@@ -12,6 +12,7 @@
     "@react-spring/web": "^10.0.1",
     "@types/react-window": "^1.8.8",
     "clsx": "^2.1.1",
+    "git": "^0.1.5",
     "next": "15.4.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
