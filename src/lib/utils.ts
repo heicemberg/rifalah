@@ -5,7 +5,7 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-// Importar constantes y tipos de archivos anteriores
+// Importar SOLO constantes y datos (NO funciones)
 import {
   QUICK_SELECT_OPTIONS,
   MEXICAN_NAMES,
@@ -13,11 +13,9 @@ import {
   TICKET_PRICE,
   EMAIL_REGEX,
   MEXICAN_WHATSAPP_REGEX,
-  CURRENCY_FORMAT,
-  calculateTotalPrice as constantsCalculatePrice
+  CURRENCY_FORMAT_CONFIG,
+  DATE_FORMAT_CONFIG
 } from './constants';
-
-import type { QuickSelectOption } from './types';
 
 // ============================================================================
 // UTILIDADES DE STYLING
@@ -45,25 +43,22 @@ export function formatTicketNumber(num: number): string {
 }
 
 /**
- * Formatea un monto como precio en formato mexicano
+ * Formatea un monto como precio en formato estadounidense
  * @param amount - Cantidad a formatear
- * @param currency - Moneda (por defecto MXN)
- * @returns String formateado como moneda mexicana
+ * @param currency - Moneda (por defecto USD)
+ * @returns String formateado como moneda estadounidense
  */
-export function formatPrice(amount: number, currency: string = 'MXN'): string {
-  if (currency === 'MXN') {
-    return CURRENCY_FORMAT.format(amount);
+export function formatPrice(amount: number, currency: string = 'USD'): string {
+  try {
+    const formatter = new Intl.NumberFormat('en-US', {
+      ...CURRENCY_FORMAT_CONFIG,
+      currency: currency
+    });
+    return formatter.format(amount);
+  } catch {
+    // Fallback en caso de error
+    return `$${amount.toLocaleString('en-US')}`;
   }
-  
-  // Para otras monedas, crear un formateador específico
-  const formatter = new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  });
-  
-  return formatter.format(amount);
 }
 
 /**
@@ -73,6 +68,8 @@ export function formatPrice(amount: number, currency: string = 'MXN'): string {
  * @returns Precio total con descuento aplicado
  */
 export function calculatePrice(tickets: number): number {
+  if (tickets <= 0) return 0;
+  
   // Buscar si hay una opción de descuento para esta cantidad exacta
   const quickOption = QUICK_SELECT_OPTIONS.find(option => option.tickets === tickets);
   
@@ -110,6 +107,8 @@ export function calculatePrice(tickets: number): number {
  * @returns Porcentaje de descuento aplicado
  */
 export function calculateDiscountPercentage(tickets: number): number {
+  if (tickets <= 0) return 0;
+  
   const originalPrice = tickets * TICKET_PRICE;
   const discountedPrice = calculatePrice(tickets);
   
@@ -128,6 +127,7 @@ export function calculateDiscountPercentage(tickets: number): number {
  * @returns Nombre aleatorio en formato "Nombre A."
  */
 export function generateRandomName(): string {
+  if (MEXICAN_NAMES.length === 0) return 'Usuario A.';
   const randomIndex = Math.floor(Math.random() * MEXICAN_NAMES.length);
   return MEXICAN_NAMES[randomIndex];
 }
@@ -137,6 +137,7 @@ export function generateRandomName(): string {
  * @returns Ciudad aleatoria
  */
 export function getRandomCity(): string {
+  if (MEXICAN_CITIES.length === 0) return 'Ciudad de México';
   const randomIndex = Math.floor(Math.random() * MEXICAN_CITIES.length);
   return MEXICAN_CITIES[randomIndex];
 }
@@ -261,14 +262,12 @@ export function formatRelativeTime(date: Date): string {
  * @returns String con fecha formateada
  */
 export function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('es-MX', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'America/Mexico_City'
-  }).format(date);
+  try {
+    return new Intl.DateTimeFormat('es-MX', DATE_FORMAT_CONFIG).format(date);
+  } catch {
+    // Fallback básico
+    return date.toLocaleDateString('es-MX');
+  }
 }
 
 /**
@@ -277,12 +276,16 @@ export function formatDate(date: Date): string {
  * @returns String con fecha formateada
  */
 export function formatDateOnly(date: Date): string {
-  return new Intl.DateTimeFormat('es-MX', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'America/Mexico_City'
-  }).format(date);
+  try {
+    return new Intl.DateTimeFormat('es-MX', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'America/Mexico_City'
+    }).format(date);
+  } catch {
+    return date.toLocaleDateString('es-MX');
+  }
 }
 
 /**
@@ -291,11 +294,15 @@ export function formatDateOnly(date: Date): string {
  * @returns String con hora formateada
  */
 export function formatTimeOnly(date: Date): string {
-  return new Intl.DateTimeFormat('es-MX', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'America/Mexico_City'
-  }).format(date);
+  try {
+    return new Intl.DateTimeFormat('es-MX', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'America/Mexico_City'
+    }).format(date);
+  } catch {
+    return date.toLocaleTimeString('es-MX');
+  }
 }
 
 /**
@@ -413,7 +420,11 @@ export function slugify(str: string): string {
  * @returns String con número formateado
  */
 export function formatNumber(num: number): string {
-  return new Intl.NumberFormat('es-MX').format(num);
+  try {
+    return new Intl.NumberFormat('es-MX').format(num);
+  } catch {
+    return num.toString();
+  }
 }
 
 /**

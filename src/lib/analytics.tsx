@@ -4,9 +4,18 @@
 
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useRaffleStore } from '../stores/raffle-store';
 import type { PaymentMethodType } from './types';
+
+// Declaración de tipo para gtag (Google Analytics)
+declare global {
+  function gtag(
+    command: 'event',
+    eventName: string,
+    parameters?: Record<string, unknown>
+  ): void;
+}
 
 // ============================================================================
 // TIPOS
@@ -36,7 +45,7 @@ export interface BaseEvent {
   page: string;
   userAgent: string;
   viewport: { width: number; height: number };
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>;
 }
 
 export interface TicketEvent extends BaseEvent {
@@ -226,7 +235,7 @@ class AnalyticsManager {
     };
 
     this.addEventToQueue(event);
-    this.updateSession(event);
+    this.updateSession();
     this.logDebug('Event tracked:', event);
   }
 
@@ -613,12 +622,12 @@ class AnalyticsManager {
     return '9001-10000';
   }
 
-  private updateSession(event: AnalyticsEvent): void {
+  private updateSession(): void {
     // Actualizar información de sesión si es necesario
     this.session.endTime = Date.now();
   }
 
-  private logDebug(message: string, ...args: any[]): void {
+  private logDebug(message: string, ...args: unknown[]): void {
     if (this.config.debug) {
       console.log(`[Analytics] ${message}`, ...args);
     }
@@ -683,7 +692,7 @@ export const useAnalytics = () => {
 
   // Auto-tracking de cambios en el store
   useEffect(() => {
-    const { selectedTickets, soldTickets } = store;
+    const { selectedTickets } = store;
 
     // Track ticket selections/deselections
     const prevSelected = prevSelectedRef.current;
@@ -702,7 +711,7 @@ export const useAnalytics = () => {
     });
 
     prevSelectedRef.current = [...selectedTickets];
-  }, [store.selectedTickets, analytics]);
+  }, [store, analytics]);
 
   // Track purchases completadas
   useEffect(() => {
@@ -723,7 +732,7 @@ export const useAnalytics = () => {
     }
 
     prevSoldRef.current = [...soldTickets];
-  }, [store.soldTickets, analytics]);
+  }, [store, analytics]);
 
   // Track page views automáticamente
   useEffect(() => {

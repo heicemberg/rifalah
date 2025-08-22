@@ -5,11 +5,24 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
+import { 
+  BarChart3, 
+  CreditCard, 
+  Trophy, 
+  Palette, 
+  TrendingUp, 
+  Dice6,
+  LogOut,
+  Eye,
+  EyeOff,
+  Download,
+  Upload
+} from 'lucide-react';
 
 // Importar desde archivos anteriores
 import { useRaffleStore } from '../../stores/raffle-store';
-import { PAYMENT_METHODS, TOTAL_TICKETS } from '../../lib/constants';
+import { TOTAL_TICKETS } from '../../lib/constants';
 import type { PaymentMethod, PaymentMethodType, ThemeColors } from '../../lib/types';
 import { formatPrice, formatTicketNumber, cn } from '../../lib/utils';
 
@@ -39,6 +52,7 @@ const AdminLogin: React.FC<{
   loading: boolean;
 }> = ({ onLogin, loading }) => {
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,8 +63,11 @@ const AdminLogin: React.FC<{
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
         <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <BarChart3 size={32} className="text-blue-600" />
+          </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            🔐 Panel de Administración
+            Panel de Administración
           </h1>
           <p className="text-gray-600">Ingresa la contraseña para continuar</p>
         </div>
@@ -60,15 +77,24 @@ const AdminLogin: React.FC<{
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Contraseña
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Ingresa la contraseña"
-              required
-              disabled={loading}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Ingresa la contraseña"
+                required
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
           <button
@@ -94,7 +120,7 @@ const AdminLogin: React.FC<{
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-500">
-          Demo: contraseña es "admin2024"
+          Demo: contraseña es &quot;admin2024&quot;
         </div>
       </div>
     </div>
@@ -111,12 +137,12 @@ const AdminSidebar: React.FC<{
   onLogout: () => void;
 }> = ({ activeTab, onTabChange, onLogout }) => {
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { id: 'payment-config', label: 'Métodos de Pago', icon: '💳' },
-    { id: 'prize-config', label: 'Configurar Premio', icon: '🏆' },
-    { id: 'theme-config', label: 'Personalización', icon: '🎨' },
-    { id: 'sales', label: 'Ventas', icon: '📈' },
-    { id: 'raffle', label: 'Sorteo', icon: '🎲' }
+    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+    { id: 'payment-config', label: 'Métodos de Pago', icon: CreditCard },
+    { id: 'prize-config', label: 'Configurar Premio', icon: Trophy },
+    { id: 'theme-config', label: 'Personalización', icon: Palette },
+    { id: 'sales', label: 'Ventas', icon: TrendingUp },
+    { id: 'raffle', label: 'Sorteo', icon: Dice6 }
   ] as const;
 
   return (
@@ -128,23 +154,26 @@ const AdminSidebar: React.FC<{
 
       <nav className="p-4">
         <ul className="space-y-2">
-          {tabs.map((tab) => (
-            <li key={tab.id}>
-              <button
-                onClick={() => onTabChange(tab.id)}
-                className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-left',
-                  {
-                    'bg-blue-100 text-blue-700 font-medium': activeTab === tab.id,
-                    'text-gray-700 hover:bg-gray-100': activeTab !== tab.id
-                  }
-                )}
-              >
-                <span className="text-xl">{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            </li>
-          ))}
+          {tabs.map((tab) => {
+            const IconComponent = tab.icon;
+            return (
+              <li key={tab.id}>
+                <button
+                  onClick={() => onTabChange(tab.id)}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-left',
+                    {
+                      'bg-blue-100 text-blue-700 font-medium': activeTab === tab.id,
+                      'text-gray-700 hover:bg-gray-100': activeTab !== tab.id
+                    }
+                  )}
+                >
+                  <IconComponent size={20} />
+                  <span>{tab.label}</span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </nav>
 
@@ -153,7 +182,7 @@ const AdminSidebar: React.FC<{
           onClick={onLogout}
           className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
         >
-          <span className="text-xl">🚪</span>
+          <LogOut size={20} />
           <span>Cerrar Sesión</span>
         </button>
       </div>
@@ -178,28 +207,28 @@ const DashboardTab: React.FC = () => {
       value: soldTickets.length.toLocaleString(),
       subtitle: `de ${TOTAL_TICKETS.toLocaleString()}`,
       color: 'bg-green-500',
-      icon: '🎫'
+      icon: Trophy
     },
     {
       title: 'Ingresos Totales',
       value: formatPrice(totalRevenue),
       subtitle: `${soldPercentage.toFixed(1)}% del objetivo`,
       color: 'bg-blue-500',
-      icon: '💰'
+      icon: TrendingUp
     },
     {
       title: 'Tasa de Conversión',
       value: `${conversionRate.toFixed(2)}%`,
       subtitle: 'Boletos vendidos vs total',
       color: 'bg-purple-500',
-      icon: '📈'
+      icon: BarChart3
     },
     {
       title: 'Boletos Reservados',
       value: reservedTickets.length.toLocaleString(),
       subtitle: 'Pendientes de pago',
       color: 'bg-yellow-500',
-      icon: '⏳'
+      icon: CreditCard
     }
   ];
 
@@ -212,20 +241,23 @@ const DashboardTab: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-lg shadow-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className={cn('w-12 h-12 rounded-lg flex items-center justify-center text-white', stat.color)}>
-                <span className="text-xl">{stat.icon}</span>
+        {stats.map((stat, index) => {
+          const IconComponent = stat.icon;
+          return (
+            <div key={index} className="bg-white rounded-lg shadow-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className={cn('w-12 h-12 rounded-lg flex items-center justify-center text-white', stat.color)}>
+                  <IconComponent size={24} />
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">{stat.title}</p>
+                <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
+                <p className="text-xs text-gray-500">{stat.subtitle}</p>
               </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-600 mb-1">{stat.title}</p>
-              <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
-              <p className="text-xs text-gray-500">{stat.subtitle}</p>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Progress Bar */}
@@ -258,7 +290,7 @@ const DashboardTab: React.FC = () => {
               <div key={activity.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <span className="text-green-600 text-sm">🎫</span>
+                    <Trophy size={16} className="text-green-600" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-800">
@@ -312,7 +344,9 @@ const PaymentConfigTab: React.FC = () => {
         {paymentMethods.map((method) => (
           <div key={method.id} className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center gap-4 mb-6">
-              <img src={method.icon} alt={method.name} className="w-12 h-12" />
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                <span className="text-xs font-bold text-gray-600">{method.name.slice(0, 3)}</span>
+              </div>
               <div>
                 <h3 className="text-lg font-bold text-gray-800">{method.name}</h3>
                 <p className="text-sm text-gray-600">Configurar cuenta de {method.name}</p>
@@ -443,9 +477,10 @@ const PrizeConfigTab: React.FC = () => {
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors text-gray-600"
+                className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors text-gray-600 flex items-center justify-center gap-2"
               >
-                📸 Seleccionar Imagen
+                <Upload size={20} />
+                Seleccionar Imagen
               </button>
             </div>
 
@@ -464,118 +499,15 @@ const PrizeConfigTab: React.FC = () => {
           
           <div className="space-y-4">
             <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
-              <img
-                src={prizeData.image}
-                alt={prizeData.title}
-                className="w-full h-full object-cover"
-              />
+              <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                <span className="text-gray-500 text-lg font-semibold">Vista Previa del Premio</span>
+              </div>
             </div>
             
             <div>
               <h4 className="text-xl font-bold text-gray-800">{prizeData.title}</h4>
               <p className="text-lg font-semibold text-green-600">{formatPrice(prizeData.value)}</p>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ============================================================================
-// THEME CONFIG TAB
-// ============================================================================
-
-const ThemeConfigTab: React.FC = () => {
-  const { adminConfig, updateAdminConfig } = useRaffleStore();
-  const [colors, setColors] = useState<ThemeColors>(adminConfig.colors);
-
-  const handleColorChange = useCallback((colorKey: keyof ThemeColors, value: string) => {
-    const newColors = { ...colors, [colorKey]: value };
-    setColors(newColors);
-    
-    // Actualizar CSS custom properties
-    document.documentElement.style.setProperty(`--color-${colorKey}`, value);
-    
-    updateAdminConfig({
-      colors: newColors
-    });
-    
-    toast.success('Color actualizado');
-  }, [colors, updateAdminConfig]);
-
-  const colorConfig = [
-    { key: 'primary' as keyof ThemeColors, label: 'Color Primario', description: 'Botones principales y enlaces' },
-    { key: 'secondary' as keyof ThemeColors, label: 'Color Secundario', description: 'Elementos de apoyo' },
-    { key: 'accent' as keyof ThemeColors, label: 'Color de Acento', description: 'Destacados y llamadas a la acción' },
-    { key: 'success' as keyof ThemeColors, label: 'Color de Éxito', description: 'Mensajes de confirmación' },
-    { key: 'error' as keyof ThemeColors, label: 'Color de Error', description: 'Mensajes de error' },
-    { key: 'warning' as keyof ThemeColors, label: 'Color de Advertencia', description: 'Mensajes de alerta' }
-  ];
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Personalización</h1>
-        <p className="text-gray-600">Customiza los colores del tema</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {colorConfig.map((config) => (
-          <div key={config.key} className="bg-white rounded-lg shadow-lg p-6">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">{config.label}</h3>
-              <p className="text-sm text-gray-600">{config.description}</p>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <input
-                  type="color"
-                  value={colors[config.key]}
-                  onChange={(e) => handleColorChange(config.key, e.target.value)}
-                  className="w-16 h-16 rounded-lg border-2 border-gray-300 cursor-pointer"
-                />
-                <div>
-                  <input
-                    type="text"
-                    value={colors[config.key]}
-                    onChange={(e) => handleColorChange(config.key, e.target.value)}
-                    className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
-                  />
-                </div>
-              </div>
-              
-              {/* Preview */}
-              <div
-                className="w-full h-12 rounded-lg border-2 border-gray-200"
-                style={{ backgroundColor: colors[config.key] }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h3 className="text-lg font-bold text-gray-800 mb-4">Vista Previa</h3>
-        <div className="space-y-4">
-          <button
-            className="px-6 py-3 rounded-lg font-semibold text-white"
-            style={{ backgroundColor: colors.primary }}
-          >
-            Botón Primario
-          </button>
-          <button
-            className="px-6 py-3 rounded-lg font-semibold text-white"
-            style={{ backgroundColor: colors.secondary }}
-          >
-            Botón Secundario
-          </button>
-          <div
-            className="p-4 rounded-lg text-white"
-            style={{ backgroundColor: colors.success }}
-          >
-            Mensaje de éxito
           </div>
         </div>
       </div>
@@ -625,7 +557,8 @@ const SalesTab: React.FC = () => {
           onClick={exportCSV}
           className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center gap-2"
         >
-          📊 Exportar CSV
+          <Download size={20} />
+          Exportar CSV
         </button>
       </div>
 
@@ -728,7 +661,10 @@ const RaffleTab: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Panel de Sorteo */}
         <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-          <h3 className="text-xl font-bold text-gray-800 mb-6">🎲 Sorteo Aleatorio</h3>
+          <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center justify-center gap-2">
+            <Dice6 size={24} />
+            Sorteo Aleatorio
+          </h3>
           
           <div className="mb-8">
             <div className="text-6xl mb-4">
@@ -767,7 +703,10 @@ const RaffleTab: React.FC = () => {
                 Sorteando...
               </div>
             ) : (
-              '🎲 Realizar Sorteo'
+              <span className="flex items-center justify-center gap-2">
+                <Dice6 size={20} />
+                Realizar Sorteo
+              </span>
             )}
           </button>
 
@@ -780,7 +719,7 @@ const RaffleTab: React.FC = () => {
 
         {/* Información del Sorteo */}
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-6">ℹ️ Información del Sorteo</h3>
+          <h3 className="text-xl font-bold text-gray-800 mb-6">📊 Información del Sorteo</h3>
           
           <div className="space-y-6">
             <div>
@@ -826,6 +765,104 @@ const RaffleTab: React.FC = () => {
                 Asegúrate de que todos los pagos estén verificados antes de proceder.
               </p>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// THEME CONFIG TAB (Agregada la funcionalidad faltante)
+// ============================================================================
+
+const ThemeConfigTab: React.FC = () => {
+  const { adminConfig, updateAdminConfig } = useRaffleStore();
+  const [colors, setColors] = useState<ThemeColors>(adminConfig.colors);
+
+  const handleColorChange = useCallback((colorKey: keyof ThemeColors, value: string) => {
+    const newColors = { ...colors, [colorKey]: value };
+    setColors(newColors);
+    
+    updateAdminConfig({
+      colors: newColors
+    });
+    
+    toast.success('Color actualizado');
+  }, [colors, updateAdminConfig]);
+
+  const colorConfig = [
+    { key: 'primary' as keyof ThemeColors, label: 'Color Primario', description: 'Botones principales y enlaces' },
+    { key: 'secondary' as keyof ThemeColors, label: 'Color Secundario', description: 'Elementos de apoyo' },
+    { key: 'accent' as keyof ThemeColors, label: 'Color de Acento', description: 'Destacados y llamadas a la acción' },
+    { key: 'success' as keyof ThemeColors, label: 'Color de Éxito', description: 'Mensajes de confirmación' },
+    { key: 'error' as keyof ThemeColors, label: 'Color de Error', description: 'Mensajes de error' },
+    { key: 'warning' as keyof ThemeColors, label: 'Color de Advertencia', description: 'Mensajes de alerta' }
+  ];
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">Personalización</h1>
+        <p className="text-gray-600">Customiza los colores del tema</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {colorConfig.map((config) => (
+          <div key={config.key} className="bg-white rounded-lg shadow-lg p-6">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">{config.label}</h3>
+              <p className="text-sm text-gray-600">{config.description}</p>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <input
+                  type="color"
+                  value={colors[config.key]}
+                  onChange={(e) => handleColorChange(config.key, e.target.value)}
+                  className="w-16 h-16 rounded-lg border-2 border-gray-300 cursor-pointer"
+                />
+                <div>
+                  <input
+                    type="text"
+                    value={colors[config.key]}
+                    onChange={(e) => handleColorChange(config.key, e.target.value)}
+                    className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                  />
+                </div>
+              </div>
+              
+              {/* Preview */}
+              <div
+                className="w-full h-12 rounded-lg border-2 border-gray-200"
+                style={{ backgroundColor: colors[config.key] }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h3 className="text-lg font-bold text-gray-800 mb-4">Vista Previa</h3>
+        <div className="space-y-4">
+          <button
+            className="px-6 py-3 rounded-lg font-semibold text-white"
+            style={{ backgroundColor: colors.primary }}
+          >
+            Botón Primario
+          </button>
+          <button
+            className="px-6 py-3 rounded-lg font-semibold text-white"
+            style={{ backgroundColor: colors.secondary }}
+          >
+            Botón Secundario
+          </button>
+          <div
+            className="p-4 rounded-lg text-white"
+            style={{ backgroundColor: colors.success }}
+          >
+            Mensaje de éxito
           </div>
         </div>
       </div>

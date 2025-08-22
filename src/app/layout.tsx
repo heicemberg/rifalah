@@ -6,11 +6,11 @@ import { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 
-// Importar componentes de sonido del prompt 11
-import { SoundProvider, SoundEffectsListener } from '../components/SoundEffects';
-
-// Importar estilos globales del prompt 14
+// Importar estilos globales
 import './globals.css';
+
+// Importar providers optimizados
+import { AppProviders } from '../providers/AppProviders';
 
 // ============================================================================
 // CONFIGURACIÓN DE FUENTE
@@ -360,6 +360,13 @@ export default function RootLayout({
         className={`${inter.className} antialiased`}
         suppressHydrationWarning
       >
+        <script dangerouslySetInnerHTML={{
+          __html: `console.log('CSS Loading Check:', {
+            globalsCss: !!document.querySelector('link[href*="globals.css"], style[data-href*="globals.css"]'),
+            tailwindCss: !!document.querySelector('link[href*="tailwind.css"], style[data-href*="tailwind.css"]'),
+            timestamp: new Date().toISOString()
+          });`
+        }} />
         {/* No-JS Fallback Message */}
         <noscript>
           <div style={{
@@ -392,84 +399,77 @@ export default function RootLayout({
           </div>
         </noscript>
 
-        {/* Sound Provider - Envuelve toda la aplicación */}
-        <SoundProvider>
-          {/* Contenido principal */}
+        {/* Contenido principal */}
+        <AppProviders>
           <div id="app-root" className="min-h-screen bg-gray-50">
             {children}
           </div>
-          
-          {/* Sound Effects Listener - Escucha cambios del store automáticamente */}
-          <SoundEffectsListener />
-          
-          {/* React Hot Toast - Configuración optimizada */}
-          <Toaster
-            position="top-right"
-            reverseOrder={false}
-            gutter={8}
-            containerClassName="z-[9999]"
-            containerStyle={{
-              top: 20,
-              right: 20
-            }}
-            toastOptions={{
-              // Configuración por defecto
-              duration: 4000,
+        </AppProviders>
+        
+        {/* React Hot Toast - Configuración optimizada */}
+        <Toaster
+          position="top-right"
+          reverseOrder={false}
+          gutter={8}
+          containerClassName="z-[9999]"
+          containerStyle={{
+            top: 20,
+            right: 20
+          }}
+          toastOptions={{
+            // Configuración por defecto
+            duration: 4000,
+            style: {
+              background: '#ffffff',
+              color: '#374151',
+              border: '1px solid #e5e7eb',
+              borderRadius: '0.75rem',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '14px',
+              fontWeight: '500',
+              padding: '12px 16px',
+              maxWidth: '400px'
+            },
+            
+            // Configuración por tipo
+            success: {
+              duration: 5000,
+              iconTheme: {
+                primary: '#10b981',
+                secondary: '#ffffff',
+              },
               style: {
-                background: '#ffffff',
-                color: '#374151',
-                border: '1px solid #e5e7eb',
-                borderRadius: '0.75rem',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '14px',
-                fontWeight: '500',
-                padding: '12px 16px',
-                maxWidth: '400px'
+                border: '1px solid #10b981',
+                background: '#f0fdf4'
+              }
+            },
+            
+            error: {
+              duration: 6000,
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#ffffff',
               },
-              
-              // Configuración por tipo
-              success: {
-                duration: 5000,
-                iconTheme: {
-                  primary: '#10b981',
-                  secondary: '#ffffff',
-                },
-                style: {
-                  border: '1px solid #10b981',
-                  background: '#f0fdf4'
-                }
+              style: {
+                border: '1px solid #ef4444',
+                background: '#fef2f2'
+              }
+            },
+            
+            loading: {
+              duration: Infinity,
+              iconTheme: {
+                primary: '#3b82f6',
+                secondary: '#ffffff',
               },
-              
-              error: {
-                duration: 6000,
-                iconTheme: {
-                  primary: '#ef4444',
-                  secondary: '#ffffff',
-                },
-                style: {
-                  border: '1px solid #ef4444',
-                  background: '#fef2f2'
-                }
-              },
-              
-              loading: {
-                duration: Infinity,
-                iconTheme: {
-                  primary: '#3b82f6',
-                  secondary: '#ffffff',
-                },
-                style: {
-                  border: '1px solid #3b82f6',
-                  background: '#eff6ff'
-                }
-              },
-              
-              // Animaciones personalizadas
-              className: 'animate-slide-in-right',
-            }}
-          />
-        </SoundProvider>
+              style: {
+                border: '1px solid #3b82f6',
+                background: '#eff6ff'
+              }
+            },
+          }}
+        />
 
         {/* Script para manejar tema oscuro */}
         <script
@@ -503,12 +503,5 @@ export default function RootLayout({
 }
 
 // ============================================================================
-// EXPORT ADICIONAL PARA METADATA DYNAMIC
+// METADATA ESTÁTICO CONFIGURADO ARRIBA
 // ============================================================================
-
-export async function generateMetadata(): Promise<Metadata> {
-  // Aquí podrías hacer fetch de datos dinámicos si fuera necesario
-  // Por ejemplo, estadísticas actuales de la rifa
-  
-  return metadata;
-}

@@ -9,6 +9,7 @@ import React, { useEffect, useState, useRef } from 'react';
 // Importar desde archivos anteriores
 import { useRaffleStore } from '../stores/raffle-store';
 import { randomBetween, cn } from '../lib/utils';
+import { TOTAL_TICKETS } from '../lib/constants';
 
 // ============================================================================
 // TIPOS
@@ -85,37 +86,40 @@ const useCountdown = (targetDate: Date): TimeRemaining => {
 // ============================================================================
 
 const useFluctuatingViewers = () => {
-  const { viewingCount, soldPercentage, setViewingCount } = useRaffleStore();
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const { viewingCount, soldTickets, setViewingCount } = useRaffleStore();
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const updateViewers = () => {
-      // Calcular base de viewers basado en porcentaje vendido
+      const currentHour = new Date().getHours();
       let baseViewers: number;
       
-      if (soldPercentage < 25) {
-        baseViewers = randomBetween(45, 89); // Inicio tranquilo
-      } else if (soldPercentage < 50) {
-        baseViewers = randomBetween(89, 156); // Creciendo interés
-      } else if (soldPercentage < 75) {
-        baseViewers = randomBetween(156, 234); // Alta demanda
-      } else if (soldPercentage < 90) {
-        baseViewers = randomBetween(234, 345); // Urgencia alta
-      } else {
-        baseViewers = randomBetween(345, 567); // FOMO máximo
+      // Viewers base entre 89-347 personas
+      baseViewers = randomBetween(89, 347);
+
+      // Aplicar modificadores por hora
+      if (currentHour >= 2 && currentHour <= 6) {
+        // Madrugada: reducir viewers significativamente
+        baseViewers = Math.floor(baseViewers * 0.3);
+      } else if (currentHour >= 18 && currentHour <= 22) {
+        // Horario pico nocturno: más viewers
+        baseViewers = Math.floor(baseViewers * 1.4);
+      } else if (currentHour >= 12 && currentHour <= 14) {
+        // Hora de comida: más viewers
+        baseViewers = Math.floor(baseViewers * 1.2);
       }
 
-      // Añadir fluctuación aleatoria ±20%
-      const fluctuation = randomBetween(-20, 20);
+      // Añadir fluctuación aleatoria ±10%
+      const fluctuation = randomBetween(-10, 10);
       const newCount = Math.max(
-        20, // Mínimo 20 viewers
-        Math.floor(baseViewers + (baseViewers * fluctuation / 100))
+        89, // Mínimo 89 viewers
+        Math.min(347, Math.floor(baseViewers + (baseViewers * fluctuation / 100)))
       );
 
       setViewingCount(newCount);
 
-      // Programar siguiente actualización (5-15 segundos)
-      const nextUpdate = randomBetween(5000, 15000);
+      // Programar siguiente actualización (30-60 segundos)
+      const nextUpdate = randomBetween(30000, 60000);
       intervalRef.current = setTimeout(updateViewers, nextUpdate);
     };
 
@@ -127,19 +131,19 @@ const useFluctuatingViewers = () => {
         clearTimeout(intervalRef.current);
       }
     };
-  }, [soldPercentage, setViewingCount]);
+  }, [soldTickets.length, setViewingCount]);
 
   return viewingCount;
 };
 
 // ============================================================================
-// FUNCIÓN PARA DETERMINAR NIVEL DE URGENCIA
+// FUNCIÓN PARA DETERMINAR NIVEL DE URGENCIA (Basado en tickets restantes)
 // ============================================================================
 
-const getUrgencyLevel = (availableTickets: number): UrgencyLevel => {
-  if (availableTickets > 5000) return 'low';
-  if (availableTickets > 1000) return 'medium';
-  if (availableTickets > 100) return 'high';
+const getUrgencyLevel = (remainingTickets: number): UrgencyLevel => {
+  if (remainingTickets > 3000) return 'low';
+  if (remainingTickets > 1500) return 'medium';
+  if (remainingTickets > 500) return 'high';
   return 'critical';
 };
 
@@ -178,7 +182,7 @@ const CountdownDisplay: React.FC<{ time: TimeRemaining }> = React.memo(({ time }
 
       {/* Contador principal - Desktop */}
       <div className="hidden md:grid grid-cols-4 gap-4">
-        {timeUnits.map((unit, index) => (
+        {timeUnits.map((unit) => (
           <div
             key={unit.label}
             className="bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-lg p-4 text-center"
@@ -197,10 +201,10 @@ const CountdownDisplay: React.FC<{ time: TimeRemaining }> = React.memo(({ time }
       <div className="md:hidden">
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-4 text-center">
           <div className="text-xl font-bold mb-2">
-            {timeUnits.map((unit, index) => (
+            {timeUnits.map((unit, idx) => (
               <span key={unit.label}>
                 {unit.value.toString().padStart(2, '0')}{unit.short}
-                {index < timeUnits.length - 1 && <span className="mx-1">:</span>}
+                {idx < timeUnits.length - 1 && <span className="mx-1">:</span>}
               </span>
             ))}
           </div>
@@ -219,8 +223,8 @@ CountdownDisplay.displayName = 'CountdownDisplay';
 // COMPONENTE DE BARRA DE URGENCIA
 // ============================================================================
 
-const UrgencyBar: React.FC<{ availableTickets: number }> = React.memo(({ availableTickets }) => {
-  const urgencyLevel = getUrgencyLevel(availableTickets);
+const UrgencyBar: React.FC<{ remainingTickets: number }> = React.memo(({ remainingTickets }) => {
+  const urgencyLevel = getUrgencyLevel(remainingTickets);
 
   const urgencyConfig = {
     low: {
@@ -228,7 +232,7 @@ const UrgencyBar: React.FC<{ availableTickets: number }> = React.memo(({ availab
       bgColor: 'bg-green-100',
       textColor: 'text-green-800',
       borderColor: 'border-green-300',
-      message: '✅ Buena disponibilidad',
+      message: `✅ Quedan ${remainingTickets.toLocaleString()} boletos`,
       pulse: false
     },
     medium: {
@@ -236,7 +240,7 @@ const UrgencyBar: React.FC<{ availableTickets: number }> = React.memo(({ availab
       bgColor: 'bg-yellow-100',
       textColor: 'text-yellow-800',
       borderColor: 'border-yellow-300',
-      message: '⚠️ Disponibilidad media',
+      message: `⚠️ Solo quedan ${remainingTickets.toLocaleString()} boletos`,
       pulse: false
     },
     high: {
@@ -244,7 +248,7 @@ const UrgencyBar: React.FC<{ availableTickets: number }> = React.memo(({ availab
       bgColor: 'bg-orange-100',
       textColor: 'text-orange-800',
       borderColor: 'border-orange-300',
-      message: '🔥 Pocos boletos restantes',
+      message: `🔥 Solo quedan ${remainingTickets.toLocaleString()} boletos disponibles`,
       pulse: true
     },
     critical: {
@@ -252,7 +256,7 @@ const UrgencyBar: React.FC<{ availableTickets: number }> = React.memo(({ availab
       bgColor: 'bg-red-100',
       textColor: 'text-red-800',
       borderColor: 'border-red-300',
-      message: '🚨 ¡ÚLTIMOS BOLETOS!',
+      message: `🚨 ¡ÚLTIMOS ${remainingTickets.toLocaleString()} BOLETOS!`,
       pulse: true
     }
   };
@@ -273,7 +277,7 @@ const UrgencyBar: React.FC<{ availableTickets: number }> = React.memo(({ availab
           {config.message}
         </span>
         <span className={cn('text-sm font-medium', config.textColor)}>
-          {availableTickets.toLocaleString()} restantes
+          {Math.round((remainingTickets / TOTAL_TICKETS) * 100)}% disponible
         </span>
       </div>
 
@@ -288,7 +292,7 @@ const UrgencyBar: React.FC<{ availableTickets: number }> = React.memo(({ availab
             }
           )}
           style={{
-            width: `${Math.min(100, (availableTickets / 10000) * 100)}%`
+            width: `${Math.min(100, (remainingTickets / TOTAL_TICKETS) * 100)}%`
           }}
         />
         
@@ -298,11 +302,20 @@ const UrgencyBar: React.FC<{ availableTickets: number }> = React.memo(({ availab
         )}
       </div>
 
-      {/* Porcentaje restante */}
-      <div className="mt-2 text-center">
-        <span className={cn('text-xs font-medium', config.textColor)}>
-          {((availableTickets / 10000) * 100).toFixed(1)}% disponible
-        </span>
+      {/* Estadísticas adicionales */}
+      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+        <div className="text-center">
+          <div className={cn('font-bold', config.textColor)}>
+            {randomBetween(847, 1200)}
+          </div>
+          <div className="text-gray-600">vendidos últimas 24h</div>
+        </div>
+        <div className="text-center">
+          <div className={cn('font-bold', config.textColor)}>
+            8.7
+          </div>
+          <div className="text-gray-600">promedio por compra</div>
+        </div>
       </div>
     </div>
   );
@@ -337,17 +350,17 @@ const LiveViewers: React.FC<{ count: number }> = React.memo(({ count }) => {
       
       {/* Mensaje dinámico basado en cantidad */}
       <div className="mt-3 text-center">
-        {count < 100 && (
+        {count < 150 && (
           <div className="text-xs text-blue-600">
-            📈 Interés creciendo
+            📈 Interés moderado
           </div>
         )}
-        {count >= 100 && count < 200 && (
+        {count >= 150 && count < 250 && (
           <div className="text-xs text-orange-600">
             🔥 Alta demanda
           </div>
         )}
-        {count >= 200 && (
+        {count >= 250 && (
           <div className="text-xs text-red-600 font-bold">
             🚨 Demanda extrema
           </div>
@@ -365,7 +378,10 @@ LiveViewers.displayName = 'LiveViewers';
 
 export const UrgencyCounters: React.FC = () => {
   // Estado del store
-  const { adminConfig, availableTickets } = useRaffleStore();
+  const { adminConfig, soldTickets } = useRaffleStore();
+  
+  // Calcular boletos restantes
+  const remainingTickets = TOTAL_TICKETS - soldTickets.length;
   
   // Hooks personalizados
   const timeRemaining = useCountdown(adminConfig.sorteoDate);
@@ -382,7 +398,7 @@ export const UrgencyCounters: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Barra de Urgencia */}
         <div>
-          <UrgencyBar availableTickets={availableTickets.length} />
+          <UrgencyBar remainingTickets={remainingTickets} />
         </div>
 
         {/* Live Viewers */}
@@ -392,13 +408,18 @@ export const UrgencyCounters: React.FC = () => {
       </div>
 
       {/* Mensaje de urgencia adicional */}
-      {availableTickets.length < 1000 && (
-        <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg p-4 text-center animate-pulse">
+      {remainingTickets < 3000 && (
+        <div className={cn(
+          'text-white rounded-lg p-4 text-center',
+          remainingTickets < 1000 
+            ? 'bg-gradient-to-r from-red-500 to-pink-500 animate-pulse' 
+            : 'bg-gradient-to-r from-orange-500 to-red-500'
+        )}>
           <div className="text-lg font-bold mb-2">
-            🚨 ¡ACCIÓN REQUERIDA!
+            {remainingTickets < 1000 ? '🚨 ¡ÚLTIMOS BOLETOS!' : '⚠️ ¡POCOS BOLETOS!'}
           </div>
           <div className="text-sm">
-            Quedan menos de 1,000 boletos. ¡No te quedes sin el tuyo!
+            Solo quedan {remainingTickets.toLocaleString()} boletos disponibles. ¡Asegura el tuyo!
           </div>
         </div>
       )}
@@ -407,30 +428,30 @@ export const UrgencyCounters: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
           <div className="text-lg font-bold text-blue-800">
-            {((10000 - availableTickets.length) / 10000 * 100).toFixed(0)}%
+            {soldTickets.length.toLocaleString()}
           </div>
-          <div className="text-xs text-blue-600">Vendido</div>
+          <div className="text-xs text-blue-600">Boletos vendidos</div>
+        </div>
+        
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+          <div className="text-lg font-bold text-red-800">
+            {remainingTickets.toLocaleString()}
+          </div>
+          <div className="text-xs text-red-600">Boletos restantes</div>
         </div>
         
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
           <div className="text-lg font-bold text-green-800">
-            {timeRemaining.days}
+            {randomBetween(847, 1200)}
           </div>
-          <div className="text-xs text-green-600">Días restantes</div>
+          <div className="text-xs text-green-600">Vendidos últimas 24h</div>
         </div>
         
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
           <div className="text-lg font-bold text-purple-800">
-            {Math.ceil(availableTickets.length / viewingCount)}
+            8.7
           </div>
-          <div className="text-xs text-purple-600">Boletos/persona</div>
-        </div>
-        
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
-          <div className="text-lg font-bold text-orange-800">
-            {viewingCount > 200 ? 'ALTA' : viewingCount > 100 ? 'MEDIA' : 'BAJA'}
-          </div>
-          <div className="text-xs text-orange-600">Demanda</div>
+          <div className="text-xs text-purple-600">Promedio por compra</div>
         </div>
       </div>
     </div>

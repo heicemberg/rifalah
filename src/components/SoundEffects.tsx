@@ -125,7 +125,16 @@ const SoundContext = createContext<SoundContextType | null>(null);
 export const useSounds = (): SoundContextType => {
   const context = useContext(SoundContext);
   if (!context) {
-    throw new Error('useSounds debe ser usado dentro de SoundProvider');
+    // En lugar de lanzar error, devolver un contexto por defecto
+    console.warn('useSounds: No se encontró SoundProvider, usando funcionalidad limitada');
+    return {
+      playSound: () => {}, // No-op function
+      enabled: false,
+      setEnabled: () => {},
+      volume: 0,
+      setVolume: () => {},
+      isAudioInitialized: false
+    };
   }
   return context;
 };
@@ -144,7 +153,7 @@ class SoundEngine {
 
     try {
       // Crear contexto de audio
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      this.audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       
       // Crear nodo de ganancia master
       this.masterGain = this.audioContext.createGain();
@@ -378,7 +387,7 @@ export const SoundEffectsListener: React.FC = () => {
 
   // Refs para tracking de cambios
   const prevSelectedRef = useRef<number[]>([]);
-  const prevLiveActivitiesRef = useRef<any[]>([]);
+  const prevLiveActivitiesRef = useRef<unknown[]>([]);
   const prevSoldTicketsRef = useRef<number[]>([]);
   const prevErrorsRef = useRef<string[]>([]);
 

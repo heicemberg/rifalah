@@ -5,6 +5,29 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { devtools } from 'zustand/middleware';
+import { subscribeWithSelector } from 'zustand/middleware';
+import { useMemo, useCallback } from 'react';
+
+// Implementación propia de shallow comparison para mayor control
+const shallow = <T>(a: T, b: T): boolean => {
+  if (Object.is(a, b)) return true;
+  if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
+    return false;
+  }
+  
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  
+  if (keysA.length !== keysB.length) return false;
+  
+  for (const key of keysA) {
+    if (!(key in b) || !Object.is((a as any)[key], (b as any)[key])) {
+      return false;
+    }
+  }
+  
+  return true;
+};
 
 // Importar tipos, constantes y utilidades de archivos anteriores
 import type {
@@ -88,6 +111,9 @@ export interface RaffleActions {
   // Acciones de inicialización
   initializeTickets: () => void;
   resetStore: () => void;
+  
+  // Funciones internas
+  _updateAvailableTickets: () => void;
 }
 
 export interface RaffleComputed {
@@ -113,12 +139,12 @@ export type RaffleStore = RaffleState & RaffleActions & RaffleComputed;
 const initialState: RaffleState = {
   tickets: [],
   selectedTickets: [],
-  soldTickets: [],
+  soldTickets: Array.from({length: 3800}, (_, i) => i + 1),
   reservedTickets: [],
   customerData: null,
   currentStep: 'selecting',
   liveActivities: [],
-  viewingCount: randomBetween(45, 89),
+  viewingCount: randomBetween(89, 347),
   adminConfig: DEFAULT_ADMIN_CONFIG,
   loading: false,
   errors: []
@@ -139,11 +165,15 @@ export const useRaffleStore = create<RaffleStore>()(
         // COMPUTED VALUES (getters)
         // ========================================================================
         
-        get availableTickets() {
-          const { soldTickets, reservedTickets } = get();
-          const unavailable = new Set([...soldTickets, ...reservedTickets]);
-          return Array.from({ length: TOTAL_TICKETS }, (_, i) => i + 1)
+        availableTickets: [],
+        
+        // Helper para actualizar tickets disponibles
+        _updateAvailableTickets: () => {
+          const state = get();
+          const unavailable = new Set([...state.soldTickets, ...state.reservedTickets]);
+          const available = Array.from({ length: TOTAL_TICKETS }, (_, i) => i + 1)
             .filter(num => !unavailable.has(num));
+          set({ availableTickets: available });
         },
         
         get totalSelected() {
@@ -307,12 +337,17 @@ export const useRaffleStore = create<RaffleStore>()(
               get().releaseReservedTickets(ticketNumbers);
             }, RESERVATION_TIME_MS);
             
-            return {
+            const newState = {
               ...state,
               reservedTickets: newReservedTickets,
               tickets: updatedTickets,
               selectedTickets: []
             };
+            
+            // Actualizar tickets disponibles
+            setTimeout(() => get()._updateAvailableTickets(), 0);
+            
+            return newState;
           });
         },
         
@@ -346,12 +381,17 @@ export const useRaffleStore = create<RaffleStore>()(
               }
             });
             
-            return {
+            const newState = {
               ...state,
               soldTickets: newSoldTickets,
               reservedTickets: updatedReservedTickets,
               tickets: updatedTickets
             };
+            
+            // Actualizar tickets disponibles
+            setTimeout(() => get()._updateAvailableTickets(), 0);
+            
+            return newState;
           });
         },
         
@@ -375,11 +415,16 @@ export const useRaffleStore = create<RaffleStore>()(
               return ticket;
             });
             
-            return {
+            const newState = {
               ...state,
               reservedTickets: updatedReservedTickets,
               tickets: updatedTickets
             };
+            
+            // Actualizar tickets disponibles
+            setTimeout(() => get()._updateAvailableTickets(), 0);
+            
+            return newState;
           });
         },
         
@@ -478,10 +523,15 @@ export const useRaffleStore = create<RaffleStore>()(
               status: 'available' as TicketStatus
             }));
             
-            return {
+            const newState = {
               ...state,
               tickets
             };
+            
+            // Actualizar tickets disponibles después de inicializar
+            setTimeout(() => get()._updateAvailableTickets(), 0);
+            
+            return newState;
           });
         },
         
@@ -520,72 +570,86 @@ export const useRaffleStore = create<RaffleStore>()(
  * Hook para obtener solo los datos de tickets
  */
 export const useTickets = () => {
-  return useRaffleStore(state => ({
-    tickets: state.tickets,
-    selectedTickets: state.selectedTickets,
-    soldTickets: state.soldTickets,
-    reservedTickets: state.reservedTickets,
-    availableTickets: state.availableTickets,
-    totalSelected: state.totalSelected,
-    totalPrice: state.totalPrice,
-    soldPercentage: state.soldPercentage
-  }));
+  return useRaffleStore(
+    useCallback((state) => ({
+      tickets: state.tickets,
+      selectedTickets: state.selectedTickets,
+      soldTickets: state.soldTickets,
+      reservedTickets: state.reservedTickets,
+      availableTickets: state.availableTickets,
+      totalSelected: state.totalSelected,
+      totalPrice: state.totalPrice,
+      soldPercentage: state.soldPercentage
+    }), []),
+    shallow
+  );
 };
 
 /**
  * Hook para obtener solo las acciones de tickets
  */
 export const useTicketActions = () => {
-  return useRaffleStore(state => ({
-    selectTicket: state.selectTicket,
-    deselectTicket: state.deselectTicket,
-    quickSelect: state.quickSelect,
-    clearSelection: state.clearSelection,
-    reserveTickets: state.reserveTickets,
-    markTicketsAsSold: state.markTicketsAsSold
-  }));
+  return useRaffleStore(
+    useCallback((state) => ({
+      selectTicket: state.selectTicket,
+      deselectTicket: state.deselectTicket,
+      quickSelect: state.quickSelect,
+      clearSelection: state.clearSelection,
+      reserveTickets: state.reserveTickets,
+      markTicketsAsSold: state.markTicketsAsSold
+    }), []),
+    shallow
+  );
 };
 
 /**
  * Hook para obtener datos del cliente y checkout
  */
 export const useCheckout = () => {
-  return useRaffleStore(state => ({
-    customerData: state.customerData,
-    currentStep: state.currentStep,
-    setCustomerData: state.setCustomerData,
-    setCurrentStep: state.setCurrentStep,
-    loading: state.loading,
-    errors: state.errors
-  }));
+  return useRaffleStore(
+    useCallback((state) => ({
+      customerData: state.customerData,
+      currentStep: state.currentStep,
+      setCustomerData: state.setCustomerData,
+      setCurrentStep: state.setCurrentStep,
+      loading: state.loading,
+      errors: state.errors
+    }), []),
+    shallow
+  );
 };
 
 /**
  * Hook para obtener actividades en vivo
  */
 export const useLiveActivities = () => {
-  return useRaffleStore(state => ({
-    liveActivities: state.liveActivities,
-    viewingCount: state.viewingCount,
-    addLiveActivity: state.addLiveActivity,
-    generateFakeActivity: state.generateFakeActivity,
-    setViewingCount: state.setViewingCount
-  }));
+  return useRaffleStore(
+    useCallback((state) => ({
+      liveActivities: state.liveActivities,
+      viewingCount: state.viewingCount,
+      addLiveActivity: state.addLiveActivity,
+      generateFakeActivity: state.generateFakeActivity,
+      setViewingCount: state.setViewingCount
+    }), []),
+    shallow
+  );
 };
 
 /**
  * Hook para obtener configuración de admin
  */
 export const useAdminConfig = () => {
-  return useRaffleStore(state => ({
-    adminConfig: state.adminConfig,
-    updateAdminConfig: state.updateAdminConfig
-  }));
+  return useRaffleStore(
+    useCallback((state) => ({
+      adminConfig: state.adminConfig,
+      updateAdminConfig: state.updateAdminConfig
+    }), []),
+    shallow
+  );
 };
 
 // ============================================================================
 // EXPORT DEL STORE Y TIPOS
 // ============================================================================
 
-export type { RaffleStep };
 export default useRaffleStore;

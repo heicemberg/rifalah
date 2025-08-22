@@ -158,7 +158,6 @@ export const StatsBar: React.FC = () => {
   const {
     soldTickets,
     reservedTickets,
-    selectedTickets,
     availableTickets,
     soldPercentage,
     totalSelected,
@@ -170,11 +169,21 @@ export const StatsBar: React.FC = () => {
   const soldCount = soldTickets.length;
   const reservedCount = reservedTickets.length;
   const availableCount = availableTickets.length;
-  const totalSoldAndReserved = soldCount + reservedCount;
 
   return (
-    <div className="w-full bg-white rounded-lg shadow-md border border-gray-200 p-6">
-      {/* Título */}
+    <div className="w-full space-y-4">
+      {/* Banner de preventa */}
+      <div className="p-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg text-black text-center shadow-md">
+        <div className="font-bold text-lg mb-1">
+          ⚡ Preventa exclusiva finalizada - 3,800 boletos vendidos a clientes VIP
+        </div>
+        <div className="text-sm opacity-90">
+          Venta pública iniciada hace 72 horas
+        </div>
+      </div>
+      
+      <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
+        {/* Título */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-800">
           📊 Estadísticas de la Rifa
@@ -265,7 +274,7 @@ export const StatsBar: React.FC = () => {
                   🎉 Descuento aplicado automáticamente
                 </span>
                 <span className="text-purple-800 font-bold">
-                  Ahorras {formatPrice((totalSelected * 50) - totalPrice)}
+                  Ahorras {formatPrice((totalSelected * 10) - totalPrice)}
                 </span>
               </div>
             </div>
@@ -287,7 +296,7 @@ export const StatsBar: React.FC = () => {
           
           <div className="p-3 bg-gray-50 rounded-lg">
             <div className="text-2xl font-bold text-green-600">
-              {formatPrice(soldCount * 50)}
+              {formatPrice(soldCount * 10)}
             </div>
             <div className="text-xs text-gray-600 font-medium">
               Recaudado
@@ -317,10 +326,10 @@ export const StatsBar: React.FC = () => {
       {/* Mensaje motivacional */}
       <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
         <div className="text-center">
-          {soldPercentage < 25 && (
+          {soldPercentage < 50 && (
             <div className="text-blue-700">
-              <div className="font-bold">🚀 ¡La rifa acaba de comenzar!</div>
-              <div className="text-sm">Asegura tus números favoritos ahora</div>
+              <div className="font-bold">🚀 ¡Venta pública en curso!</div>
+              <div className="text-sm">Ya llevamos {soldPercentage}% vendido desde la preventa</div>
             </div>
           )}
           
@@ -359,6 +368,7 @@ export const StatsBar: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

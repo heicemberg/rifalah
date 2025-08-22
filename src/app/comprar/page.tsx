@@ -46,8 +46,7 @@ interface FormErrors {
 // COMPONENTE BREADCRUMB
 // ============================================================================
 
-const Breadcrumb: React.FC<{ currentStep: CheckoutStep }> = ({ currentStep }) => {
-  const router = useRouter();
+const Breadcrumb: React.FC<{ currentStep: CheckoutStep }> = ({ }) => {
 
   const breadcrumbItems = [
     { label: 'Inicio', href: '/', active: false },
@@ -434,7 +433,7 @@ const PagoStep: React.FC<{
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <ol className="space-y-2 text-sm">
               <li><strong>1.</strong> Abre tu app de Binance</li>
-              <li><strong>2.</strong> Ve a "Pay" → "Enviar"</li>
+              <li><strong>2.</strong> Ve a &quot;Pay&quot; → &quot;Enviar&quot;</li>
               <li><strong>3.</strong> Envía exactamente <strong>{formatPrice(totalPrice)}</strong> a:</li>
             </ol>
             <div className="bg-white border rounded-lg p-3 mt-3 font-mono text-sm break-all">
@@ -453,7 +452,7 @@ const PagoStep: React.FC<{
             <div className="bg-white border rounded-lg p-3 mt-3 font-mono text-sm">
               {method.account}
             </div>
-            <p className="text-sm mt-2"><strong>Concepto:</strong> "Rifa Silverado"</p>
+            <p className="text-sm mt-2"><strong>Concepto:</strong> &quot;Rifa Silverado&quot;</p>
           </div>
         )}
 
@@ -461,7 +460,7 @@ const PagoStep: React.FC<{
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <ol className="space-y-2 text-sm">
               <li><strong>1.</strong> Ve a cualquier OXXO</li>
-              <li><strong>2.</strong> Di "Quiero hacer un depósito"</li>
+              <li><strong>2.</strong> Di &quot;Quiero hacer un depósito&quot;</li>
               <li><strong>3.</strong> Monto exacto: <strong>{formatPrice(totalPrice)}</strong></li>
               <li><strong>4.</strong> Referencia:</li>
             </ol>
@@ -758,8 +757,7 @@ export default function CheckoutPage() {
     totalSelected,
     totalPrice,
     setCustomerData,
-    reserveTickets,
-    clearSelection
+    reserveTickets
   } = useRaffleStore();
 
   // Estado local

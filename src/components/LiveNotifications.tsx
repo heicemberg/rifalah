@@ -15,6 +15,7 @@ import {
   randomBetween,
   cn
 } from '../lib/utils';
+import { TOTAL_TICKETS } from '../lib/constants';
 
 // ============================================================================
 // TIPOS
@@ -27,6 +28,8 @@ interface LiveNotification {
   ticketCount: number;
   createdAt: Date;
   isVisible: boolean;
+  type: 'purchase' | 'viewing' | 'urgency';
+  message?: string;
 }
 
 interface NotificationItemProps {
@@ -44,7 +47,7 @@ const NotificationItem: React.FC<NotificationItemProps> = React.memo(({
 }) => {
   const [isEntering, setIsEntering] = useState(true);
   const [isLeaving, setIsLeaving] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Animación de entrada
@@ -83,14 +86,15 @@ const NotificationItem: React.FC<NotificationItemProps> = React.memo(({
   return (
     <div
       className={cn(
-        'bg-white border border-gray-200 rounded-lg shadow-lg p-4 mb-3',
+        'border rounded-lg shadow-lg p-4 mb-3',
         'cursor-pointer transition-all duration-300 ease-out',
-        'hover:shadow-xl hover:border-blue-300',
         'max-w-sm w-full',
         {
-          'transform translate-x-full opacity-0': isEntering,
+          'transform translate-x-full opacity-0': isEntering || isLeaving,
           'transform translate-x-0 opacity-100': !isEntering && !isLeaving,
-          'transform translate-x-full opacity-0': isLeaving,
+          'bg-white border-gray-200 hover:shadow-xl hover:border-blue-300': notification.type === 'purchase',
+          'bg-blue-50 border-blue-200 hover:shadow-xl hover:border-blue-400': notification.type === 'viewing',
+          'bg-red-50 border-red-200 hover:shadow-xl hover:border-red-400': notification.type === 'urgency',
         }
       )}
       onClick={handleClick}
@@ -98,10 +102,30 @@ const NotificationItem: React.FC<NotificationItemProps> = React.memo(({
       {/* Header con icono y tiempo */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="text-xs font-medium text-green-600">
-            Nueva compra
-          </span>
+          {notification.type === 'purchase' && (
+            <>
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-xs font-medium text-green-600">
+                Nueva compra
+              </span>
+            </>
+          )}
+          {notification.type === 'viewing' && (
+            <>
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+              <span className="text-xs font-medium text-blue-600">
+                Actividad
+              </span>
+            </>
+          )}
+          {notification.type === 'urgency' && (
+            <>
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              <span className="text-xs font-medium text-red-600">
+                Urgente
+              </span>
+            </>
+          )}
         </div>
         <span className="text-xs text-gray-500">
           {formatRelativeTime(notification.createdAt)}
@@ -109,24 +133,30 @@ const NotificationItem: React.FC<NotificationItemProps> = React.memo(({
       </div>
 
       {/* Contenido principal */}
-      <div className="space-y-1">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-gray-800">
-            {notification.buyerName}
-          </span>
-          <span className="text-xs text-gray-500">de</span>
-          <span className="text-xs font-medium text-blue-600">
-            {notification.city}
-          </span>
+      {notification.type === 'purchase' ? (
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-gray-800">
+              {notification.buyerName}
+            </span>
+            <span className="text-xs text-gray-500">de</span>
+            <span className="text-xs font-medium text-blue-600">
+              {notification.city}
+            </span>
+          </div>
+          
+          <div className="text-sm text-gray-700">
+            compró{' '}
+            <span className="font-bold text-purple-600">
+              {notification.ticketCount} boleto{notification.ticketCount !== 1 ? 's' : ''}
+            </span>
+          </div>
         </div>
-        
-        <div className="text-sm text-gray-700">
-          compró{' '}
-          <span className="font-bold text-purple-600">
-            {notification.ticketCount} boleto{notification.ticketCount !== 1 ? 's' : ''}
-          </span>
+      ) : (
+        <div className="text-sm font-medium text-gray-700">
+          {notification.message}
         </div>
-      </div>
+      )}
 
       {/* Indicador de click para cerrar */}
       <div className="mt-2 text-xs text-gray-400 text-right">
@@ -145,41 +175,108 @@ NotificationItem.displayName = 'NotificationItem';
 export const LiveNotifications: React.FC = () => {
   const { addLiveActivity, soldTickets } = useRaffleStore();
   const [notifications, setNotifications] = useState<LiveNotification[]>([]);
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const notificationIdCounter = useRef(0);
 
-  // Función para generar una nueva actividad fake
-  const generateFakeActivity = () => {
+  // Generar ciudad específica (no estado completo)
+  const getSpecificCity = () => {
+    const majorCities = [
+      'CDMX', 'Guadalajara', 'Monterrey', 'Zapopan', 'Tlalnepantla',
+      'Naucalpan', 'Puebla', 'León', 'Tijuana', 'Juárez'
+    ];
+    
+    // 70% de las veces usar ciudades grandes
+    if (Math.random() < 0.7) {
+      return majorCities[Math.floor(Math.random() * majorCities.length)];
+    } else {
+      const otherCities = ['Querétaro', 'Mérida', 'Saltillo', 'Aguascalientes', 'Morelia'];
+      return otherCities[Math.floor(Math.random() * otherCities.length)];
+    }
+  };
+
+  // Función para generar diferentes tipos de notificaciones
+  const generateActivity = () => {
+    const remainingTickets = TOTAL_TICKETS - soldTickets.length;
+    
     // Solo generar si no se han vendido todos los tickets
-    if (soldTickets.length >= 10000) {
+    if (soldTickets.length >= TOTAL_TICKETS) {
       return;
     }
 
-    const buyerName = generateRandomName();
-    const city = getRandomCity();
-    const ticketCount = randomBetween(1, 12);
     const now = new Date();
+    const currentHour = now.getHours();
+    
+    // Reducir actividad 90% en madrugada (2am-6am)
+    if (currentHour >= 2 && currentHour <= 6) {
+      if (Math.random() < 0.9) return;
+    }
 
-    const newNotification: LiveNotification = {
-      id: `notif-${++notificationIdCounter.current}`,
-      buyerName,
-      city,
-      ticketCount,
-      createdAt: now,
-      isVisible: true
-    };
+    const notificationType = Math.random();
+    let newNotification: LiveNotification;
 
-    // Agregar al store
-    addLiveActivity({
-      buyerName,
-      ticketCount
-    });
+    if (notificationType < 0.6) {
+      // 60% - Notificaciones de compra
+      const buyerName = generateRandomName();
+      const city = getSpecificCity();
+      const ticketCount = randomBetween(8, 12);
+      
+      newNotification = {
+        id: `notif-${++notificationIdCounter.current}`,
+        buyerName,
+        city,
+        ticketCount,
+        createdAt: now,
+        isVisible: true,
+        type: 'purchase',
+        message: `${buyerName} de ${city} acaba de comprar ${ticketCount} boletos`
+      };
+      
+      // Agregar al store
+      addLiveActivity({
+        buyerName,
+        ticketCount
+      });
+    } else if (notificationType < 0.8) {
+      // 20% - Notificaciones de personas viendo
+      const viewerCount = randomBetween(12, 28);
+      
+      newNotification = {
+        id: `notif-${++notificationIdCounter.current}`,
+        buyerName: '',
+        city: '',
+        ticketCount: 0,
+        createdAt: now,
+        isVisible: true,
+        type: 'viewing',
+        message: `⚡ ${viewerCount} personas viendo este boleto`
+      };
+    } else {
+      // 20% - Notificaciones de urgencia
+      const urgencyMessages = [
+        `🔥 Solo quedan ${remainingTickets.toLocaleString()} boletos disponibles`,
+        `⏰ Última compra hace ${randomBetween(2, 7)} minutos`,
+        `📈 ${randomBetween(647, 1200)} boletos vendidos en las últimas 24 horas`,
+        `🎯 Promedio de compra: 8.7 boletos por persona`,
+        `🚨 ${Math.round((soldTickets.length / TOTAL_TICKETS) * 100)}% vendido - Date prisa`
+      ];
+      
+      newNotification = {
+        id: `notif-${++notificationIdCounter.current}`,
+        buyerName: '',
+        city: '',
+        ticketCount: 0,
+        createdAt: now,
+        isVisible: true,
+        type: 'urgency',
+        message: urgencyMessages[Math.floor(Math.random() * urgencyMessages.length)]
+      };
+    }
 
     // Agregar a notificaciones locales
     setNotifications(prev => {
       const updated = [newNotification, ...prev];
-      // Mantener solo las últimas 3 notificaciones
-      return updated.slice(0, 3);
+      // Mantener solo las últimas 4 notificaciones
+      return updated.slice(0, 4);
     });
   };
 
@@ -192,14 +289,25 @@ export const LiveNotifications: React.FC = () => {
   useEffect(() => {
     // Generar primera notificación inmediatamente
     const initialTimer = setTimeout(() => {
-      generateFakeActivity();
+      generateActivity();
     }, 1000);
 
     // Configurar intervalo regular
     const scheduleNext = () => {
-      const delay = randomBetween(3000, 8000); // 3-8 segundos
+      const currentHour = new Date().getHours();
+      let delay;
+      
+      // Intervalos diferentes según la hora
+      if (currentHour >= 2 && currentHour <= 6) {
+        delay = randomBetween(180000, 300000); // 3-5 minutos en madrugada
+      } else if (currentHour >= 18 && currentHour <= 22) {
+        delay = randomBetween(10000, 30000); // 10-30 segundos en horario pico
+      } else {
+        delay = randomBetween(30000, 90000); // 30 segundos - 1.5 minutos normal
+      }
+      
       intervalRef.current = setTimeout(() => {
-        generateFakeActivity();
+        generateActivity();
         scheduleNext(); // Programar el siguiente
       }, delay);
     };
@@ -212,7 +320,7 @@ export const LiveNotifications: React.FC = () => {
         clearTimeout(intervalRef.current);
       }
     };
-  }, [soldTickets.length]); // Re-ejecutar si cambia el número de tickets vendidos
+  }, [soldTickets.length, generateFakeActivity]); // Re-ejecutar si cambia el número de tickets vendidos
 
   // No mostrar en móviles muy pequeños
   const [isMobile, setIsMobile] = useState(false);

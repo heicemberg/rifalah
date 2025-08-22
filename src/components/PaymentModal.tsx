@@ -5,6 +5,7 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import Image from 'next/image';
 
 // Importar desde archivos anteriores
 import { useRaffleStore } from '../stores/raffle-store';
@@ -208,11 +209,9 @@ const FormStep: React.FC<{
                   onChange={(e) => onFormChange({ paymentMethod: e.target.value as PaymentMethodType })}
                   className="sr-only"
                 />
-                <img
-                  src={method.icon}
-                  alt={method.name}
-                  className="w-8 h-8 mr-3"
-                />
+                <div className="w-8 h-8 mr-3 bg-gray-100 rounded flex items-center justify-center">
+                  <span className="text-xs font-bold text-gray-600">{method.name.slice(0, 2)}</span>
+                </div>
                 <span className="font-medium text-gray-800">{method.name}</span>
               </label>
             ))}
@@ -242,7 +241,8 @@ const InstructionsStep: React.FC<{
   totalPrice: number;
   onNext: () => void;
   onBack: () => void;
-}> = ({ paymentMethod, totalPrice, onNext, onBack }) => {
+  handleCopyToClipboard: (text: string) => void;
+}> = ({ paymentMethod, totalPrice, onNext, onBack, handleCopyToClipboard }) => {
   const method = PAYMENT_METHODS.find(m => m.id === paymentMethod);
   
   if (!method) return null;
@@ -254,7 +254,9 @@ const InstructionsStep: React.FC<{
           💳 Instrucciones de Pago
         </h3>
         <div className="flex items-center justify-center gap-2 mt-2">
-          <img src={method.icon} alt={method.name} className="w-6 h-6" />
+          <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center">
+            <span className="text-xs font-bold text-gray-600">{method.name.slice(0, 2)}</span>
+          </div>
           <span className="font-medium text-gray-700">{method.name}</span>
         </div>
       </div>
@@ -277,11 +279,31 @@ const InstructionsStep: React.FC<{
           <div className="space-y-3">
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
               <p className="text-sm"><strong>1.</strong> Abre tu app de Binance</p>
-              <p className="text-sm"><strong>2.</strong> Ve a "Pay" → "Enviar"</p>
+              <p className="text-sm"><strong>2.</strong> Ve a &quot;Pay&quot; → &quot;Enviar&quot;</p>
               <p className="text-sm"><strong>3.</strong> Envía <strong>{formatPrice(totalPrice)}</strong> a:</p>
-              <div className="bg-white border rounded p-2 mt-2 font-mono text-sm">
-                {method.account}
+              <div className="bg-white border rounded p-2 mt-2 font-mono text-sm relative group">
+                <div className="flex items-center justify-between">
+                  <span>{method.account}</span>
+                  <button
+                    onClick={() => handleCopyToClipboard(method.account)}
+                    className="ml-2 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
+                    title="Copiar"
+                  >
+                    📋
+                  </button>
+                </div>
               </div>
+              {method.accountDetails && (
+                <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                  <pre className="whitespace-pre-wrap">{method.accountDetails}</pre>
+                  <button
+                    onClick={() => handleCopyToClipboard(method.accountDetails!)}
+                    className="mt-2 px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors"
+                  >
+                    📋 Copiar todos los datos
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -292,10 +314,30 @@ const InstructionsStep: React.FC<{
               <p className="text-sm"><strong>1.</strong> Transfiere desde tu app bancaria</p>
               <p className="text-sm"><strong>2.</strong> Monto: <strong>{formatPrice(totalPrice)}</strong></p>
               <p className="text-sm"><strong>3.</strong> Cuenta destino:</p>
-              <div className="bg-white border rounded p-2 mt-2 font-mono text-sm">
-                {method.account}
+              <div className="bg-white border rounded p-2 mt-2 font-mono text-sm relative group">
+                <div className="flex items-center justify-between">
+                  <span>{method.account}</span>
+                  <button
+                    onClick={() => handleCopyToClipboard(method.account)}
+                    className="ml-2 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
+                    title="Copiar"
+                  >
+                    📋
+                  </button>
+                </div>
               </div>
-              <p className="text-sm"><strong>4.</strong> Concepto: "Rifa Silverado"</p>
+              {method.accountDetails && (
+                <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                  <pre className="whitespace-pre-wrap">{method.accountDetails}</pre>
+                  <button
+                    onClick={() => handleCopyToClipboard(method.accountDetails!)}
+                    className="mt-2 px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors"
+                  >
+                    📋 Copiar todos los datos
+                  </button>
+                </div>
+              )}
+              <p className="text-sm"><strong>4.</strong> Concepto: &quot;Rifa Silverado&quot;</p>
             </div>
           </div>
         )}
@@ -304,12 +346,32 @@ const InstructionsStep: React.FC<{
           <div className="space-y-3">
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
               <p className="text-sm"><strong>1.</strong> Ve a cualquier OXXO</p>
-              <p className="text-sm"><strong>2.</strong> Di "Quiero hacer un depósito"</p>
+              <p className="text-sm"><strong>2.</strong> Di &quot;Quiero hacer un depósito&quot;</p>
               <p className="text-sm"><strong>3.</strong> Monto: <strong>{formatPrice(totalPrice)}</strong></p>
               <p className="text-sm"><strong>4.</strong> Referencia:</p>
-              <div className="bg-white border rounded p-2 mt-2 font-mono text-sm">
-                {method.account}
+              <div className="bg-white border rounded p-2 mt-2 font-mono text-sm relative group">
+                <div className="flex items-center justify-between">
+                  <span>{method.account}</span>
+                  <button
+                    onClick={() => handleCopyToClipboard(method.account)}
+                    className="ml-2 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
+                    title="Copiar"
+                  >
+                    📋
+                  </button>
+                </div>
               </div>
+              {method.accountDetails && (
+                <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                  <pre className="whitespace-pre-wrap">{method.accountDetails}</pre>
+                  <button
+                    onClick={() => handleCopyToClipboard(method.accountDetails!)}
+                    className="mt-2 px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors"
+                  >
+                    📋 Copiar todos los datos
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -449,16 +511,27 @@ const UploadStep: React.FC<{
               {uploadedFile.name}
             </p>
             {previewUrl && (
-              <img
+              <Image
                 src={previewUrl}
                 alt="Preview"
-                className="max-w-full max-h-48 mx-auto rounded-lg shadow-md"
+                width={300}
+                height={200}
+                className="max-w-full max-h-48 mx-auto rounded-lg shadow-md object-contain"
               />
             )}
           </div>
         )}
       </div>
 
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <h4 className="font-bold text-blue-800 mb-2">🎯 Sistema de Verificación:</h4>
+        <div className="text-sm text-blue-700 space-y-2">
+          <p><strong>1.</strong> Tu comprobante será revisado por nuestro equipo</p>
+          <p><strong>2.</strong> Una vez verificado, tus boletos cambiarán de RESERVADOS a <span className="font-bold text-green-600">VENDIDOS</span></p>
+          <p><strong>3.</strong> Recibirás confirmación por WhatsApp en menos de 30 minutos</p>
+        </div>
+      </div>
+      
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <h4 className="font-bold text-yellow-800 mb-2">💡 Consejos para tu comprobante:</h4>
         <ul className="text-sm text-yellow-700 space-y-1">
@@ -586,6 +659,32 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
     paymentMethod: 'bancoppel'
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [copyFeedback, setCopyFeedback] = useState<string>('');
+  
+  // Función para copiar al clipboard
+  const handleCopyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyFeedback('¡Copiado!');
+      setTimeout(() => setCopyFeedback(''), 2000);
+    } catch {
+      // Fallback para navegadores que no soportan clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopyFeedback('¡Copiado!');
+        setTimeout(() => setCopyFeedback(''), 2000);
+      } catch {
+        setCopyFeedback('Error al copiar');
+        setTimeout(() => setCopyFeedback(''), 2000);
+      }
+      document.body.removeChild(textArea);
+    }
+  };
 
   // Reset al cerrar
   useEffect(() => {
@@ -720,6 +819,15 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
           </div>
         </div>
 
+        {/* Copy Feedback */}
+        {copyFeedback && (
+          <div className="px-6 py-2">
+            <div className="bg-green-100 border border-green-300 text-green-700 px-3 py-2 rounded text-sm text-center">
+              {copyFeedback}
+            </div>
+          </div>
+        )}
+
         {/* Content */}
         <div className="p-6">
           {currentStep === 'form' && (
@@ -738,6 +846,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
               paymentMethod={formData.paymentMethod}
               totalPrice={totalPrice}
               onNext={handleInstructionsNext}
+              handleCopyToClipboard={handleCopyToClipboard}
               onBack={() => setCurrentStep('form')}
             />
           )}

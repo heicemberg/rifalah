@@ -73,6 +73,8 @@ export interface PaymentMethod {
   icon: string;
   /** Número de cuenta o información de pago */
   account: string;
+  /** Detalles completos de la cuenta para copiar */
+  accountDetails?: string;
   /** Si el método está habilitado */
   enabled: boolean;
 }
@@ -186,7 +188,7 @@ export interface Notification {
 /**
  * Interface para respuesta de API genérica
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   /** Si la operación fue exitosa */
   success: boolean;
   /** Datos de respuesta */
@@ -238,28 +240,7 @@ export interface PaginatedResponse<T> {
 // EXPORT DE TODAS LAS INTERFACES Y TIPOS
 // ============================================================================
 
-export type {
-  // Tipos principales
-  TicketStatus,
-  CustomerStatus,
-  PaymentMethodType,
-  
-  // Interfaces principales
-  Ticket,
-  Customer,
-  PaymentMethod,
-  LiveActivity,
-  AdminConfig,
-  QuickSelectOption,
-  
-  // Interfaces auxiliares
-  ThemeColors,
-  RaffleStats,
-  Notification,
-  ApiResponse,
-  PaginationParams,
-  PaginatedResponse
-};
+// Los tipos ya están exportados en sus definiciones arriba
 
 // Constantes útiles
 export const TICKET_STATUSES: TicketStatus[] = ['available', 'selected', 'reserved', 'sold'];

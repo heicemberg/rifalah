@@ -20,6 +20,7 @@ interface QuickSelectButtonProps {
   price: number;
   discount: number;
   popular?: boolean;
+  mostSold?: boolean;
   isDisabled: boolean;
   onSelect: () => void;
 }
@@ -33,6 +34,7 @@ const QuickSelectButton: React.FC<QuickSelectButtonProps> = React.memo(({
   price,
   discount,
   popular = false,
+  mostSold = false,
   isDisabled,
   onSelect
 }) => {
@@ -54,9 +56,14 @@ const QuickSelectButton: React.FC<QuickSelectButtonProps> = React.memo(({
             'hover:border-blue-300 hover:shadow-lg hover:scale-105 hover:from-blue-50 hover:to-blue-100': !isDisabled && !popular,
             
             // Estado popular
-            'border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50': !isDisabled && popular,
-            'hover:border-purple-400 hover:shadow-xl hover:scale-105 hover:from-purple-100 hover:to-pink-100': !isDisabled && popular,
-            'ring-2 ring-purple-200': popular,
+            'border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50': !isDisabled && popular && !mostSold,
+            'hover:border-purple-400 hover:shadow-xl hover:scale-105 hover:from-purple-100 hover:to-pink-100': !isDisabled && popular && !mostSold,
+            'ring-2 ring-purple-200': popular && !mostSold,
+            
+            // Estado más vendido
+            'border-orange-300 bg-gradient-to-br from-orange-50 to-red-50': !isDisabled && mostSold,
+            'hover:border-orange-400 hover:shadow-xl hover:scale-105 hover:from-orange-100 hover:to-red-100': !isDisabled && mostSold,
+            'ring-2 ring-orange-200': mostSold,
             
             // Estado deshabilitado
             'border-gray-200 bg-gradient-to-br from-gray-100 to-gray-200 cursor-not-allowed opacity-60': isDisabled
@@ -72,13 +79,23 @@ const QuickSelectButton: React.FC<QuickSelectButtonProps> = React.memo(({
           </div>
         )}
         
+        {/* Badge MÁS VENDIDO */}
+        {mostSold && (
+          <div className="absolute -top-2 -left-2 z-10">
+            <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg transform -rotate-12 animate-pulse">
+              🔥 EL MÁS VENDIDO
+            </div>
+          </div>
+        )}
+        
         {/* Efecto de gradiente en hover */}
         <div className={cn(
           'absolute inset-0 bg-gradient-to-r opacity-0 transition-opacity duration-300',
           'group-hover:opacity-10',
           {
-            'from-blue-500 to-purple-500': !popular,
-            'from-purple-500 to-pink-500': popular
+            'from-blue-500 to-purple-500': !popular && !mostSold,
+            'from-purple-500 to-pink-500': popular && !mostSold,
+            'from-orange-500 to-red-500': mostSold
           }
         )} />
         
@@ -229,6 +246,7 @@ export const QuickSelect: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {QUICK_SELECT_OPTIONS.map((option) => {
           const isDisabled = availableTickets.length < option.tickets;
+          const isMostSold = option.tickets === 10; // El paquete de 10 boletos es el más vendido
           
           return (
             <QuickSelectButton
@@ -237,6 +255,7 @@ export const QuickSelect: React.FC = () => {
               price={option.price}
               discount={option.discount}
               popular={option.popular}
+              mostSold={isMostSold}
               isDisabled={isDisabled}
               onSelect={() => handleQuickSelect(option.tickets)}
             />
@@ -244,17 +263,30 @@ export const QuickSelect: React.FC = () => {
         })}
       </div>
       
-      {/* Mensaje de ayuda */}
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <div className="flex items-start gap-3">
-          <div className="text-yellow-500 text-xl">💡</div>
-          <div className="text-sm text-gray-700">
-            <div className="font-medium mb-1">Consejos para ahorrar:</div>
-            <ul className="space-y-1 text-xs">
-              <li>• Compra más boletos para obtener mejores descuentos</li>
-              <li>• La opción popular tiene la mejor relación precio-cantidad</li>
-              <li>• Puedes cambiar tu selección las veces que quieras</li>
-            </ul>
+      {/* Mensaje de ayuda con estadísticas */}
+      <div className="mt-6 space-y-4">
+        {/* Mensaje de popularidad del paquete de 10 */}
+        <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+          <div className="flex items-center gap-3">
+            <div className="text-orange-500 text-xl">🔥</div>
+            <div className="text-sm text-orange-800">
+              <div className="font-bold mb-1">¡El paquete de 10 boletos es el favorito!</div>
+              <div className="text-xs">67% de compradores eligen este paquete por su excelente descuento</div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex items-start gap-3">
+            <div className="text-yellow-500 text-xl">💡</div>
+            <div className="text-sm text-gray-700">
+              <div className="font-medium mb-1">Consejos para ahorrar:</div>
+              <ul className="space-y-1 text-xs">
+                <li>• Compra más boletos para obtener mejores descuentos</li>
+                <li>• El paquete de 10 boletos tiene 20% de descuento</li>
+                <li>• Puedes cambiar tu selección las veces que quieras</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -272,8 +304,9 @@ export const QuickSelect: React.FC = () => {
                   <div className={cn(
                     'text-xs',
                     {
-                      'text-purple-600 font-bold': option.popular,
-                      'text-gray-600': !option.popular
+                      'text-purple-600 font-bold': option.popular && !option.tickets === 10,
+                      'text-orange-600 font-bold': option.tickets === 10,
+                      'text-gray-600': !option.popular && option.tickets !== 10
                     }
                   )}>
                     {formatPrice(pricePerTicket)}/boleto

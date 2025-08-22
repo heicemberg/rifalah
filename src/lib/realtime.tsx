@@ -4,17 +4,17 @@
 
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 
 // Importar desde archivos anteriores
 import { useRaffleStore } from '../stores/raffle-store';
 import { 
   generateRandomName, 
   getRandomCity, 
-  randomBetween, 
-  sleep,
+  randomBetween,
   generateId
 } from './utils';
+import { MEXICAN_CITIES } from './constants';
 
 // ============================================================================
 // TIPOS
@@ -54,16 +54,16 @@ interface SimulationState {
 
 const DEFAULT_CONFIG: RealtimeConfig = {
   activityInterval: {
-    min: 3000,  // 3 segundos
-    max: 8000   // 8 segundos
+    min: 45000,  // 45 segundos
+    max: 120000  // 2 minutos
   },
   viewersInterval: {
-    min: 5000,   // 5 segundos
-    max: 15000   // 15 segundos
+    min: 30000,  // 30 segundos
+    max: 60000   // 1 minuto
   },
   rushMode: false,
-  ticketSaleChance: 5, // 5% de probabilidad
-  maxTicketsPerSale: 8
+  ticketSaleChance: 15, // 15% de probabilidad
+  maxTicketsPerSale: 12 // Compras de 8-12 boletos
 };
 
 // ============================================================================
@@ -73,7 +73,15 @@ const DEFAULT_CONFIG: RealtimeConfig = {
 class RealtimeManager {
   private static instance: RealtimeManager | null = null;
   private state: SimulationState;
-  private storeActions: any = null;
+  private storeActions: {
+    addSoldTicket?: (ticket: unknown) => void;
+    updateLiveActivity?: (activity: unknown[]) => void;
+    setViewingCount?: (count: number) => void;
+    addLiveActivity?: (activity: { buyerName: string; ticketCount: number }) => void;
+    availableTickets?: unknown[];
+    markTicketsAsSold?: (tickets: number[], customerId: string) => void;
+    soldPercentage?: number;
+  } = {};
 
   private constructor() {
     this.state = {
@@ -100,7 +108,15 @@ class RealtimeManager {
   }
 
   // Configurar acciones del store
-  public setStoreActions(actions: any): void {
+  public setStoreActions(actions: {
+    addSoldTicket?: (ticket: unknown) => void;
+    updateLiveActivity?: (activity: unknown[]) => void;
+    setViewingCount?: (count: number) => void;
+    addLiveActivity?: (activity: { buyerName: string; ticketCount: number }) => void;
+    availableTickets?: unknown[];
+    markTicketsAsSold?: (tickets: number[], customerId: string) => void;
+    soldPercentage?: number;
+  }): void {
     this.storeActions = actions;
   }
 
@@ -216,20 +232,27 @@ class RealtimeManager {
   private generateActivity(): void {
     if (!this.storeActions) return;
 
+    const currentHour = new Date().getHours();
+    
+    // Reducir actividad 90% en madrugada (2am-6am)
+    if (currentHour >= 2 && currentHour <= 6) {
+      if (Math.random() < 0.9) return; // 90% menos actividad
+    }
+
     const buyerName = generateRandomName();
-    const city = getRandomCity();
-    const ticketCount = randomBetween(1, this.state.config.maxTicketsPerSale);
+    const city = this.getRealisticCity();
+    const ticketCount = randomBetween(8, this.state.config.maxTicketsPerSale); // 8-12 boletos
 
     // Determinar si es compra real o solo actividad
     const isRealPurchase = Math.random() * 100 < this.state.config.ticketSaleChance;
 
     if (isRealPurchase) {
       // Simular compra real - marcar tickets como vendidos
-      this.simulateRealPurchase(ticketCount, buyerName);
+      this.simulateRealPurchase(ticketCount);
     }
 
     // Siempre agregar actividad visual
-    this.storeActions.addLiveActivity({
+    this.storeActions.addLiveActivity?.({
       buyerName,
       ticketCount
     });
@@ -242,14 +265,33 @@ class RealtimeManager {
     }
   }
 
+  // Obtener ciudad realista con distribución 70% grandes ciudades, 30% otras
+  private getRealisticCity(): string {
+    const majorCities = [
+      'CDMX', 'Guadalajara', 'Monterrey', 'Zapopan', 'Tlalnepantla',
+      'Naucalpan', 'Chimalhuacán', 'Ecatepec', 'Nezahualcóyotl'
+    ];
+    
+    // 70% de las veces usar ciudades grandes
+    if (Math.random() < 0.7) {
+      return majorCities[Math.floor(Math.random() * majorCities.length)];
+    } else {
+      // 30% otras ciudades
+      const otherCities = MEXICAN_CITIES.filter(city => 
+        !majorCities.some(major => city.includes(major.replace('CDMX', 'Ciudad de México')))
+      );
+      return otherCities[Math.floor(Math.random() * otherCities.length)].split(',')[0];
+    }
+  }
+
   // Simular compra real
-  private simulateRealPurchase(ticketCount: number, buyerName: string): void {
+  private simulateRealPurchase(ticketCount: number): void {
     if (!this.storeActions) return;
 
     const availableTickets = this.storeActions.availableTickets;
     
     // Verificar si hay suficientes tickets disponibles
-    if (availableTickets.length < ticketCount) {
+    if (!availableTickets || !Array.isArray(availableTickets) || availableTickets.length < ticketCount) {
       return;
     }
 
@@ -266,7 +308,7 @@ class RealtimeManager {
       const customerId = generateId();
       
       // Marcar como vendidos
-      this.storeActions.markTicketsAsSold(selectedTickets, customerId);
+      this.storeActions.markTicketsAsSold?.(selectedTickets as number[], customerId);
       this.state.stats.ticketsSold += selectedTickets.length;
 
       console.log(`💰 Compra real simulada: ${selectedTickets.length} tickets vendidos`);
@@ -277,20 +319,23 @@ class RealtimeManager {
   private updateViewers(): void {
     if (!this.storeActions) return;
 
-    const currentSoldPercentage = this.storeActions.soldPercentage;
+    const currentSoldPercentage = this.storeActions.soldPercentage || 0;
+    const currentHour = new Date().getHours();
     let baseViewers: number;
 
-    // Calcular viewers base según progreso de ventas
-    if (currentSoldPercentage < 25) {
-      baseViewers = randomBetween(45, 89);
-    } else if (currentSoldPercentage < 50) {
-      baseViewers = randomBetween(89, 156);
-    } else if (currentSoldPercentage < 75) {
-      baseViewers = randomBetween(156, 234);
-    } else if (currentSoldPercentage < 90) {
-      baseViewers = randomBetween(234, 345);
-    } else {
-      baseViewers = randomBetween(345, 567);
+    // Viewers base entre 89-347 personas
+    baseViewers = randomBetween(89, 347);
+
+    // Aplicar modificadores por hora
+    if (currentHour >= 2 && currentHour <= 6) {
+      // Madrugada: reducir viewers significativamente
+      baseViewers = Math.floor(baseViewers * 0.3);
+    } else if (currentHour >= 18 && currentHour <= 22) {
+      // Horario pico nocturno: más viewers
+      baseViewers = Math.floor(baseViewers * 1.4);
+    } else if (currentHour >= 12 && currentHour <= 14) {
+      // Hora de comida: más viewers
+      baseViewers = Math.floor(baseViewers * 1.2);
     }
 
     // Aplicar multiplicador si está en modo rush
@@ -298,14 +343,14 @@ class RealtimeManager {
       baseViewers = Math.floor(baseViewers * randomBetween(1.3, 1.8));
     }
 
-    // Añadir fluctuación aleatoria ±15%
-    const fluctuation = randomBetween(-15, 15);
+    // Añadir fluctuación aleatoria ±10%
+    const fluctuation = randomBetween(-10, 10);
     const newViewerCount = Math.max(
-      20, // Mínimo 20 viewers
-      Math.floor(baseViewers + (baseViewers * fluctuation / 100))
+      89, // Mínimo 89 viewers
+      Math.min(347, Math.floor(baseViewers + (baseViewers * fluctuation / 100)))
     );
 
-    this.storeActions.setViewingCount(newViewerCount);
+    this.storeActions.setViewingCount?.(newViewerCount);
     this.state.stats.viewerUpdates++;
 
     if (process.env.NODE_ENV === 'development') {
@@ -403,13 +448,13 @@ if (typeof window !== 'undefined') {
       const initInterval = setInterval(() => {
         try {
           // Acceder al store de forma dinámica
-          const storeState = (window as any).__RAFFLE_STORE__;
+          const storeState = (window as { __RAFFLE_STORE__?: unknown }).__RAFFLE_STORE__;
           if (storeState) {
             manager.setStoreActions(storeState);
             manager.start();
             clearInterval(initInterval);
           }
-        } catch (error) {
+        } catch {
           // Continuar intentando...
         }
       }, 1000);

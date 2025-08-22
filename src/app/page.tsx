@@ -1,246 +1,272 @@
-// ============================================================================
-// PÁGINA PRINCIPAL DE LA RIFA DE CAMIONETA
-// ============================================================================
-
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import dynamic from 'next/dynamic';
-
-// Importar componentes de prompts 5-12
-import PrizeShowcase from '../components/PrizeShowcase';
-import UrgencyCounters from '../components/UrgencyCounters';
-import StatsBar from '../components/StatsBar';
-import QuickSelect from '../components/QuickSelect';
+import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
+import { useTickets, useTicketActions } from '../stores/raffle-store';
+import ComprehensivePurchaseModal from '../components/ComprehensivePurchaseModal';
+import OrganicNotifications from '../components/OrganicNotifications';
 import TicketGrid from '../components/TicketGrid';
-import LiveNotifications from '../components/LiveNotifications';
-import PaymentModal from '../components/PaymentModal';
+import SoundEffects from '../components/SoundEffects';
+import PrizeShowcase from '../components/PrizeShowcase';
+import SocialProof from '../components/SocialProof';
+import UrgencyBanner from '../components/UrgencyBanner';
+import { formatPrice } from '../lib/utils';
 
-// Importar hooks y utilidades
-import { useRaffleStore } from '../stores/raffle-store';
-import { useRealtime } from '../lib/realtime';
-import { useSounds } from '../components/SoundEffects';
-import { formatPrice, cn } from '../lib/utils';
-
-// Lazy load para componentes pesados
-const RealtimeDebugPanel = dynamic(
-  () => import('../lib/realtime').then(mod => ({ default: mod.RealtimeDebugPanel })),
-  { ssr: false }
-);
+// Utilidad para clases condicionales
+const cn = (...classes: (string | undefined | false)[]): string => {
+  return classes.filter(Boolean).join(' ');
+};
 
 // ============================================================================
-// COMPONENTE FAQ
+// HERO SECTION COMPLETAMENTE REDISEÑADO
 // ============================================================================
 
-const FAQSection: React.FC = () => {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+const HeroSection: React.FC<{ onOpenPurchaseModal: () => void }> = ({ onOpenPurchaseModal }) => {
+  
+  return (
+    <div className="relative h-screen overflow-hidden group">
+      {/* Imagen de fondo full screen de la camioneta completa */}
+      <div className="absolute inset-0">
+        <Image
+          src="/premios/premio-rifa.png"
+          alt="Chevrolet Silverado Z71 2024"
+          fill
+          className="object-cover object-center group-hover:scale-105 transition-transform duration-1000"
+          priority
+          quality={100}
+        />
+        
+        {/* Overlay optimizado para mejor legibilidad del texto */}
+        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-all duration-1000">
+          {/* Gradients más suaves para mostrar mejor la imagen */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-black/60"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40"></div>
+        </div>
+      </div>
+      
+      
+      {/* Hero Content - Reorganizado para evitar superposiciones */}
+      <div className="relative z-20 h-screen flex items-center justify-center">
+        
+        {/* Badge flotante superior */}
+        <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-30">
+          <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white px-6 py-2 rounded-full font-black text-xs md:text-sm shadow-2xl animate-pulse border-2 border-white/30 backdrop-blur-sm">
+            🔥 ÚLTIMOS BOLETOS DISPONIBLES
+          </div>
+        </div>
+        
+        {/* Valor del premio flotante - esquina superior derecha sin sobreposición */}
+        <div className="absolute top-20 right-4 md:right-8 bg-gradient-to-br from-yellow-400 via-orange-500 to-red-600 p-3 md:p-4 rounded-2xl shadow-2xl border-2 border-white/30 backdrop-blur-sm transform rotate-2 hover:rotate-0 transition-transform duration-500 z-30">
+          <div className="text-white text-center">
+            <div className="text-xs font-bold mb-1">PREMIO TOTAL</div>
+            <div className="text-lg md:text-2xl font-black">$45,000</div>
+            <div className="text-xs font-bold">USD</div>
+          </div>
+        </div>
+        
+        {/* Título principal centrado con más espacio */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 pt-16 pb-32">
+          <h1 className="text-4xl md:text-6xl xl:text-8xl font-black leading-none mb-6 tracking-tight">
+            <div className="mb-3">
+              <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent drop-shadow-2xl" 
+                    style={{textShadow: '0 0 40px rgba(59, 130, 246, 0.5)'}}>
+                GANA LA
+              </span>
+            </div>
+            <div className="mb-3">
+              <span className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent drop-shadow-2xl" 
+                    style={{textShadow: '0 0 40px rgba(251, 191, 36, 0.8)'}}>
+                SILVERADO
+              </span>
+            </div>
+            <div>
+              <span className="bg-gradient-to-r from-green-400 via-emerald-500 to-teal-600 bg-clip-text text-transparent drop-shadow-2xl" 
+                    style={{textShadow: '0 0 40px rgba(16, 185, 129, 0.5)'}}>
+                Z71 2024
+              </span>
+            </div>
+          </h1>
+          
+          {/* Propuesta de valor más compacta */}
+          <div className="bg-gradient-to-r from-black/60 via-purple-900/50 to-black/60 backdrop-blur-xl rounded-2xl p-4 md:p-6 mb-6 border border-white/20 shadow-2xl max-w-3xl">
+            <div className="text-lg md:text-2xl text-white space-y-2">
+              <div className="flex items-center justify-center gap-2 md:gap-4 flex-wrap">
+                <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent font-black">PlayStation 5</span> 
+                <span className="text-white/80 text-xl md:text-2xl">+</span>
+                <span className="bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent font-black">$3,000 USD</span>
+              </div>
+              <div className="bg-gradient-to-r from-pink-400 via-purple-500 to-indigo-600 bg-clip-text text-transparent font-black text-xl md:text-3xl">
+                ¡SOLO $10 USD POR BOLETO!
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Botones flotantes - parte inferior sin sobreposición */}
+        <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 flex flex-col sm:flex-row gap-3 items-center z-30">
+          <button 
+            onClick={() => onOpenPurchaseModal(25, false)}
+            className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-700 hover:via-pink-700 hover:to-red-700 text-white text-lg md:text-xl font-black px-8 py-3 rounded-xl shadow-2xl transform hover:scale-110 transition-all duration-300 border-2 border-white/30 backdrop-blur-sm animate-pulse hover:animate-none"
+          >
+            🎫 COMPRAR AHORA
+          </button>
+          
+          <button 
+            onClick={() => document.getElementById('tickets-section')?.scrollIntoView({ behavior: 'smooth' })}
+            className="bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-700 hover:from-cyan-600 hover:via-blue-700 hover:to-purple-800 text-white text-base font-bold px-6 py-2 rounded-lg shadow-xl transform hover:scale-105 transition-all duration-300 border border-white/30 backdrop-blur-sm"
+          >
+            🎯 VER NÚMEROS
+          </button>
+        </div>
+        
+        {/* Características flotantes - esquina inferior izquierda sin sobreposición */}
+        <div className="absolute bottom-6 left-4 md:left-8 bg-gradient-to-r from-black/70 to-purple-900/70 backdrop-blur-xl rounded-xl p-3 border border-white/20 shadow-xl z-30">
+          <div className="text-white text-xs space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-green-400">💳</span>
+              <span>Pago Seguro</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-blue-400">📺</span>
+              <span>Sorteo EN VIVO</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-yellow-400">🚚</span>
+              <span>Entrega Garantizada</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Elegant particles */}
+      <div className="absolute inset-0 pointer-events-none z-10">
+        <div className="absolute top-1/4 left-20 w-2 h-2 bg-white/30 rounded-full animate-pulse"></div>
+        <div className="absolute top-1/3 right-32 w-1 h-1 bg-yellow-400/40 rounded-full animate-ping"></div>
+        <div className="absolute bottom-1/3 left-16 w-1 h-1 bg-emerald-400/30 rounded-full animate-pulse"></div>
+        <div className="absolute top-2/3 right-20 w-2 h-2 bg-white/20 rounded-full animate-ping"></div>
+      </div>
+      
+      {/* Removed scroll indicator */}
+    </div>
+  );
+};
 
-  const faqs = [
-    {
-      question: "¿Cuánto cuesta un boleto?",
-      answer: "Cada boleto individual cuesta $50 MXN. Sin embargo, ofrecemos descuentos por volumen: 5 boletos por $225 (10% OFF), 10 boletos por $400 (20% OFF), 25 boletos por $750 (25% OFF), y 50 boletos por $1,400 (30% OFF)."
-    },
-    {
-      question: "¿Cuándo es el sorteo?",
-      answer: "El sorteo se realizará el 31 de Diciembre de 2024 a las 8:00 PM (hora de México, CST). Será transmitido completamente en vivo para garantizar total transparencia."
-    },
-    {
-      question: "¿La rifa es legal y confiable?",
-      answer: "Absolutamente sí. Nuestra rifa está completamente autorizada y cumple con todas las regulaciones mexicanas. Contamos con todos los permisos necesarios y el sorteo será supervisado por autoridades competentes."
-    },
-    {
-      question: "¿Qué incluye el premio?",
-      answer: "El ganador recibirá una Chevrolet Silverado Z71 2024 completamente nueva (0 KM) con todos los papeles incluidos: factura, placas, tenencia al día y seguro por 1 año completo."
-    },
-    {
-      question: "¿Cómo puedo pagar mis boletos?",
-      answer: "Aceptamos múltiples métodos de pago: transferencias bancarias (BanCoppel, Banco Azteca), depósitos en OXXO, y Binance Pay para pagos con criptomonedas."
-    },
-    {
-      question: "¿Puedo participar desde cualquier parte de México?",
-      answer: "¡Por supuesto! Pueden participar personas de toda la República Mexicana. El premio puede ser entregado en cualquier estado del país."
-    },
-    {
-      question: "¿Qué pasa si no se venden todos los boletos?",
-      answer: "El sorteo se realizará independientemente del número de boletos vendidos. Mientras más boletos queden disponibles, mayores serán tus probabilidades de ganar."
-    },
-    {
-      question: "¿Cómo sabré si gané?",
-      answer: "Te contactaremos inmediatamente por WhatsApp y correo electrónico. También publicaremos el resultado en nuestras redes sociales y en esta página web."
-    }
+// ============================================================================
+// QUICK SELECT SECTION MEJORADA
+// ============================================================================
+
+const QuickSelectSection: React.FC<{ onOpenPurchaseModal: (tickets: number) => void }> = ({ onOpenPurchaseModal }) => {
+  
+  const quickOptions = [
+    { tickets: 2, price: 20, discount: 0, popular: false, badge: '' },
+    { tickets: 5, price: 45, discount: 10, popular: false, badge: '' },
+    { tickets: 10, price: 80, discount: 20, popular: true, badge: '🔥 EL MÁS VENDIDO' },
+    { tickets: 25, price: 187, discount: 25, popular: false, badge: '' },
+    { tickets: 50, price: 350, discount: 30, popular: false, badge: '⚡ AHORRO EXTREMO' },
+    { tickets: 100, price: 650, discount: 35, popular: false, badge: '🏆 PAQUETE VIP' }
   ];
 
-  const toggleFAQ = useCallback((index: number) => {
-    setOpenIndex(openIndex === index ? null : index);
-  }, [openIndex]);
-
   return (
-    <section className="py-16 bg-white">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-4">
-            Preguntas Frecuentes
+    <div className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 py-12">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white px-4 py-2 rounded-full font-bold text-sm mb-4 shadow-xl">
+            ⚡ PAQUETES CON DESCUENTO
+          </div>
+          <h2 className="text-2xl md:text-4xl font-black text-white mb-4">
+            🎯 <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">COMPRA MÁS</span> Y <span className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent">AHORRA MÁS</span>
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Resolvemos todas tus dudas sobre la rifa más emocionante del año
-          </p>
         </div>
-
-        <div className="max-w-4xl mx-auto space-y-4">
-          {faqs.map((faq, index) => (
-            <div
-              key={index}
-              className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-md"
+        
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+          {quickOptions.map((option) => (
+            <button
+              key={option.tickets}
+              onClick={() => onOpenPurchaseModal(option.tickets)}
+              className={cn(
+                'relative group bg-slate-800/70 backdrop-blur-lg border-2 rounded-xl p-3 text-center transition-all duration-300 hover:scale-105 hover:shadow-lg',
+                option.popular 
+                  ? 'border-purple-400 ring-2 ring-purple-400/30 bg-gradient-to-br from-purple-600/20 to-pink-600/20' 
+                  : 'border-slate-600 hover:border-purple-500'
+              )}
             >
-              <button
-                onClick={() => toggleFAQ(index)}
-                className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-100 transition-colors"
-              >
-                <span className="text-lg font-semibold text-gray-800">
-                  {faq.question}
-                </span>
-                <svg
-                  className={cn(
-                    'w-5 h-5 text-gray-500 transition-transform duration-300',
-                    { 'rotate-180': openIndex === index }
-                  )}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              {openIndex === index && (
-                <div className="px-6 pb-4 animate-fade-in-up">
-                  <p className="text-gray-700 leading-relaxed">
-                    {faq.answer}
-                  </p>
+              {/* Badge especial */}
+              {option.badge && (
+                <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                  {option.badge.includes('VIP') ? 'VIP' : option.badge.includes('EXTREMO') ? 'AHORRO' : 'TOP'}
                 </div>
               )}
-            </div>
+              
+              {/* Popular badge */}
+              {option.popular && (
+                <div className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-2 py-1 rounded-full transform rotate-12 shadow-lg">
+                  #1
+                </div>
+              )}
+              
+              {/* Número de boletos */}
+              <div className="text-2xl md:text-3xl font-black text-white mb-1 group-hover:scale-110 transition-transform duration-300">
+                {option.tickets}
+              </div>
+              
+              <div className="text-xs font-bold text-slate-300 mb-2">
+                {option.tickets === 1 ? 'BOLETO' : 'BOLETOS'}
+              </div>
+              
+              {/* Precio */}
+              <div className="space-y-1">
+                <div className="text-lg md:text-xl font-black text-transparent bg-gradient-to-r from-green-400 via-emerald-500 to-teal-600 bg-clip-text">
+                  {formatPrice(option.price)}
+                </div>
+                
+                {option.discount > 0 && (
+                  <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full inline-block shadow-lg">
+                    -{option.discount}%
+                  </div>
+                )}
+              </div>
+              
+              {/* Precio por boleto */}
+              <div className="mt-2 pt-2 border-t border-slate-600">
+                <div className="text-xs text-slate-400">Por boleto:</div>
+                <div className="text-sm font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
+                  {formatPrice(option.price / option.tickets)}
+                </div>
+              </div>
+              
+              {/* Botón de compra */}
+              <div className="mt-3">
+                <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white text-xs font-bold py-2 px-3 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-lg">
+                  COMPRAR
+                </div>
+              </div>
+              
+              {/* Hover effect overlay */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 via-purple-600/0 to-pink-600/0 group-hover:from-blue-600/10 group-hover:via-purple-600/10 group-hover:to-pink-600/10 rounded-2xl transition-all duration-300"></div>
+            </button>
           ))}
         </div>
-      </div>
-    </section>
-  );
-};
-
-// ============================================================================
-// COMPONENTE TRUST SECTION
-// ============================================================================
-
-const TrustSection: React.FC = () => {
-  const trustItems = [
-    {
-      icon: '🏛️',
-      title: 'Totalmente Legal',
-      description: 'Rifa autorizada y regulada por las autoridades mexicanas'
-    },
-    {
-      icon: '📺',
-      title: 'Transmisión en Vivo',
-      description: 'Sorteo completamente transparente y público'
-    },
-    {
-      icon: '🔒',
-      title: 'Pagos Seguros',
-      description: 'Múltiples métodos de pago confiables y verificados'
-    },
-    {
-      icon: '✅',
-      title: 'Garantía Total',
-      description: 'Premio garantizado con todos los papeles incluidos'
-    },
-    {
-      icon: '📱',
-      title: 'Soporte 24/7',
-      description: 'Atención al cliente disponible en todo momento'
-    },
-    {
-      icon: '🎯',
-      title: 'Sin Letra Chica',
-      description: 'Términos y condiciones claros y transparentes'
-    }
-  ];
-
-  return (
-    <section className="py-16 bg-gradient-to-br from-blue-50 to-purple-50">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-4">
-            ¿Por qué confiar en nosotros?
-          </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Somos la plataforma de rifas más confiable de México
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {trustItems.map((item, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-fade-in-up"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <div className="text-4xl mb-4 text-center">{item.icon}</div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2 text-center">
-                {item.title}
-              </h3>
-              <p className="text-gray-600 text-center leading-relaxed">
-                {item.description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-// ============================================================================
-// COMPONENTE CTA FLOTANTE
-// ============================================================================
-
-const FloatingCTA: React.FC<{
-  selectedCount: number;
-  totalPrice: number;
-  onOpenPayment: () => void;
-}> = ({ selectedCount, totalPrice, onOpenPayment }) => {
-  const { playSound } = useSounds();
-
-  const handleClick = useCallback(() => {
-    playSound('click');
-    onOpenPayment();
-  }, [playSound, onOpenPayment]);
-
-  if (selectedCount === 0) return null;
-
-  return (
-    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40 animate-bounce-in">
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full px-6 py-4 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-        <button
-          onClick={handleClick}
-          className="flex items-center gap-4"
-        >
-          <div className="text-center">
-            <div className="text-sm opacity-90">
-              {selectedCount} boleto{selectedCount !== 1 ? 's' : ''} seleccionado{selectedCount !== 1 ? 's' : ''}
-            </div>
-            <div className="text-lg font-bold">
-              {formatPrice(totalPrice)}
+        
+        {/* Información de confianza */}
+        <div className="mt-16 bg-gradient-to-r from-black/60 via-purple-900/50 to-black/60 backdrop-blur-xl border border-purple-500/30 rounded-3xl p-8 shadow-2xl">
+          <div className="text-center text-white">
+            <h3 className="text-2xl font-bold mb-8 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">🔒 COMPRA SEGURA Y CONFIABLE</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div>
+                <div className="text-4xl font-black bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent mb-2">📺</div>
+                <div className="text-slate-200">Sorteo transmitido en vivo</div>
+              </div>
+              <div>
+                <div className="text-4xl font-black bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent mb-2">📋</div>
+                <div className="text-slate-200">Con notario público</div>
+              </div>
+              <div>
+                <div className="text-4xl font-black bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent mb-2">🏆</div>
+                <div className="text-slate-200">Entrega garantizada 24h</div>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="font-bold">Proceder al Pago</span>
-            <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </div>
-          </div>
-        </button>
+        </div>
       </div>
     </div>
   );
@@ -251,236 +277,282 @@ const FloatingCTA: React.FC<{
 // ============================================================================
 
 export default function HomePage() {
-  // Estado del store
-  const {
-    selectedTickets,
-    totalSelected,
-    totalPrice,
-    availableTickets,
-    soldPercentage,
-    initializeTickets
-  } = useRaffleStore();
+  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+  const [selectedTicketAmount, setSelectedTicketAmount] = useState(25);
+  const [hasPromotionalDiscount, setHasPromotionalDiscount] = useState(false);
+  const { 
+    totalSelected, 
+    totalPrice 
+  } = useTickets();
+  
+  const scrollToTickets = () => {
+    document.getElementById('tickets-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
-  // Hooks de funcionalidad
-  const { start: startRealtime, getState } = useRealtime();
-  const { playSound } = useSounds();
-
-  // Estado local
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Inicialización
-  useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        // Inicializar tickets
-        initializeTickets();
-        
-        // Inicializar realtime simulator
-        startRealtime();
-        
-        // Pequeña pausa para mejor UX
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        setIsLoading(false);
-        
-        // Sonido de bienvenida
-        setTimeout(() => {
-          playSound('notification');
-        }, 500);
-        
-      } catch (error) {
-        console.error('Error inicializando aplicación:', error);
-        setIsLoading(false);
-      }
-    };
-
-    initializeApp();
-  }, [initializeTickets, startRealtime, playSound]);
-
-  // Handlers
-  const openPaymentModal = useCallback(() => {
-    if (totalSelected > 0) {
-      setIsPaymentModalOpen(true);
-      playSound('click');
-    }
-  }, [totalSelected, playSound]);
-
-  const closePaymentModal = useCallback(() => {
-    setIsPaymentModalOpen(false);
-    playSound('click');
-  }, [playSound]);
-
-  const scrollToSection = useCallback((sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
-      playSound('click');
-    }
-  }, [playSound]);
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-          <p className="text-gray-600 font-medium">Cargando rifa...</p>
-        </div>
-      </div>
-    );
-  }
+  const openPurchaseModal = (tickets: number = 25, hasDiscount: boolean = false) => {
+    setSelectedTicketAmount(tickets);
+    setHasPromotionalDiscount(hasDiscount);
+    setIsPurchaseModalOpen(true);
+  };
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      {/* Hero Section - Prize Showcase */}
-      <section id="hero-section">
-        <PrizeShowcase />
-      </section>
-
-      {/* Stats y Urgency Section */}
-      <section id="stats-section" className="py-12 bg-white">
-        <div className="container mx-auto px-4 space-y-8">
-          <UrgencyCounters />
-          <StatsBar />
-        </div>
-      </section>
-
-      {/* Quick Select Section */}
-      <section id="quick-select-section" className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-4">
-              🎯 Elige tus Boletos
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Selecciona la cantidad de boletos que quieres comprar y aprovecha nuestros descuentos
-            </p>
-          </div>
-          <QuickSelect />
-        </div>
-      </section>
-
-      {/* Ticket Grid Section */}
-      <section id="tickets-section" className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-4">
-              🎫 Selecciona tus Números de la Suerte
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
-              Haz clic en los boletos para seleccionarlos. Quedan {availableTickets.length.toLocaleString()} boletos disponibles
-            </p>
-            
-            {/* Progress indicator */}
-            <div className="max-w-md mx-auto mb-8">
-              <div className="flex justify-between text-sm text-gray-600 mb-2">
-                <span>Progreso de ventas</span>
-                <span>{soldPercentage}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div
-                  className={cn(
-                    'h-3 rounded-full transition-all duration-1000',
-                    {
-                      'bg-gradient-to-r from-green-500 to-blue-500': soldPercentage < 75,
-                      'bg-gradient-to-r from-orange-500 to-red-500': soldPercentage >= 75,
-                      'animate-pulse-soft': soldPercentage >= 90
-                    }
-                  )}
-                  style={{ width: `${Math.min(soldPercentage, 100)}%` }}
-                />
-              </div>
-            </div>
-          </div>
-          
-          <TicketGrid />
-          
-          {/* Resumen de selección */}
-          {totalSelected > 0 && (
-            <div className="mt-8 max-w-md mx-auto">
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 text-center">
-                <h3 className="text-lg font-bold text-purple-800 mb-2">
-                  📋 Resumen de tu Selección
-                </h3>
-                <div className="space-y-2 text-purple-700">
-                  <div>Boletos seleccionados: <strong>{totalSelected}</strong></div>
-                  <div>Total a pagar: <strong>{formatPrice(totalPrice)}</strong></div>
-                  {totalSelected > 1 && (
-                    <div className="text-sm">
-                      Precio por boleto: {formatPrice(Math.round(totalPrice / totalSelected))}
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={openPaymentModal}
-                  className="mt-4 w-full btn-primary"
-                >
-                  🚀 Proceder al Pago
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {/* Empty state */}
-          {totalSelected === 0 && (
-            <div className="mt-8 text-center text-gray-500">
-              <p className="mb-4">👆 Selecciona tus boletos de arriba o usa la selección rápida</p>
-              <button
-                onClick={() => scrollToSection('quick-select-section')}
-                className="btn-secondary"
-              >
-                ⚡ Ir a Selección Rápida
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Trust Section */}
-      <TrustSection />
-
-      {/* FAQ Section */}
-      <FAQSection />
-
-      {/* Final CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-            🏆 ¡No te quedes sin tu oportunidad!
-          </h2>
-          <p className="text-xl mb-8 opacity-90">
-            Quedan {availableTickets.length.toLocaleString()} boletos disponibles
-          </p>
-          <button
-            onClick={() => scrollToSection('tickets-section')}
-            className="bg-white text-blue-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors hover:scale-105 transform duration-200"
-          >
-            🎫 Comprar Boletos Ahora
-          </button>
-        </div>
-      </section>
-
-      {/* Componentes flotantes */}
-      <LiveNotifications />
+    <div className="min-h-screen bg-white">
+      {/* Efectos de sonido */}
+      <SoundEffects />
       
-      <FloatingCTA
-        selectedCount={totalSelected}
-        totalPrice={totalPrice}
-        onOpenPayment={openPaymentModal}
+      {/* Notificaciones orgánicas */}
+      <OrganicNotifications />
+      
+      {/* Prueba social */}
+      <SocialProof />
+      
+      {/* Banner de urgencia */}
+      <UrgencyBanner onOpenPurchaseModal={() => openPurchaseModal(25, false)} />
+      
+      <HeroSection onOpenPurchaseModal={() => openPurchaseModal(25, false)} />
+      <QuickSelectSection onOpenPurchaseModal={(tickets) => openPurchaseModal(tickets, true)} />
+      <PrizeShowcase />
+      
+      {/* Sección de selección de tickets mejorada */}
+      <div id="tickets-section" className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 py-12 relative overflow-hidden">
+        {/* Elementos decorativos minimalistas */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-10 left-10 w-24 h-24 bg-purple-500/30 rounded-full blur-2xl"></div>
+          <div className="absolute bottom-10 right-10 w-32 h-32 bg-cyan-500/30 rounded-full blur-2xl"></div>
+        </div>
+        
+        <div className="max-w-6xl mx-auto px-4 relative z-10">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white px-6 py-2 rounded-full font-bold text-sm mb-6 shadow-xl border border-purple-500/30">
+              🎯 SELECCIONA TUS NÚMEROS
+            </div>
+            <h2 className="text-3xl lg:text-5xl font-black mb-4">
+              <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+                🎲 Elige Tus Números de la Suerte
+              </span>
+            </h2>
+            <p className="text-lg text-slate-300 max-w-2xl mx-auto">
+              Selecciona manualmente o usa los paquetes de arriba
+            </p>
+          </div>
+          
+          {/* Grid completo de tickets */}
+          <TicketGrid onOpenPurchaseModal={(tickets) => openPurchaseModal(tickets, false)} />
+          
+          {/* Resumen de compra - COMPACTO */}
+          <div className="bg-gradient-to-r from-slate-800 via-purple-900 to-slate-800 border-2 border-purple-500/50 rounded-2xl p-6 mt-8 text-center shadow-xl backdrop-blur-lg">
+            {totalSelected > 0 ? (
+              <>
+                <h4 className="text-xl font-black bg-gradient-to-r from-green-400 via-emerald-500 to-teal-600 bg-clip-text text-transparent mb-3">
+                  ✅ BOLETOS SELECCIONADOS
+                </h4>
+                <p className="text-lg text-slate-200 mb-4">
+                  {totalSelected} boleto{totalSelected !== 1 ? 's' : ''} • <span className="bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent font-bold">{formatPrice(totalPrice)}</span>
+                </p>
+                <button
+                  onClick={() => openPurchaseModal(totalSelected, false)}
+                  className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-700 hover:via-pink-700 hover:to-red-700 text-white text-xl font-bold px-8 py-4 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300 border border-purple-500"
+                >
+                  💳 PROCEDER AL PAGO
+                </button>
+              </>
+            ) : (
+              <>
+                <h4 className="text-lg font-bold text-slate-400 mb-2">
+                  🎯 Selecciona tus boletos
+                </h4>
+                <p className="text-slate-500 mb-4">
+                  Haz clic en los números o usa los paquetes de arriba
+                </p>
+                <button
+                  onClick={() => openPurchaseModal(25, false)}
+                  className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-700 hover:via-pink-700 hover:to-red-700 text-white text-lg font-bold px-8 py-3 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300 border border-purple-500"
+                >
+                  🎟️ COMPRA RÁPIDA
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      {/* Testimoniales - COMPACTOS */}
+      <div className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 py-8 relative overflow-hidden">
+        {/* Elementos decorativos de fondo */}
+        <div className="absolute inset-0">
+          <div className="absolute top-10 left-10 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl"></div>
+          <div className="absolute bottom-10 right-10 w-40 h-40 bg-cyan-500/20 rounded-full blur-2xl"></div>
+        </div>
+        <div className="max-w-6xl mx-auto px-4 relative z-10">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white px-4 py-2 rounded-full font-bold text-sm mb-4 shadow-xl">
+              👥 TESTIMONIOS VERIFICADOS
+            </div>
+            <h2 className="text-2xl lg:text-4xl font-black mb-4">
+              <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+                💬 Lo que dicen nuestros participantes
+              </span>
+            </h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 shadow-xl border border-white/20 hover:bg-white/20 hover:scale-105 transition-all duration-300">
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-white font-black text-lg shadow-lg">
+                  C
+                </div>
+                <div className="ml-3">
+                  <h4 className="font-bold text-white text-sm">Carlos M.</h4>
+                  <p className="text-cyan-200 text-xs">Monterrey, N.L.</p>
+                </div>
+              </div>
+              <p className="text-white text-sm mb-3 leading-relaxed">
+                "Ya compré mis 10 números, ojalá me toque 🙏 La Silverado está padrísima."
+              </p>
+              <div className="text-xs bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent font-bold">
+                ✅ Verificado • Hace 2 horas
+              </div>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 shadow-xl border border-white/20 hover:bg-white/20 hover:scale-105 transition-all duration-300">
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center text-white font-black text-lg shadow-lg">
+                  A
+                </div>
+                <div className="ml-3">
+                  <h4 className="font-bold text-white text-sm">Ana G.</h4>
+                  <p className="text-yellow-200 text-xs">CDMX</p>
+                </div>
+              </div>
+              <p className="text-white text-sm mb-3 leading-relaxed">
+                "Mi grupo compramos 50 boletos entre todos. Si ganamos la compartimos 😂"
+              </p>
+              <div className="text-xs bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent font-bold">
+                ✅ Verificado • Hace 5 horas
+              </div>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 shadow-xl border border-white/20 hover:bg-white/20 hover:scale-105 transition-all duration-300">
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-black text-lg shadow-lg">
+                  R
+                </div>
+                <div className="ml-3">
+                  <h4 className="font-bold text-white text-sm">Roberto L.</h4>
+                  <p className="text-purple-200 text-xs">Guadalajara, Jal.</p>
+                </div>
+              </div>
+              <p className="text-white text-sm mb-3 leading-relaxed">
+                "El año pasado gané una moto. Todo muy transparente y confiable."
+              </p>
+              <div className="text-xs bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent font-bold">
+                ✅ Verificado • Hace 1 día
+              </div>
+            </div>
+          </div>
+          
+          {/* Garantías y confianza */}
+          <div className="mt-6 bg-gradient-to-r from-slate-800 via-purple-900 to-slate-800 rounded-xl p-4 shadow-lg border border-purple-500/30">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent mb-1">📺</div>
+                <div className="text-slate-300 text-xs">Sorteo en vivo</div>
+              </div>
+              <div>
+                <div className="text-xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent mb-1">🔒</div>
+                <div className="text-slate-300 text-xs">Pago seguro</div>
+              </div>
+              <div>
+                <div className="text-xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent mb-1">🏆</div>
+                <div className="text-slate-300 text-xs">Premio garantizado</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Métodos de pago */}
+      <div className="bg-gradient-to-br from-slate-100 via-purple-50 to-slate-200 py-8">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white px-4 py-2 rounded-full font-bold text-sm mb-4 shadow-xl">
+              💳 MÉTODOS DE PAGO
+            </div>
+            <h2 className="text-2xl lg:text-3xl font-bold mb-2">
+              <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+                Paga como prefieras
+              </span>
+            </h2>
+          </div>
+          
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { name: 'Binance Pay', icon: '/logos/binance.svg', desc: 'Crypto' },
+              { name: 'BanCoppel', icon: '/logos/bancoppel.png', desc: 'Transferencia' },
+              { name: 'Banco Azteca', icon: '/logos/bancoazteca.png', desc: 'Transferencia' },
+              { name: 'OXXO', icon: '/logos/oxxo.png', desc: 'En tienda' }
+            ].map((method) => (
+              <div key={method.name} className="bg-white border-2 border-purple-300 rounded-xl p-4 text-center hover:shadow-lg hover:border-purple-500 hover:bg-purple-50 transition-all duration-300 group">
+                <div className="mb-3 flex items-center justify-center h-8">
+                  <Image
+                    src={method.icon}
+                    alt={method.name}
+                    width={32}
+                    height={32}
+                    className="max-h-8 w-auto group-hover:scale-110 transition-transform duration-300"
+                  />
+                </div>
+                <h3 className="font-bold text-slate-800 mb-1 text-sm">{method.name}</h3>
+                <p className="text-xs text-slate-600">{method.desc}</p>
+                <div className="mt-2 text-xs bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent font-medium">✓ Disponible</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      {/* CTA Final - COMPACTO Y UNIFICADO */}
+      <div className="bg-gradient-to-r from-slate-800 via-purple-900 to-slate-800 text-white py-8 border-t border-purple-700/50">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-xl lg:text-3xl font-black mb-3">
+            <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">
+              🚨 ¡ÚLTIMAS HORAS PARA PARTICIPAR!
+            </span>
+          </h2>
+          <p className="text-base mb-2 font-bold text-slate-200">
+            Miles ya compraron sus boletos. ¡NO TE QUEDES FUERA!
+          </p>
+          <p className="text-sm mb-4">
+            <span className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent font-bold">
+              Por solo $10 USD puedes ganar $45,000 USD + Silverado Z71 2024 + PlayStation 5
+            </span>
+          </p>
+          
+          <button 
+            onClick={() => openPurchaseModal(totalSelected > 0 ? totalSelected : 25, false)}
+            className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-700 hover:via-pink-700 hover:to-red-700 text-white text-lg lg:text-xl font-bold px-6 py-3 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-300 border border-purple-500"
+          >
+            {totalSelected > 0 
+              ? `🛒 Comprar ${totalSelected} boleto${totalSelected !== 1 ? 's' : ''}`
+              : '🎫 Comprar Boletos'
+            }
+          </button>
+          
+          {totalSelected > 0 && (
+            <p className="text-base mt-3">
+              Total: <span className="font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">{formatPrice(totalPrice)}</span>
+            </p>
+          )}
+        </div>
+      </div>
+      
+      {/* Modal de compra comprehensive */}
+      <ComprehensivePurchaseModal
+        isOpen={isPurchaseModalOpen}
+        onClose={() => setIsPurchaseModalOpen(false)}
+        initialTickets={selectedTicketAmount}
+        hasDiscount={hasPromotionalDiscount}
       />
-
-      {/* Payment Modal */}
-      <PaymentModal
-        isOpen={isPaymentModalOpen}
-        onClose={closePaymentModal}
-      />
-
-      {/* Debug Panel (solo en desarrollo) */}
-      {process.env.NODE_ENV === 'development' && <RealtimeDebugPanel />}
-    </main>
+    </div>
   );
 }

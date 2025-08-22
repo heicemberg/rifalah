@@ -17,8 +17,8 @@ import type {
 /** Total de tickets disponibles */
 export const TOTAL_TICKETS = 10000;
 
-/** Precio por ticket en pesos mexicanos */
-export const TICKET_PRICE = 50;
+/** Precio por ticket en dólares estadounidenses */
+export const TICKET_PRICE = 10;
 
 /** Tiempo de reserva en minutos */
 export const RESERVATION_TIME = 30;
@@ -33,32 +33,38 @@ export const RESERVATION_TIME_MS = RESERVATION_TIME * 60 * 1000;
 export const QUICK_SELECT_OPTIONS: QuickSelectOption[] = [
   {
     tickets: 1,
-    price: 50,
+    price: 10,
     discount: 0,
     popular: false
   },
   {
     tickets: 5,
-    price: 225,
+    price: 45,
     discount: 10,
     popular: false
   },
   {
     tickets: 10,
-    price: 400,
+    price: 80,
     discount: 20,
     popular: true
   },
   {
     tickets: 25,
-    price: 750,
+    price: 187,
     discount: 25,
     popular: false
   },
   {
     tickets: 50,
-    price: 1400,
+    price: 350,
     discount: 30,
+    popular: false
+  },
+  {
+    tickets: 100,
+    price: 650,
+    discount: 35,
     popular: false
   }
 ];
@@ -72,28 +78,32 @@ export const PAYMENT_METHODS: PaymentMethod[] = [
     id: 'binance' as PaymentMethodType,
     name: 'Binance Pay',
     icon: '/logos/binance.svg',
-    account: 'binance@rifa.mx',
+    account: 'rifadesilverado2024@gmail.com',
+    accountDetails: 'Email Binance Pay: rifadesilverado2024@gmail.com',
     enabled: true
   },
   {
     id: 'bancoppel' as PaymentMethodType,
     name: 'BanCoppel',
     icon: '/logos/bancoppel.png',
-    account: '4169 1234 5678 9012',
+    account: '4169 1598 7643 2108',
+    accountDetails: 'Tarjeta: 4169 1598 7643 2108\nTitular: RIFA SILVERADO 2024\nCLABE: 137180000123456789',
     enabled: true
   },
   {
     id: 'bancoazteca' as PaymentMethodType,
     name: 'Banco Azteca',
     icon: '/logos/bancoazteca.png',
-    account: '5204 1234 5678 9012',
+    account: '5204 8765 4321 0987',
+    accountDetails: 'Tarjeta: 5204 8765 4321 0987\nTitular: RIFA SILVERADO 2024\nCLABE: 127180000987654321',
     enabled: true
   },
   {
     id: 'oxxo' as PaymentMethodType,
     name: 'OXXO',
     icon: '/logos/oxxo.png',
-    account: 'Referencia: RIF-2024-001',
+    account: 'RIF-SIL-2024-001',
+    accountDetails: 'Referencia OXXO: RIF-SIL-2024-001\nMonto exacto del pago\nConserva tu comprobante',
     enabled: true
   }
 ];
@@ -102,58 +112,40 @@ export const PAYMENT_METHODS: PaymentMethod[] = [
 // NOMBRES MEXICANOS PARA ACTIVIDAD EN TIEMPO REAL
 // ============================================================================
 
-export const MEXICAN_NAMES: string[] = [
-  'Juan M.',
-  'María G.',
-  'Carlos R.',
-  'Ana L.',
-  'Miguel H.',
-  'Carmen S.',
-  'José A.',
-  'Lucía F.',
-  'Roberto C.',
-  'Patricia V.',
-  'Francisco J.',
-  'Rosa M.',
-  'Antonio L.',
-  'Isabel D.',
-  'Manuel P.',
-  'Teresa R.',
-  'Daniel G.',
-  'Mónica H.',
-  'Rafael S.',
-  'Sandra T.',
-  'Eduardo M.',
-  'Alejandra C.',
-  'Sergio L.',
-  'Gabriela R.',
-  'Fernando V.',
-  'Verónica P.',
-  'Arturo N.',
-  'Claudia B.',
-  'Raúl G.',
-  'Adriana F.',
-  'Jorge M.',
-  'Silvia H.',
-  'Héctor R.',
-  'Diana L.',
-  'Enrique S.',
-  'Mariana T.',
-  'Ricardo P.',
-  'Leticia V.',
-  'Javier C.',
-  'Norma D.',
-  'Oscar F.',
-  'Rocío M.',
-  'Gerardo H.',
-  'Esperanza R.',
-  'Armando L.',
-  'Guadalupe S.',
-  'Alfredo T.',
-  'Beatriz P.',
-  'Ignacio V.',
-  'Yolanda C.'
+// Nombres completos para actividad más realista
+export const MEXICAN_FIRST_NAMES = [
+  'José', 'Luis', 'Juan', 'Miguel', 'Carlos', 'Fernando', 'Jorge', 'Alejandro',
+  'María', 'Guadalupe', 'Rosa', 'Ana', 'Carmen', 'Patricia', 'Sandra', 'Leticia',
+  'Francisco', 'Roberto', 'Ricardo', 'Eduardo', 'Raúl', 'Jesús', 'Daniel', 'Pedro',
+  'Juana', 'Teresa', 'Gloria', 'Esperanza', 'Julia', 'Irma', 'Silvia', 'Martha',
+  'Antonio', 'Arturo', 'Armando', 'Alberto', 'Andrés', 'Ángel', 'Adrián', 'Agustín',
+  'Beatriz', 'Blanca', 'Bertha', 'Brenda', 'Bárbara', 'Claudia', 'Cristina', 'Carolina',
+  'Diego', 'David', 'Emilio', 'Edgar', 'Enrique', 'Ernesto', 'Esteban', 'Erika',
+  'Gabriela', 'Graciela', 'Gustavo', 'Guillermo', 'Hugo', 'Héctor', 'Ignacio', 'Isabel',
+  'Jaime', 'Javier', 'Jonathan', 'Julián', 'Karina', 'Laura', 'Lucía', 'Lorena',
+  'Manuel', 'Marco', 'Martín', 'Mauricio', 'Mónica', 'Nancy', 'Norma', 'Octavio',
+  'Oscar', 'Pablo', 'Paulo', 'Rafael', 'Ramón', 'Raquel', 'Rubén', 'Salvador',
+  'Sergio', 'Susana', 'Sofía', 'Verónica', 'Vicente', 'Víctor', 'Yolanda', 'Ximena'
 ];
+
+export const MEXICAN_SURNAMES = [
+  'González', 'García', 'Rodríguez', 'Hernández', 'López', 'Martínez', 'Pérez', 'Sánchez',
+  'Ramírez', 'Torres', 'Flores', 'Rivera', 'Gómez', 'Díaz', 'Cruz', 'Morales',
+  'Reyes', 'Gutiérrez', 'Ortiz', 'Chávez', 'Ruiz', 'Vásquez', 'Castillo', 'Jiménez',
+  'Vargas', 'Ramos', 'Mendoza', 'Aguilar', 'Contreras', 'Medina', 'Luna', 'Moreno',
+  'Alvarez', 'Acosta', 'Alvarado', 'Ayala', 'Bautista', 'Cabrera', 'Campos', 'Cárdenas',
+  'Cervantes', 'Cortés', 'Delgado', 'Domínguez', 'Espinoza', 'Estrada', 'Figueroa', 'Fuentes',
+  'Galván', 'Guerrero', 'Herrera', 'Ibarra', 'Lara', 'Ledesma', 'Maldonado', 'Miranda',
+  'Montoya', 'Muñoz', 'Navarro', 'Núñez', 'Ochoa', 'Padilla', 'Palacios', 'Paredes',
+  'Peña', 'Quintero', 'Robles', 'Romero', 'Salazar', 'Silva', 'Solís', 'Téllez',
+  'Valdez', 'Valencia', 'Vega', 'Velasco', 'Villa', 'Villanueva', 'Zamora', 'Zúñiga'
+];
+
+// Para compatibilidad con código existente
+export const MEXICAN_NAMES: string[] = MEXICAN_FIRST_NAMES.map((name, index) => {
+  const surname = MEXICAN_SURNAMES[index % MEXICAN_SURNAMES.length];
+  return `${name} ${surname.charAt(0)}.`;
+});
 
 // ============================================================================
 // CIUDADES MEXICANAS PRINCIPALES
@@ -222,9 +214,9 @@ export const DEFAULT_THEME_COLORS: ThemeColors = {
 // ============================================================================
 
 export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
-  prizeTitle: 'Chevrolet Silverado Z71 2024',
+  prizeTitle: 'Chevrolet Silverado Z71 2024 - Valor $45,000 USD',
   prizeImage: '/premios/premio-rifa.png',
-  prizeValue: 890000,
+  prizeValue: 45000,
   sorteoDate: new Date('2024-12-31T20:00:00-06:00'), // 31 Dec 2024 8PM CST
   colors: DEFAULT_THEME_COLORS,
   paymentMethods: PAYMENT_METHODS
@@ -242,6 +234,52 @@ export const RESERVATION_CHECK_INTERVAL = 60000;
 
 /** Intervalo para generar actividad falsa de compras (ms) */
 export const FAKE_ACTIVITY_INTERVAL = 15000;
+
+// ============================================================================
+// CONFIGURACIÓN FOMO REALISTA
+// ============================================================================
+
+/** Configuración para FOMO realista */
+export const FOMO_CONFIG = {
+  // Rango de tiempo entre notificaciones (en milisegundos)
+  MIN_INTERVAL: 20000, // 20 segundos
+  MAX_INTERVAL: 180000, // 3 minutos
+  
+  // Número de boletos por compra (distribución realista)
+  TICKET_RANGES: [
+    { min: 1, max: 1, weight: 30 },    // 30% compran 1 boleto
+    { min: 2, max: 3, weight: 25 },    // 25% compran 2-3 boletos
+    { min: 4, max: 7, weight: 20 },    // 20% compran 4-7 boletos
+    { min: 8, max: 15, weight: 15 },   // 15% compran 8-15 boletos
+    { min: 16, max: 30, weight: 8 },   // 8% compran 16-30 boletos
+    { min: 31, max: 50, weight: 2 }    // 2% compran 31-50 boletos
+  ],
+  
+  // Máximo porcentaje de venta ficticia
+  MAX_FAKE_PERCENTAGE: 27,
+  
+  // Velocidad inicial de ventas ficticias (boletos por hora)
+  INITIAL_SALES_RATE: 150,
+  
+  // Mensajes de compra más naturales
+  PURCHASE_MESSAGES: [
+    'acaba de comprar',
+    'acaba de adquirir',
+    'compró',
+    'adquirió',
+    'seleccionó',
+    'reservó'
+  ],
+  
+  // Tiempo adicional en los mensajes
+  TIME_MESSAGES: [
+    'hace 1 minuto',
+    'hace 2 minutos',
+    'hace unos minutos',
+    'recién',
+    'ahora mismo'
+  ]
+};
 
 // ============================================================================
 // LÍMITES Y VALIDACIONES
@@ -303,105 +341,40 @@ export const MESSAGES = {
 };
 
 // ============================================================================
-// CONFIGURACIONES DE FORMATO
+// CONFIGURACIONES DE FORMATO (SOLO OBJETOS INTL)
 // ============================================================================
 
-/** Configuración para formatear moneda mexicana */
-export const CURRENCY_FORMAT = new Intl.NumberFormat('es-MX', {
-  style: 'currency',
-  currency: 'MXN',
+/** Configuración para formatear moneda estadounidense */
+export const CURRENCY_FORMAT_CONFIG = {
+  style: 'currency' as const,
+  currency: 'USD' as const,
   minimumFractionDigits: 0,
   maximumFractionDigits: 0
-});
+};
 
 /** Configuración para formatear fechas en México */
-export const DATE_FORMAT = new Intl.DateTimeFormat('es-MX', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
+export const DATE_FORMAT_CONFIG = {
+  year: 'numeric' as const,
+  month: 'long' as const,
+  day: 'numeric' as const,
+  hour: '2-digit' as const,
+  minute: '2-digit' as const,
   timeZone: 'America/Mexico_City'
-});
+};
 
 /** Configuración para formatear números */
-export const NUMBER_FORMAT = new Intl.NumberFormat('es-MX');
+export const NUMBER_FORMAT_CONFIG = {
+  // Configuración por defecto para números en México
+};
 
 // ============================================================================
-// EXPORTS PARA FÁCIL IMPORTACIÓN
+// RE-EXPORTS DE TIPOS PARA CONVENIENCIA
 // ============================================================================
 
-export {
-  // Re-exportar tipos del archivo types.ts para conveniencia
-  type QuickSelectOption,
-  type PaymentMethod,
-  type PaymentMethodType,
-  type AdminConfig,
-  type ThemeColors
+export type {
+  QuickSelectOption,
+  PaymentMethod,
+  PaymentMethodType,
+  AdminConfig,
+  ThemeColors
 } from './types';
-
-// ============================================================================
-// FUNCIONES HELPER PARA CONSTANTES
-// ============================================================================
-
-/**
- * Obtiene una opción de selección rápida por cantidad de tickets
- */
-export const getQuickSelectOption = (ticketCount: number): QuickSelectOption | undefined => {
-  return QUICK_SELECT_OPTIONS.find(option => option.tickets === ticketCount);
-};
-
-/**
- * Obtiene un método de pago por ID
- */
-export const getPaymentMethod = (id: PaymentMethodType): PaymentMethod | undefined => {
-  return PAYMENT_METHODS.find(method => method.id === id);
-};
-
-/**
- * Obtiene métodos de pago habilitados
- */
-export const getEnabledPaymentMethods = (): PaymentMethod[] => {
-  return PAYMENT_METHODS.filter(method => method.enabled);
-};
-
-/**
- * Calcula el precio total con descuento
- */
-export const calculateTotalPrice = (tickets: number): number => {
-  const option = getQuickSelectOption(tickets);
-  if (option) {
-    return option.price;
-  }
-  
-  // Si no hay opción predefinida, calcular precio base
-  return tickets * TICKET_PRICE;
-};
-
-/**
- * Formatea precio en pesos mexicanos
- */
-export const formatPrice = (amount: number): string => {
-  return CURRENCY_FORMAT.format(amount);
-};
-
-/**
- * Formatea fecha en formato mexicano
- */
-export const formatDate = (date: Date): string => {
-  return DATE_FORMAT.format(date);
-};
-
-/**
- * Obtiene un nombre mexicano aleatorio
- */
-export const getRandomMexicanName = (): string => {
-  return MEXICAN_NAMES[Math.floor(Math.random() * MEXICAN_NAMES.length)];
-};
-
-/**
- * Obtiene una ciudad mexicana aleatoria
- */
-export const getRandomMexicanCity = (): string => {
-  return MEXICAN_CITIES[Math.floor(Math.random() * MEXICAN_CITIES.length)];
-};
