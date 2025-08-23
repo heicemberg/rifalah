@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRaffleStore } from '../stores/raffle-store';
+import { useRealTimeTickets } from '../hooks/useRealTimeTickets';
 import { 
   MEXICAN_FIRST_NAMES, 
   MEXICAN_SURNAMES, 
-  MEXICAN_CITIES, 
-  FOMO_CONFIG 
+  MEXICAN_CITIES 
 } from '../lib/constants';
 
 interface NotificationData {
@@ -22,7 +22,9 @@ interface NotificationData {
 const OrganicNotifications: React.FC = () => {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [currentNotification, setCurrentNotification] = useState<NotificationData | null>(null);
-  const { soldPercentage, markTicketsAsSold, availableTickets } = useRaffleStore();
+  const { markTicketsAsSold, availableTickets } = useRaffleStore();
+  const { stats, formatMexicanNumber } = useRealTimeTickets();
+  const soldPercentage = stats.soldPercentage;
 
   // Función para generar nombres realistas
   const generateRealisticName = useCallback(() => {
@@ -33,17 +35,14 @@ const OrganicNotifications: React.FC = () => {
 
   // Función para generar número de boletos con distribución realista
   const generateTicketCount = useCallback(() => {
-    const random = Math.random() * 100;
-    let cumulativeWeight = 0;
+    const random = Math.random();
     
-    for (const range of FOMO_CONFIG.TICKET_RANGES) {
-      cumulativeWeight += range.weight;
-      if (random <= cumulativeWeight) {
-        return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
-      }
-    }
-    
-    return 1; // Fallback
+    // Distribución de boletos más realista
+    if (random < 0.5) return 1; // 50% - 1 boleto
+    if (random < 0.7) return Math.floor(Math.random() * 3) + 2; // 20% - 2-4 boletos
+    if (random < 0.85) return Math.floor(Math.random() * 6) + 5; // 15% - 5-10 boletos
+    if (random < 0.95) return Math.floor(Math.random() * 15) + 10; // 10% - 10-25 boletos
+    return Math.floor(Math.random() * 25) + 25; // 5% - 25-50 boletos
   }, []);
 
   // Función para crear una nueva notificación
@@ -51,8 +50,11 @@ const OrganicNotifications: React.FC = () => {
     const buyerName = generateRealisticName();
     const ticketCount = generateTicketCount();
     const city = MEXICAN_CITIES[Math.floor(Math.random() * MEXICAN_CITIES.length)];
-    const action = FOMO_CONFIG.PURCHASE_MESSAGES[Math.floor(Math.random() * FOMO_CONFIG.PURCHASE_MESSAGES.length)];
-    const timeAgo = FOMO_CONFIG.TIME_MESSAGES[Math.floor(Math.random() * FOMO_CONFIG.TIME_MESSAGES.length)];
+    const actions = ['compró', 'adquirió', 'se llevó'];
+    const timeMessages = ['hace 1m', 'hace 2m', 'hace 3m', 'recién'];
+    
+    const action = actions[Math.floor(Math.random() * actions.length)];
+    const timeAgo = timeMessages[Math.floor(Math.random() * timeMessages.length)];
     
     const notification: NotificationData = {
       id: `notif-${Date.now()}-${Math.random()}`,
@@ -71,8 +73,8 @@ const OrganicNotifications: React.FC = () => {
   const showNotification = useCallback((notification: NotificationData) => {
     setCurrentNotification(notification);
     
-    // Ocultar después de 4-6 segundos
-    const hideDelay = 4000 + Math.random() * 2000;
+    // Ocultar después de 2-2.5 segundos (muy rápido y discreto)
+    const hideDelay = 2000 + Math.random() * 500;
     setTimeout(() => {
       setCurrentNotification(prev => prev?.id === notification.id ? null : prev);
     }, hideDelay);
@@ -80,7 +82,9 @@ const OrganicNotifications: React.FC = () => {
 
   // Función para simular ventas reales
   const simulateSale = useCallback((ticketCount: number) => {
-    if (soldPercentage < FOMO_CONFIG.MAX_FAKE_PERCENTAGE && availableTickets.length >= ticketCount) {
+    const MAX_FAKE_PERCENTAGE = 75; // Máximo 75% de boletos simulados
+    
+    if (soldPercentage < MAX_FAKE_PERCENTAGE && availableTickets.length >= ticketCount) {
       // Seleccionar tickets aleatorios disponibles
       const randomTickets = availableTickets
         .sort(() => Math.random() - 0.5)
@@ -96,14 +100,17 @@ const OrganicNotifications: React.FC = () => {
     let timeoutId: NodeJS.Timeout;
 
     const scheduleNextNotification = () => {
-      // Solo mostrar notificaciones si no hemos alcanzado el límite de FOMO
-      if (soldPercentage >= FOMO_CONFIG.MAX_FAKE_PERCENTAGE) {
+      const MAX_FAKE_PERCENTAGE = 75; // Máximo 75% de boletos simulados
+      
+      // Solo mostrar notificaciones si no hemos alcanzado el límite
+      if (soldPercentage >= MAX_FAKE_PERCENTAGE) {
         return;
       }
 
-      // Intervalo aleatorio entre 20 segundos y 3 minutos
-      const interval = FOMO_CONFIG.MIN_INTERVAL + 
-        Math.random() * (FOMO_CONFIG.MAX_INTERVAL - FOMO_CONFIG.MIN_INTERVAL);
+      // Intervalo aleatorio entre 30 y 60 segundos (más razonable)
+      const MIN_INTERVAL = 30000; // 30 segundos
+      const MAX_INTERVAL = 60000; // 60 segundos
+      const interval = MIN_INTERVAL + Math.random() * (MAX_INTERVAL - MIN_INTERVAL);
 
       timeoutId = setTimeout(() => {
         const notification = createNotification();
@@ -124,8 +131,8 @@ const OrganicNotifications: React.FC = () => {
       }, interval);
     };
 
-    // Iniciar después de 3 segundos
-    const initialTimeout = setTimeout(scheduleNextNotification, 3000);
+    // Iniciar después de 8 segundos
+    const initialTimeout = setTimeout(scheduleNextNotification, 8000);
 
     return () => {
       clearTimeout(timeoutId);
@@ -139,42 +146,18 @@ const OrganicNotifications: React.FC = () => {
   }
 
   return (
-    <div className="fixed top-4 right-4 z-50 max-w-sm">
-      <div className="bg-white border border-green-300 rounded-lg shadow-2xl p-4 animate-in slide-in-from-right-full duration-300">
-        <div className="flex items-start gap-3">
-          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse flex-shrink-0 mt-1"></div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm font-semibold text-gray-900 truncate">
-                {currentNotification.buyerName}
-              </span>
-              <span className="text-xs text-gray-500 flex-shrink-0">
-                • {currentNotification.timeAgo}
-              </span>
-            </div>
-            <p className="text-sm text-gray-700 leading-tight">
-              {currentNotification.action}{' '}
-              <span className="font-semibold text-green-600">
-                {currentNotification.ticketCount} boleto{currentNotification.ticketCount !== 1 ? 's' : ''}
-              </span>
-            </p>
-            <p className="text-xs text-gray-500 mt-1 truncate">
-              📍 {currentNotification.city}
-            </p>
+    <div className="fixed bottom-4 left-4 z-10 max-w-fit">
+      <div className="backdrop-blur-sm bg-white/15 border border-white/10 rounded-full shadow-none px-3 py-1.5 animate-in slide-in-from-left-2 duration-500 ease-out opacity-40 hover:opacity-60 transition-opacity">
+        <div className="flex items-center gap-2">
+          <div className="w-1 h-1 bg-gray-500 rounded-full opacity-50"></div>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-xs text-gray-700 font-medium truncate">
+              {currentNotification.buyerName} compró {formatMexicanNumber(currentNotification.ticketCount)} boleto{currentNotification.ticketCount !== 1 ? 's' : ''}
+            </span>
+            <span className="text-[10px] text-gray-500 font-normal">
+              {currentNotification.timeAgo}
+            </span>
           </div>
-        </div>
-        
-        {/* Barra de progreso sutil */}
-        <div className="mt-3 flex items-center gap-2">
-          <div className="flex-1 bg-gray-200 rounded-full h-1">
-            <div 
-              className="bg-green-500 h-1 rounded-full transition-all duration-1000"
-              style={{ width: `${Math.min(soldPercentage, FOMO_CONFIG.MAX_FAKE_PERCENTAGE)}%` }}
-            ></div>
-          </div>
-          <span className="text-xs text-gray-500 font-medium">
-            {Math.min(soldPercentage, FOMO_CONFIG.MAX_FAKE_PERCENTAGE).toFixed(1)}%
-          </span>
         </div>
       </div>
     </div>

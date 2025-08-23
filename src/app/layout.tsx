@@ -5,6 +5,7 @@
 import { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
+import Script from 'next/script';
 
 // Importar estilos globales
 import './globals.css';
@@ -227,8 +228,8 @@ const structuredData = {
       '@id': 'https://rifa-silverado.mx/#event',
       name: 'Sorteo Chevrolet Silverado Z71 2024',
       description: 'Sorteo legal y transparente de una Chevrolet Silverado Z71 2024 completamente nueva. Transmisión en vivo del evento.',
-      startDate: '2024-12-31T20:00:00-06:00',
-      endDate: '2024-12-31T21:00:00-06:00',
+      startDate: '2025-11-24T20:00:00-06:00',
+      endDate: '2025-11-24T21:00:00-06:00',
       eventStatus: 'EventScheduled',
       eventAttendanceMode: 'OnlineEventAttendanceMode',
       location: {
@@ -291,7 +292,7 @@ const structuredData = {
           name: '¿Cuándo es el sorteo?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'El sorteo se realizará el 31 de Diciembre de 2024 a las 8:00 PM (hora de México) con transmisión en vivo.'
+            text: 'El sorteo se realizará el 24 de Noviembre de 2025 a las 8:00 PM (hora de México) con transmisión en vivo.'
           }
         },
         {
@@ -406,54 +407,62 @@ export default function RootLayout({
           </div>
         </AppProviders>
         
-        {/* React Hot Toast - Configuración optimizada */}
+        {/* React Hot Toast - Ultra discreto y sutil */}
         <Toaster
-          position="top-right"
+          position="bottom-right"
           reverseOrder={false}
-          gutter={8}
+          gutter={4}
           containerClassName="z-[9999]"
           containerStyle={{
-            top: 20,
-            right: 20
+            bottom: 16,
+            right: 16
           }}
           toastOptions={{
-            // Configuración por defecto
-            duration: 4000,
+            // Configuración ultra discreta y pequeña
+            duration: 2000,
             style: {
-              background: '#ffffff',
-              color: '#374151',
-              border: '1px solid #e5e7eb',
-              borderRadius: '0.75rem',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+              background: 'rgba(0, 0, 0, 0.6)',
+              color: 'rgba(255, 255, 255, 0.85)',
+              border: 'none',
+              borderRadius: '20px',
+              boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
+              backdropFilter: 'blur(8px)',
               fontFamily: 'Inter, sans-serif',
-              fontSize: '14px',
-              fontWeight: '500',
-              padding: '12px 16px',
-              maxWidth: '400px'
+              fontSize: '11px',
+              fontWeight: '400',
+              padding: '4px 8px',
+              maxWidth: '120px',
+              minHeight: '24px',
+              opacity: '0.8',
+              transform: 'scale(0.85)'
             },
             
-            // Configuración por tipo
+            // Configuración por tipo - Muy discretos
             success: {
-              duration: 5000,
+              duration: 1500,
               iconTheme: {
                 primary: '#10b981',
-                secondary: '#ffffff',
+                secondary: 'rgba(255, 255, 255, 0.8)',
               },
               style: {
-                border: '1px solid #10b981',
-                background: '#f0fdf4'
+                background: 'rgba(16, 185, 129, 0.7)',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '10px',
+                padding: '3px 6px'
               }
             },
             
             error: {
-              duration: 6000,
+              duration: 2000,
               iconTheme: {
                 primary: '#ef4444',
-                secondary: '#ffffff',
+                secondary: 'rgba(255, 255, 255, 0.8)',
               },
               style: {
-                border: '1px solid #ef4444',
-                background: '#fef2f2'
+                background: 'rgba(239, 68, 68, 0.7)',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '10px',
+                padding: '3px 6px'
               }
             },
             
@@ -461,11 +470,13 @@ export default function RootLayout({
               duration: Infinity,
               iconTheme: {
                 primary: '#3b82f6',
-                secondary: '#ffffff',
+                secondary: 'rgba(255, 255, 255, 0.8)',
               },
               style: {
-                border: '1px solid #3b82f6',
-                background: '#eff6ff'
+                background: 'rgba(59, 130, 246, 0.7)',
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '10px',
+                padding: '3px 6px'
               }
             },
           }}
@@ -490,6 +501,88 @@ export default function RootLayout({
             `
           }}
         />
+
+        {/* Google Analytics 4 */}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            
+            gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', {
+              page_title: 'Rifa Silverado Z71 2024 - Página Principal',
+              page_location: window.location.href,
+              custom_map: {
+                'custom_parameter_1': 'rifa_silverado'
+              }
+            });
+
+            // Custom events for rifa
+            gtag('event', 'page_view', {
+              event_category: 'rifa_engagement',
+              event_label: 'home_page_load',
+              page_title: document.title
+            });
+          `}
+        </Script>
+
+        {/* Enhanced ecommerce tracking */}
+        <Script id="ecommerce-tracking" strategy="afterInteractive">
+          {`
+            // Track rifa-specific events
+            window.raffleTracking = {
+              ticketSelected: function(ticketNumber, totalSelected) {
+                gtag('event', 'select_item', {
+                  event_category: 'rifa_tickets',
+                  event_label: 'ticket_' + ticketNumber,
+                  value: totalSelected,
+                  items: [{
+                    item_id: 'ticket_' + ticketNumber,
+                    item_name: 'Boleto Rifa Silverado',
+                    item_category: 'raffle_ticket',
+                    quantity: 1,
+                    price: 10
+                  }]
+                });
+              },
+              
+              purchaseStarted: function(ticketCount, totalAmount) {
+                gtag('event', 'begin_checkout', {
+                  event_category: 'rifa_conversion',
+                  currency: 'USD',
+                  value: totalAmount,
+                  items: [{
+                    item_id: 'raffle_tickets',
+                    item_name: 'Boletos Rifa Silverado Z71',
+                    item_category: 'raffle',
+                    quantity: ticketCount,
+                    price: totalAmount / ticketCount
+                  }]
+                });
+              },
+              
+              purchaseCompleted: function(orderId, ticketCount, amount) {
+                gtag('event', 'purchase', {
+                  transaction_id: orderId,
+                  value: amount,
+                  currency: 'USD',
+                  event_category: 'rifa_conversion',
+                  items: [{
+                    item_id: 'raffle_tickets',
+                    item_name: 'Boletos Rifa Silverado Z71',
+                    item_category: 'raffle',
+                    quantity: ticketCount,
+                    price: amount / ticketCount
+                  }]
+                });
+              }
+            };
+          `}
+        </Script>
 
         {/* Preload de recursos críticos */}
         <link rel="preload" href="/premios/premio-rifa.png" as="image" />

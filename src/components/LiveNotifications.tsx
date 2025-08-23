@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 
 // Importar desde archivos anteriores
 import { useRaffleStore } from '../stores/raffle-store';
@@ -55,7 +55,7 @@ const NotificationItem: React.FC<NotificationItemProps> = React.memo(({
       setIsEntering(false);
     }, 100);
 
-    // Auto-hide después de 4 segundos
+    // Auto-hide después de 2.5 segundos (aparición muy breve)
     timeoutRef.current = setTimeout(() => {
       setIsLeaving(true);
       
@@ -63,7 +63,7 @@ const NotificationItem: React.FC<NotificationItemProps> = React.memo(({
       setTimeout(() => {
         onHide(notification.id);
       }, 300);
-    }, 4000);
+    }, 2500);
 
     return () => {
       clearTimeout(enterTimer);
@@ -86,81 +86,26 @@ const NotificationItem: React.FC<NotificationItemProps> = React.memo(({
   return (
     <div
       className={cn(
-        'border rounded-lg shadow-lg p-4 mb-3',
-        'cursor-pointer transition-all duration-300 ease-out',
-        'max-w-sm w-full',
+        'backdrop-blur-sm bg-white/15 rounded-full shadow-none px-2 py-0.5 mb-0.5',
+        'cursor-pointer transition-all duration-300 ease-in-out',
+        'max-w-fit border border-white/5 opacity-40 hover:opacity-60',
         {
-          'transform translate-x-full opacity-0': isEntering || isLeaving,
-          'transform translate-x-0 opacity-100': !isEntering && !isLeaving,
-          'bg-white border-gray-200 hover:shadow-xl hover:border-blue-300': notification.type === 'purchase',
-          'bg-blue-50 border-blue-200 hover:shadow-xl hover:border-blue-400': notification.type === 'viewing',
-          'bg-red-50 border-red-200 hover:shadow-xl hover:border-red-400': notification.type === 'urgency',
+          'transform translate-x-8 opacity-0 scale-90': isEntering || isLeaving,
+          'transform translate-x-0 opacity-40 scale-95': !isEntering && !isLeaving,
         }
       )}
       onClick={handleClick}
     >
-      {/* Header con icono y tiempo */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          {notification.type === 'purchase' && (
-            <>
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-xs font-medium text-green-600">
-                Nueva compra
-              </span>
-            </>
-          )}
-          {notification.type === 'viewing' && (
-            <>
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-              <span className="text-xs font-medium text-blue-600">
-                Actividad
-              </span>
-            </>
-          )}
-          {notification.type === 'urgency' && (
-            <>
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-              <span className="text-xs font-medium text-red-600">
-                Urgente
-              </span>
-            </>
-          )}
-        </div>
-        <span className="text-xs text-gray-500">
-          {formatRelativeTime(notification.createdAt)}
+      <div className="flex items-center gap-1">
+        <div className="w-0.5 h-0.5 bg-gray-400 rounded-full opacity-50"></div>
+        <span className="text-gray-600 font-normal text-[9px] tracking-tight">
+          {notification.type === 'purchase' 
+            ? `${notification.buyerName?.split(' ')[0]?.substring(0, 4)} +${notification.ticketCount}`
+            : notification.type === 'viewing'
+            ? `${notification.message?.match(/\d+/)?.[0]}`
+            : '·'
+          }
         </span>
-      </div>
-
-      {/* Contenido principal */}
-      {notification.type === 'purchase' ? (
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-gray-800">
-              {notification.buyerName}
-            </span>
-            <span className="text-xs text-gray-500">de</span>
-            <span className="text-xs font-medium text-blue-600">
-              {notification.city}
-            </span>
-          </div>
-          
-          <div className="text-sm text-gray-700">
-            compró{' '}
-            <span className="font-bold text-purple-600">
-              {notification.ticketCount} boleto{notification.ticketCount !== 1 ? 's' : ''}
-            </span>
-          </div>
-        </div>
-      ) : (
-        <div className="text-sm font-medium text-gray-700">
-          {notification.message}
-        </div>
-      )}
-
-      {/* Indicador de click para cerrar */}
-      <div className="mt-2 text-xs text-gray-400 text-right">
-        Click para cerrar
       </div>
     </div>
   );
@@ -195,7 +140,7 @@ export const LiveNotifications: React.FC = () => {
   };
 
   // Función para generar diferentes tipos de notificaciones
-  const generateActivity = () => {
+  const generateActivity = useCallback(() => {
     const remainingTickets = TOTAL_TICKETS - soldTickets.length;
     
     // Solo generar si no se han vendido todos los tickets
@@ -275,10 +220,10 @@ export const LiveNotifications: React.FC = () => {
     // Agregar a notificaciones locales
     setNotifications(prev => {
       const updated = [newNotification, ...prev];
-      // Mantener solo las últimas 4 notificaciones
-      return updated.slice(0, 4);
+      // Mantener solo 1 notificación para máxima discreción
+      return updated.slice(0, 1);
     });
-  };
+  }, [soldTickets.length, addLiveActivity]);
 
   // Función para ocultar notificación
   const hideNotification = (id: string) => {
@@ -287,23 +232,23 @@ export const LiveNotifications: React.FC = () => {
 
   // Efecto para configurar el intervalo de generación
   useEffect(() => {
-    // Generar primera notificación inmediatamente
+    // Generar primera notificación después de un tiempo considerable
     const initialTimer = setTimeout(() => {
       generateActivity();
-    }, 1000);
+    }, 30000); // 30 segundos de espera inicial
 
     // Configurar intervalo regular
     const scheduleNext = () => {
       const currentHour = new Date().getHours();
       let delay;
       
-      // Intervalos diferentes según la hora
+      // Intervalos extremadamente espaciados para máxima discreción
       if (currentHour >= 2 && currentHour <= 6) {
-        delay = randomBetween(180000, 300000); // 3-5 minutos en madrugada
+        delay = randomBetween(1200000, 1800000); // 20-30 minutos en madrugada
       } else if (currentHour >= 18 && currentHour <= 22) {
-        delay = randomBetween(10000, 30000); // 10-30 segundos en horario pico
+        delay = randomBetween(240000, 480000); // 4-8 minutos en horario pico
       } else {
-        delay = randomBetween(30000, 90000); // 30 segundos - 1.5 minutos normal
+        delay = randomBetween(360000, 600000); // 6-10 minutos normal
       }
       
       intervalRef.current = setTimeout(() => {
@@ -320,7 +265,7 @@ export const LiveNotifications: React.FC = () => {
         clearTimeout(intervalRef.current);
       }
     };
-  }, [soldTickets.length, generateFakeActivity]); // Re-ejecutar si cambia el número de tickets vendidos
+  }, [soldTickets.length]); // Re-ejecutar si cambia el número de tickets vendidos
 
   // No mostrar en móviles muy pequeños
   const [isMobile, setIsMobile] = useState(false);
@@ -342,8 +287,8 @@ export const LiveNotifications: React.FC = () => {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 pointer-events-none">
-      <div className="flex flex-col-reverse gap-3">
+    <div className="fixed bottom-3 right-3 z-10 pointer-events-none">
+      <div className="flex flex-col-reverse gap-0.5">
         {notifications.map((notification) => (
           <div key={notification.id} className="pointer-events-auto">
             <NotificationItem
@@ -353,15 +298,6 @@ export const LiveNotifications: React.FC = () => {
           </div>
         ))}
       </div>
-
-      {/* Indicador de actividad (solo visible si hay notificaciones) */}
-      {notifications.length > 0 && (
-        <div className="fixed bottom-2 right-2 pointer-events-none">
-          <div className="bg-green-500 text-white text-xs px-2 py-1 rounded-full shadow-lg animate-pulse">
-            🔴 En vivo
-          </div>
-        </div>
-      )}
     </div>
   );
 };

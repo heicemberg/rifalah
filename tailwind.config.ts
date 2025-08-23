@@ -5,6 +5,8 @@ const config: Config = {
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/hooks/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/providers/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
@@ -42,6 +44,8 @@ const config: Config = {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        '4xl': '2rem',
+        '5xl': '2.5rem',
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
@@ -118,10 +122,59 @@ const config: Config = {
         'golden': '0 4px 20px rgba(199, 148, 30, 0.4)',
         'ticket': '0 2px 10px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.1)',
         'ticket-selected': '0 4px 20px rgba(206, 17, 38, 0.4), 0 2px 10px rgba(206, 17, 38, 0.2)',
+        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
+        'medium': '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        'large': '0 10px 40px -12px rgba(0, 0, 0, 0.15)',
+        'colored-green': '0 10px 30px -5px rgba(34, 197, 94, 0.3)',
+        'colored-red': '0 10px 30px -5px rgba(239, 68, 68, 0.3)',
+        'colored-yellow': '0 10px 30px -5px rgba(245, 158, 11, 0.3)',
+        'colored-purple': '0 10px 30px -5px rgba(147, 51, 234, 0.3)',
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Plugin para scrollbar personalizada y utilidades adicionales
+    function({ addUtilities }: { addUtilities: any }) {
+      const newUtilities = {
+        '.scrollbar-thin': {
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgb(156 163 175) transparent',
+        },
+        '.scrollbar-webkit': {
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgb(156 163 175)',
+            borderRadius: '20px',
+            border: '1px solid transparent',
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            backgroundColor: 'rgb(107 114 128)',
+          },
+        },
+        '.glass-effect': {
+          background: 'rgba(255, 255, 255, 0.1)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+        },
+        '.text-shadow-sm': {
+          textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+        },
+        '.text-shadow-md': {
+          textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+        },
+        '.text-shadow-lg': {
+          textShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+        },
+      }
+      
+      addUtilities(newUtilities, ['responsive', 'hover'])
+    },
+  ],
 }
 
 export default config

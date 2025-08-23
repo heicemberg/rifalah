@@ -17,7 +17,12 @@
       "Bash(node:*)",
       "Bash(timeout 10s npm run build)",
       "mcp__ide__getDiagnostics",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(tasklist)",
+      "Bash(taskkill:*)",
+      "Bash(cmd /c:*)",
+      "Bash(TASKKILL:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": [],

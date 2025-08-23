@@ -398,38 +398,50 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
   return (
     <div className="w-full">
       {/* Leyenda */}
-      <div className="flex flex-wrap justify-center gap-4 mb-4 p-3 bg-slate-800/50 rounded-lg border border-slate-600">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-white border-2 border-green-500 rounded shadow-md"></div>
-          <span className="text-sm text-slate-300">Disponible</span>
+      <div className="flex flex-wrap justify-center gap-4 mb-4 p-4 bg-white/95 backdrop-blur-sm rounded-2xl border-2 border-gray-200 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 bg-white border-2 border-green-500 rounded-lg shadow-md"></div>
+          <span className="text-sm font-semibold text-gray-800">Disponible</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-green-600 border-2 border-green-800 rounded shadow-md"></div>
-          <span className="text-sm text-slate-300">Seleccionado</span>
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 bg-green-600 border-2 border-green-800 rounded-lg shadow-md"></div>
+          <span className="text-sm font-semibold text-gray-800">Seleccionado</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-yellow-500 border-2 border-yellow-600 rounded shadow-md"></div>
-          <span className="text-sm text-slate-300">Reservado</span>
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 bg-yellow-500 border-2 border-yellow-600 rounded-lg shadow-md"></div>
+          <span className="text-sm font-semibold text-gray-800">Reservado</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-600 border-2 border-red-800 rounded shadow-md"></div>
-          <span className="text-sm text-slate-300">Vendido</span>
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 bg-red-600 border-2 border-red-800 rounded-lg shadow-md"></div>
+          <span className="text-sm font-semibold text-gray-800">Vendido</span>
         </div>
       </div>
       
       {/* Información del grid */}
-      <div className="flex flex-wrap gap-4 mb-4 text-sm text-slate-400 bg-slate-800/30 p-3 rounded-lg">
-        <span>Total: <span className="text-slate-200 font-semibold">{TOTAL_TICKETS.toLocaleString()}</span></span>
-        <span>Seleccionados: <span className="text-emerald-400 font-semibold">{selectedTickets.length}</span></span>
-        <span>Vendidos: <span className="text-slate-400 font-semibold">{allSoldTickets.length}</span></span>
-        <span>Disponibles: <span className="text-emerald-400 font-semibold">{TOTAL_TICKETS - allSoldTickets.length - reservedTickets.length}</span></span>
+      <div className="flex flex-wrap justify-center gap-6 mb-6 text-sm bg-gradient-to-r from-blue-50/80 to-purple-50/80 backdrop-blur-sm p-4 rounded-2xl border border-gray-200 shadow-sm">
+        <div className="text-center">
+          <div className="text-lg font-black text-gray-900">{TOTAL_TICKETS.toLocaleString()}</div>
+          <div className="text-xs font-medium text-gray-600">Total</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg font-black text-green-600">{selectedTickets.length}</div>
+          <div className="text-xs font-medium text-gray-600">Seleccionados</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg font-black text-red-600">{allSoldTickets.length}</div>
+          <div className="text-xs font-medium text-gray-600">Vendidos</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg font-black text-blue-600">{TOTAL_TICKETS - allSoldTickets.length - reservedTickets.length}</div>
+          <div className="text-xs font-medium text-gray-600">Disponibles</div>
+        </div>
       </div>
       
       {/* Container virtualizado - CENTRADO Y SIN SCROLL HORIZONTAL */}
       <div className="w-full flex justify-center px-4">
         <div 
           ref={containerRef}
-          className="border-2 border-gray-300 rounded-xl shadow-xl bg-white mx-auto"
+          className="border-2 border-gray-300/60 rounded-2xl shadow-2xl bg-gradient-to-b from-white to-gray-50 mx-auto backdrop-blur-sm"
           style={{ 
             width: `${columnsPerRow * cellSize + (columnsPerRow - 1) * CELL_GAP + 32}px`,
             height: containerHeight,

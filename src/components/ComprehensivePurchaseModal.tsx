@@ -2,6 +2,10 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
+import { guardarCompra, subirCaptura, obtenerMetadata, type CompraCompleta } from '../lib/supabase';
+import toast from 'react-hot-toast';
+import { useRaffleStore } from '../stores/raffle-store';
+import { useRealTimeTickets } from '../hooks/useRealTimeTickets';
 
 // Tipos para la estructura de datos
 interface TicketData {
@@ -111,6 +115,11 @@ const estados = [
 ];
 
 export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTickets = 25, hasDiscount = false }: Props) {
+  // Obtener funciones del store para manejar boletos
+  const { availableTickets, markTicketsAsSold } = useRaffleStore();
+  // Hook para precios y formateo mexicano
+  const { formatMexicanNumber, formatPriceMXN, calculatePrice: calculatePriceMXN, PRECIO_POR_BOLETO_MXN } = useRealTimeTickets();
+  
   // Estados principales
   const [tickets, setTickets] = useState<number>(initialTickets);
   const [customTickets, setCustomTickets] = useState<string>('');
@@ -140,6 +149,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [boletosAsignados, setBoletosAsignados] = useState<number[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -318,6 +328,33 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
     }
   };
 
+  // Función para asignar números de boletos aleatorios
+  const asignarBoletos = useCallback((cantidad: number): number[] => {
+    if (availableTickets.length < cantidad) {
+      throw new Error(`Solo quedan ${availableTickets.length} boletos disponibles`);
+    }
+    
+    // Crear una copia del array de boletos disponibles
+    const disponibles = [...availableTickets];
+    const boletosSeleccionados: number[] = [];
+    
+    // Seleccionar números aleatorios
+    for (let i = 0; i < cantidad; i++) {
+      const randomIndex = Math.floor(Math.random() * disponibles.length);
+      const boletoSeleccionado = disponibles[randomIndex];
+      boletosSeleccionados.push(boletoSeleccionado);
+      // Remover el boleto seleccionado para evitar duplicados
+      disponibles.splice(randomIndex, 1);
+    }
+    
+    // Ordenar los números para mostrarlos de forma organizada
+    return boletosSeleccionados.sort((a, b) => a - b);
+  }, [availableTickets]);
+
+  const formatearNumeroBoleto = (numero: number): string => {
+    return numero.toString().padStart(4, '0');
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -351,89 +388,177 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
     // Si no están completos los datos mínimos, mostrar mensaje amigable
     if (!validateForm()) {
       const missingData = [];
-      if (tickets < 2) missingData.push('cantidad de boletos');
+      if (tickets < 1) missingData.push('cantidad de boletos');
       if (!selectedPayment) missingData.push('método de pago');
       if (!customerData.nombre.trim()) missingData.push('nombre');
       if (!customerData.telefono.trim() && !customerData.email.trim()) missingData.push('teléfono o email');
       if (!acceptedTerms) missingData.push('aceptar términos y condiciones');
       
-      alert(`¡Casi listo! Solo completa: ${missingData.join(', ')}`);
+      toast.error(`¡Casi listo! Solo completa: ${missingData.join(', ')}`);
       return;
     }
 
     setIsLoading(true);
-
-    // Estructura simplificada para backend
-    const purchaseData = {
-      boletos: {
-        cantidad: tickets,
-        precioUnitario: 10,
-        total: calculatePrice()
-      },
-      metodoPago: selectedPaymentMethod?.name || '',
-      datosCliente: {
-        nombre: customerData.nombre,
-        telefono: customerData.telefono || 'No proporcionado',
-        email: customerData.email || 'No proporcionado',
-        estado: customerData.estado || 'No especificado',
-        ciudad: customerData.ciudad || 'No especificada',
-        infoAdicional: customerData.infoAdicional
-      },
-      comprobante: uploadedFile.archivo ? 'Archivo subido' : 'Enviará después',
-      timestamp: new Date().toLocaleString(),
-      hasDiscount
-    };
-
+    
     try {
-      // Simular procesamiento
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Mostrar toast de inicio
+      toast.loading('Procesando tu compra...', { id: 'purchase' });
+
+      // 1. Asignar números de boletos aleatorios
+      let numerosAsignados: number[] = [];
+      try {
+        numerosAsignados = asignarBoletos(tickets);
+        setBoletosAsignados(numerosAsignados);
+        toast.loading(`Boletos asignados: ${numerosAsignados.map(formatearNumeroBoleto).join(', ')}`, { id: 'purchase' });
+      } catch (error) {
+        throw new Error(`Error al asignar boletos: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      }
+
+      // 2. Simular procesamiento
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Preparar datos de la compra para el log
+      const datosCompra = {
+        // Datos del cliente
+        nombre: customerData.nombre.trim(),
+        apellidos: customerData.apellidos?.trim() || '',
+        telefono: customerData.telefono?.trim() || '',
+        email: customerData.email?.trim() || '',
+        estado: customerData.estado?.trim() || '',
+        ciudad: customerData.ciudad?.trim() || '',
+        info_adicional: customerData.infoAdicional?.trim() || '',
+        
+        // Información de la compra
+        cantidad_boletos: tickets,
+        numeros_boletos: numerosAsignados,
+        numeros_boletos_formateados: numerosAsignados.map(formatearNumeroBoleto).join(', '),
+        precio_unitario: PRECIO_POR_BOLETO_MXN,
+        precio_total: calculatePrice(),
+        descuento_aplicado: getDiscount(),
+        
+        // Método de pago
+        metodo_pago: selectedPaymentMethod?.name || selectedPayment || '',
+        
+        // Archivos
+        archivo_subido: !!uploadedFile.archivo,
+        nombre_archivo: uploadedFile.nombreArchivo || '',
+        
+        // Timestamp
+        fecha_compra: new Date().toISOString(),
+        
+        // Estado inicial
+        estado_compra: 'pendiente'
+      };
+
+      // Log para debug - esto simula el guardado en base de datos
+      console.log('✅ COMPRA PROCESADA EXITOSAMENTE:', datosCompra);
       
-      console.log('Orden creada:', purchaseData);
+      // 3. Marcar boletos como vendidos en el store
+      const customerId = Date.now().toString();
+      markTicketsAsSold(numerosAsignados, customerId);
+
+      // 4. Subir comprobante a Supabase Storage (si existe)
+      let urlComprobante = null;
+      if (uploadedFile.archivo) {
+        toast.loading('Subiendo comprobante...', { id: 'purchase' });
+        urlComprobante = await subirCaptura(uploadedFile.archivo, customerData.nombre);
+      }
+
+      // 5. Preparar datos para Supabase
+      const metadata = obtenerMetadata();
+      const datosSupabase: CompraCompleta = {
+        // Datos del cliente
+        nombre: customerData.nombre.trim(),
+        apellidos: customerData.apellidos?.trim() || '',
+        telefono: customerData.telefono?.trim() || '',
+        email: customerData.email?.trim() || '',
+        estado: customerData.estado?.trim() || '',
+        ciudad: customerData.ciudad?.trim() || '',
+        info_adicional: customerData.infoAdicional?.trim() || '',
+        
+        // Información de la compra
+        cantidad_boletos: tickets,
+        numeros_boletos: numerosAsignados,
+        precio_unitario: PRECIO_POR_BOLETO_MXN,
+        precio_total: calculatePrice(),
+        descuento_aplicado: getDiscount(),
+        
+        // Método de pago
+        metodo_pago: selectedPaymentMethod?.name || selectedPayment || '',
+        referencia_pago: `RF-${Date.now()}`,
+        captura_comprobante_url: urlComprobante || undefined,
+        
+        // Metadata técnica
+        navegador: metadata.navegador,
+        dispositivo: metadata.dispositivo,
+        user_agent: metadata.user_agent
+      };
+
+      // 6. Guardar en Supabase
+      toast.loading('Guardando en base de datos...', { id: 'purchase' });
+      const compraGuardada = await guardarCompra(datosSupabase);
+
+      // 7. Backup en localStorage (opcional)
+      try {
+        const comprasAnteriores = JSON.parse(localStorage.getItem('compras-registradas') || '[]');
+        comprasAnteriores.push({
+          ...datosCompra,
+          id: compraGuardada.purchase?.id || customerId,
+          timestamp: Date.now()
+        });
+        localStorage.setItem('compras-registradas', JSON.stringify(comprasAnteriores));
+      } catch (localError) {
+        console.warn('No se pudo guardar backup local:', localError);
+      }
+
+      // Éxito! 
+      toast.success('¡Compra registrada exitosamente!', { id: 'purchase' });
       
       // Mostrar efecto de éxito
       setShowSuccess(true);
       setIsLoading(false);
       
-      // Limpiar datos guardados
+      // Limpiar datos guardados del formulario
       localStorage.removeItem('purchase-progress');
+      
+      // Mostrar información adicional al usuario
+      toast.success(
+        `¡Gracias ${customerData.nombre}! Tus boletos ${numerosAsignados.map(formatearNumeroBoleto).join(', ')} han sido registrados.`,
+        { duration: 8000 }
+      );
       
       // Cerrar automáticamente después del confeti
       setTimeout(() => {
         onClose();
         setShowSuccess(false);
-      }, 3000);
+      }, 4000);
       
     } catch (error) {
-      console.error('Error:', error);
-      alert('Ups, algo salió mal. Inténtalo de nuevo.');
+      console.error('Error al procesar compra:', error);
+      
+      // Mostrar error específico
+      if (error instanceof Error) {
+        toast.error(`Error: ${error.message}`, { id: 'purchase' });
+      } else {
+        toast.error('Ups, algo salió mal. Inténtalo de nuevo.', { id: 'purchase' });
+      }
+      
       setIsLoading(false);
     }
   };
 
-  // Función para calcular precio con descuentos
+  // Función para calcular precio con descuentos mexicano
   const calculatePrice = () => {
-    if (!hasDiscount) {
-      return tickets * 10; // Precio completo
-    }
-    
-    // Aplicar descuentos solo cuando viene de promoción
-    if (tickets >= 100) return Math.floor(tickets * 10 * 0.65); // 35% descuento
-    if (tickets >= 50) return Math.floor(tickets * 10 * 0.70); // 30% descuento
-    if (tickets >= 25) return Math.floor(tickets * 10 * 0.75); // 25% descuento
-    if (tickets >= 10) return Math.floor(tickets * 10 * 0.80); // 20% descuento
-    if (tickets >= 5) return Math.floor(tickets * 10 * 0.90); // 10% descuento
-    return tickets * 10; // Sin descuento para menos de 5
+    return calculatePriceMXN(tickets, hasDiscount);
   };
 
   const getDiscount = () => {
     if (!hasDiscount) return 0;
     
-    if (tickets >= 100) return 35;
-    if (tickets >= 50) return 30;
-    if (tickets >= 25) return 25;
-    if (tickets >= 10) return 20;
-    if (tickets >= 5) return 10;
-    return 0;
+    const basePrice = tickets * PRECIO_POR_BOLETO_MXN;
+    const discountPrice = calculatePrice();
+    const discountAmount = basePrice - discountPrice;
+    return Math.round((discountAmount / basePrice) * 100);
   };
 
   const openWhatsApp = () => {
@@ -466,75 +591,78 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black bg-opacity-60 backdrop-blur-sm">
       <div className="relative w-full max-w-3xl max-h-[95vh] overflow-hidden bg-white rounded-xl shadow-2xl animate-bounce-in">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-purple-200 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600">
+        <div className="flex items-center justify-between p-6 border-b border-purple-200/30 bg-gradient-to-r from-purple-600/95 via-pink-600/95 to-red-600/95 backdrop-blur-sm">
           <div>
-            <h2 className="text-xl font-bold text-white">🎯 Compra Rápida de Boletos</h2>
-            <div className="flex items-center mt-1 space-x-3 text-purple-100">
-              <div className="text-sm flex items-center">
-                ⏰ <span className="font-mono font-bold ml-1">{formatTime(timeLeft)}</span>
+            <h2 className="text-2xl font-bold text-white drop-shadow-sm">🎯 Compra Rápida de Boletos</h2>
+            <div className="flex items-center mt-2 space-x-4 text-purple-100">
+              <div className="text-base flex items-center">
+                ⏰ <span className="font-mono font-bold ml-2 bg-white/20 px-2 py-1 rounded-lg">{formatTime(timeLeft)}</span>
               </div>
-              <div className="text-sm flex items-center">
-                📊 <span className="font-bold ml-1">{Math.round(progress)}% completo</span>
+              <div className="text-base flex items-center">
+                📊 <span className="font-bold ml-2 bg-white/20 px-2 py-1 rounded-lg">{Math.round(progress)}% completo</span>
               </div>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-white hover:bg-white/20 rounded-full transition-colors"
+            className="p-3 text-white hover:bg-white/40 rounded-2xl transition-all duration-300 hover:scale-110 bg-white/20 shadow-xl backdrop-blur-sm border border-white/30"
+            title="Cerrar"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full h-3 bg-gray-100">
+        <div className="w-full h-4 bg-gradient-to-r from-gray-100 to-gray-200 relative overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 transition-all duration-500"
+            className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 transition-all duration-700 ease-out relative overflow-hidden"
             style={{ width: `${progress}%` }}
-          />
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
+          </div>
         </div>
 
         {/* Content */}
-        <div className="max-h-[calc(95vh-100px)] overflow-y-auto p-4 space-y-6">
+        <div className="max-h-[calc(95vh-120px)] overflow-y-auto p-6 space-y-8 bg-gradient-to-b from-gray-50/50 to-white">
           {/* Sección de Boletos */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center">
-              <span className="mr-2">🎫</span>
+          <div className="space-y-6">
+            <h3 className="text-xl font-bold text-gray-900 flex items-center">
+              <span className="mr-3 text-2xl">🎫</span>
               Selecciona tus boletos
             </h3>
-            <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
-              <p className="text-sm text-gray-700 font-medium text-center">
-                💡 Mínimo 2 boletos • Máximo 10,000 • <span className="font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">$10 USD por boleto</span>
+            <div className="p-5 bg-gradient-to-r from-purple-50/80 via-pink-50/80 to-purple-50/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 shadow-sm">
+              <p className="text-base text-gray-700 font-medium text-center leading-relaxed">
+                💡 Mínimo 2 boletos • Máximo 10,000 • <span className="font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{formatPriceMXN(PRECIO_POR_BOLETO_MXN)} por boleto</span>
               </p>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {[2, 5, 10, 25, 50, 100].map((amount) => (
                 <button
                   key={amount}
                   onClick={() => handleTicketSelect(amount)}
-                  className={`p-3 rounded-lg border-2 font-bold transition-all text-center ${
+                  className={`p-4 rounded-2xl border-2 font-bold transition-all duration-300 text-center hover:scale-105 hover:shadow-lg group ${
                     tickets === amount
-                      ? 'border-purple-500 bg-purple-100 text-purple-800 shadow-lg scale-105'
-                      : 'border-gray-300 bg-white text-gray-700 hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700'
+                      ? 'border-purple-500 bg-gradient-to-br from-purple-100 to-purple-200 text-purple-800 shadow-xl scale-105 ring-2 ring-purple-300/50'
+                      : 'border-gray-300/60 bg-gradient-to-br from-white to-gray-50 text-gray-700 hover:border-purple-400 hover:bg-gradient-to-br hover:from-purple-50 hover:to-purple-100 hover:text-purple-700 hover:shadow-purple-200/50'
                   }`}
                 >
-                  <div className="text-lg">{amount}</div>
-                  <div className="text-xs text-gray-500">boletos</div>
+                  <div className="text-xl font-black mb-1">{amount}</div>
+                  <div className="text-sm text-gray-500 font-medium">boleto{amount !== 1 ? 's' : ''}</div>
                 </button>
               ))}
             </div>
             
-            <div className="mt-3">
-              <label className="block text-sm font-medium text-gray-700 mb-2">O ingresa cantidad personalizada:</label>
+            <div className="mt-6">
+              <label className="block text-base font-medium text-gray-700 mb-3">O ingresa cantidad personalizada:</label>
               <input
                 type="number"
                 placeholder="Cantidad personalizada"
                 value={customTickets}
                 onChange={(e) => handleCustomTickets(e.target.value)}
-                className="w-full p-3 border-2 border-gray-300 rounded-lg font-medium text-center focus:border-emerald-500 focus:outline-none bg-white text-gray-900 placeholder-gray-400"
+                className="w-full p-4 border-2 border-gray-300/60 rounded-2xl font-medium text-center focus:border-emerald-500 focus:outline-none bg-gradient-to-br from-white to-gray-50 text-gray-900 placeholder-gray-400 transition-all duration-300 hover:shadow-md focus:shadow-lg backdrop-blur-sm"
                 min="2"
                 max="10000"
               />
@@ -545,12 +673,12 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
             <div className="p-4 bg-gradient-to-r from-emerald-500 to-green-500 rounded-lg border-2 border-emerald-400 shadow-lg">
               <div className="space-y-2">
                 <p className="text-lg font-bold text-white text-center">
-                  🎯 {tickets.toLocaleString()} boletos | Total: ${calculatePrice().toLocaleString()} USD
+                  🎯 {formatMexicanNumber(tickets)} boletos | Total: {formatPriceMXN(calculatePrice())}
                 </p>
                 {hasDiscount && getDiscount() > 0 && (
                   <div className="flex items-center justify-between bg-white/20 rounded p-2">
                     <span className="text-sm text-emerald-100 line-through">
-                      Precio normal: ${(tickets * 10).toLocaleString()} USD
+                      Precio normal: {formatPriceMXN(tickets * PRECIO_POR_BOLETO_MXN)}
                     </span>
                     <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold animate-pulse">
                       🔥 ¡Ahorras {getDiscount()}%!
@@ -615,7 +743,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                     </div>
                     <div className="flex items-center justify-between bg-emerald-100 p-3 rounded-lg">
                       <span className="text-sm font-medium text-gray-700">Monto a enviar:</span>
-                      <span className="font-bold text-lg text-emerald-700">${calculatePrice()} USDT</span>
+                      <span className="font-bold text-lg text-emerald-700">{formatPriceMXN(calculatePrice())}</span>
                     </div>
                     <p className="text-sm text-gray-600 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                       💡 {selectedPaymentMethod.details.instructions}
@@ -633,7 +761,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                     </div>
                     <div className="flex items-center justify-between bg-emerald-100 p-3 rounded-lg">
                       <span className="text-sm font-medium text-gray-700">Monto a pagar:</span>
-                      <span className="font-bold text-lg text-emerald-700">${calculatePrice()} USD</span>
+                      <span className="font-bold text-lg text-emerald-700">{formatPriceMXN(calculatePrice())}</span>
                     </div>
                     <p className="text-sm text-gray-600 bg-orange-50 p-3 rounded-lg border border-orange-200">
                       🏪 {selectedPaymentMethod.details.instructions}
@@ -659,7 +787,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                     </div>
                     <div className="flex items-center justify-between bg-emerald-100 p-3 rounded-lg">
                       <span className="text-sm font-medium text-gray-700">Monto a transferir:</span>
-                      <span className="font-bold text-lg text-emerald-700">${calculatePrice()} USD</span>
+                      <span className="font-bold text-lg text-emerald-700">{formatPriceMXN(calculatePrice())}</span>
                     </div>
                     <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
                       🏦 {selectedPaymentMethod.details.instructions}
@@ -851,7 +979,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                   <div className="bg-white p-3 rounded-lg border border-emerald-200">
                     <h4 className="font-bold text-emerald-800 mb-2">🎫 Boletos</h4>
                     <p className="text-gray-800">
-                      <span className="font-bold text-lg">{tickets.toLocaleString()}</span> boletos × $10 USD
+                      <span className="font-bold text-lg">{formatMexicanNumber(tickets)}</span> boletos × {formatPriceMXN(PRECIO_POR_BOLETO_MXN)}
                     </p>
                     {hasDiscount && getDiscount() > 0 && (
                       <p className="text-green-600 font-medium text-sm">
@@ -859,7 +987,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                       </p>
                     )}
                     <p className="text-xl font-bold text-emerald-700 mt-2">
-                      Total: ${calculatePrice().toLocaleString()} USD
+                      Total: {formatPriceMXN(calculatePrice())}
                     </p>
                   </div>
                   
@@ -1017,7 +1145,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
               
               <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4 mb-4">
                 <p className="text-green-800 font-bold text-lg mb-2">
-                  {tickets} boletos • ${calculatePrice().toLocaleString()} USD
+                  {formatMexicanNumber(tickets)} boletos • {formatPriceMXN(calculatePrice())}
                 </p>
                 <p className="text-green-700 text-sm">
                   Método: {selectedPaymentMethod?.name}

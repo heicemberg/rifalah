@@ -3,13 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "export": "next build",
+    "lint": "next lint",
+    "serve": "npx serve out -p 3000",
+    "build:static": "next build"
   },
   "dependencies": {
     "@react-spring/web": "^10.0.1",
+    "@supabase/supabase-js": "^2.56.0",
     "@types/react-window": "^1.8.8",
     "claude": "^0.1.1",
     "clsx": "^2.1.1",
