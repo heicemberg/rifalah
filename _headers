@@ -1,0 +1,39 @@
+# Security Headers para todos los archivos
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com
+
+# Cache Headers para assets estáticos
+/out/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Cache Headers para assets de la aplicación  
+/*.js
+  Cache-Control: public, max-age=31536000
+
+/*.css
+  Cache-Control: public, max-age=31536000
+
+/*.png
+  Cache-Control: public, max-age=31536000
+
+/*.jpg
+  Cache-Control: public, max-age=31536000
+
+/*.svg
+  Cache-Control: public, max-age=31536000
+
+/*.woff2
+  Cache-Control: public, max-age=31536000
+
+# Headers específicos para HTML
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Headers para API routes (si existieran)
+/api/*
+  Cache-Control: no-store, no-cache, must-revalidate

@@ -1,0 +1,28 @@
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://rifa-silverado.mx/sitemap.xml
+
+# Specific instructions for search engines
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Disallow unnecessary paths for crawlers
+Disallow: /admin
+Disallow: /test-supabase
+Disallow: /compras-test
+Disallow: /_next/
+Disallow: /out/
+Disallow: /dist/
+
+# Allow important pages
+Allow: /
+Allow: /comprar
+Allow: /terminos
+Allow: /privacidad

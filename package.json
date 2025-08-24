@@ -4,14 +4,20 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "cross-env NODE_ENV=production next build",
     "start": "next start",
     "export": "next build",
     "lint": "next lint",
     "serve": "npx serve out -p 3000",
-    "build:static": "next build"
+    "build:static": "cross-env NODE_ENV=production next build",
+    "netlify:build": "cross-env NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 SKIP_PREFLIGHT_CHECK=true next build",
+    "netlify:dev": "next dev",
+    "postbuild": "echo 'Build completed successfully for Netlify deployment'",
+    "clean": "rm -rf .next out dist",
+    "prebuild": "npm run clean"
   },
   "dependencies": {
+    "@netlify/functions": "4.2.2",
     "@netlify/plugin-nextjs": "^5.12.1",
     "@react-spring/web": "^10.0.1",
     "@supabase/supabase-js": "^2.56.0",
@@ -33,13 +39,30 @@
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/postcss": "^4.1.12",
     "@types/node": "^20.19.11",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "autoprefixer": "^10.4.14",
+    "@types/react": "^18.3.24",
+    "@types/react-dom": "^18.3.7",
+    "autoprefixer": "^10.4.21",
+    "cross-env": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.4.4",
     "postcss": "^8.4.21",
     "tailwindcss": "^3.3.5",
     "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=18.17.0",
+    "npm": ">=8.0.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }

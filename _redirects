@@ -1,0 +1,20 @@
+# Redirects para SPA routing
+/*    /index.html   200
+
+# Redirects para páginas específicas (si hubiera cambios de URL)
+/rifa     /           301
+/sorteo   /           301
+/boletos  /comprar    301
+
+# Redirects para dominios alternativos
+https://rifa-silverado.netlify.app/*  https://rifa-silverado.mx/:splat  301!
+
+# Redirect de www a non-www (si se configura dominio personalizado)
+https://www.rifa-silverado.mx/*  https://rifa-silverado.mx/:splat  301!
+
+# Redirects para páginas que no existen
+/admin-old    /admin    301
+/purchase     /comprar  301
+
+# Fallback para 404
+/404.html     /         200
