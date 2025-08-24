@@ -259,7 +259,7 @@ export const startTimeTracking = () => {
   if (timeTrackingActive || typeof window === 'undefined') return;
   timeTrackingActive = true;
 
-  let startTime = Date.now();
+  const startTime = Date.now();
 
   const trackTime = () => {
     const seconds = Math.floor((Date.now() - startTime) / 1000);

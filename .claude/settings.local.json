@@ -22,7 +22,8 @@
       "Bash(taskkill:*)",
       "Bash(cmd /c:*)",
       "Bash(TASKKILL:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": [],
