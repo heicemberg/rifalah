@@ -152,8 +152,20 @@ class SoundEngine {
     if (this.isInitialized) return true;
 
     try {
+      // Verificar si estamos en el lado del cliente y si AudioContext está disponible
+      if (typeof window === 'undefined') {
+        console.warn('AudioContext no disponible en el servidor');
+        return false;
+      }
+
+      const AudioContextConstructor = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextConstructor) {
+        console.warn('AudioContext no soportado en este navegador');
+        return false;
+      }
+
       // Crear contexto de audio
-      this.audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      this.audioContext = new AudioContextConstructor();
       
       // Crear nodo de ganancia master
       this.masterGain = this.audioContext.createGain();
@@ -167,7 +179,7 @@ class SoundEngine {
       this.isInitialized = true;
       return true;
     } catch (error) {
-      console.warn('Error inicializando audio:', error);
+      console.warn('Audio no disponible:', error);
       return false;
     }
   }
@@ -307,13 +319,26 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Inicializar engine de sonido
   useEffect(() => {
+    // Solo en el cliente
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     soundEngineRef.current = new SoundEngine();
 
     // Manejar primer gesto del usuario
     const initializeAudio = async () => {
       if (soundEngineRef.current) {
-        const success = await soundEngineRef.current.initialize();
-        setIsAudioInitialized(success);
+        try {
+          const success = await soundEngineRef.current.initialize();
+          setIsAudioInitialized(success);
+          if (!success) {
+            console.info('Aviso: La funcionalidad de Audio no está disponible en este momento. La aplicación continuará funcionando con funcionalidad limitada.');
+          }
+        } catch (error) {
+          console.warn('Error inicializando audio:', error);
+          setIsAudioInitialized(false);
+        }
       }
     };
 
