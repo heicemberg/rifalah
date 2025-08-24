@@ -79,25 +79,57 @@ const HydrationProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 const StoreInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const initializeTickets = useRaffleStore(state => state.initializeTickets);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
-    try {
-      initializeTickets();
-      setIsInitialized(true);
-    } catch (error) {
-      console.error('Error initializing store:', error);
-      // Aún así marcar como inicializado para no bloquear la app
-      setIsInitialized(true);
-    }
-  }, [initializeTickets]);
+    // Manejar hidratación manual del store
+    const handleHydration = async () => {
+      try {
+        // Si el store tiene persistencia configurada, rehydrate manualmente
+        if (typeof window !== 'undefined') {
+          // Esperar un tick para asegurar que el DOM esté listo
+          await new Promise(resolve => setTimeout(resolve, 0));
+          
+          // Verificar si hay datos persistidos
+          const persistedData = localStorage.getItem('raffle-store');
+          if (persistedData) {
+            // Rehydrate el store si hay datos guardados
+            useRaffleStore.persist.rehydrate();
+          }
+          
+          setHasHydrated(true);
+        }
+      } catch (error) {
+        console.warn('Store hydration error:', error);
+        setHasHydrated(true);
+      }
+    };
 
-  // Mostrar loading mientras se inicializa
-  if (!isInitialized) {
+    handleHydration();
+  }, []);
+
+  useEffect(() => {
+    if (hasHydrated) {
+      try {
+        initializeTickets();
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Error initializing store:', error);
+        // Aún así marcar como inicializado para no bloquear la app
+        setIsInitialized(true);
+      }
+    }
+  }, [hasHydrated, initializeTickets]);
+
+  // Mostrar loading mientras se hidrata e inicializa
+  if (!hasHydrated || !isInitialized) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Inicializando aplicación...</p>
+          <p className="text-gray-600">
+            {!hasHydrated ? 'Cargando datos...' : 'Inicializando aplicación...'}
+          </p>
         </div>
       </div>
     );

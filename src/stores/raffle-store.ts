@@ -553,7 +553,22 @@ export const useRaffleStore = create<RaffleStore>()(
           liveActivities: state.liveActivities.slice(0, 20) // Solo las últimas 20
         }),
         // Versión para manejar migraciones
-        version: 1
+        version: 1,
+        // Configuración para SSR compatibility
+        skipHydration: true,
+        // Usar storage por defecto con manejo de errores mejorado
+        onRehydrateStorage: () => (state) => {
+          if (state) {
+            // Actualizar tickets disponibles después de la rehidratación
+            setTimeout(() => {
+              try {
+                state._updateAvailableTickets();
+              } catch (error) {
+                console.warn('Error updating available tickets after rehydration:', error);
+              }
+            }, 0);
+          }
+        }
       }
     ),
     {

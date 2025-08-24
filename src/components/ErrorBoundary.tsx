@@ -92,16 +92,17 @@ export const ContextErrorBoundary: React.FC<ContextErrorBoundaryProps> = ({
   fallbackComponent
 }) => {
   const handleError = (error: Error) => {
-    // Log específico para errores de contexto
-    console.warn(`Context error in ${contextName}:`, error.message);
+    // Log específico para errores de contexto - solo en desarrollo
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`Context error in ${contextName}:`, error.message);
+    }
   };
 
+  // Fallback mucho más discreto para producción
   const fallback = fallbackComponent || (
-    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-      <p className="text-yellow-800 text-sm">
-        <strong>Aviso:</strong> La funcionalidad de {contextName} no está disponible en este momento. 
-        La aplicación continuará funcionando con funcionalidad limitada.
-      </p>
+    <div className="sr-only" aria-live="polite">
+      {/* Mensaje solo para screen readers */}
+      Cargando funcionalidad de {contextName}...
     </div>
   );
 
