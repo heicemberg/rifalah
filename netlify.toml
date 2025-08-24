@@ -1,11 +1,10 @@
 [build]
   publish = ".next"
-  command = "npm run build"
+  command = "npx @netlify/plugin-nextjs"
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 [build.environment]
   NODE_VERSION = "18"
+  NEXT_PRIVATE_TARGET = "server"

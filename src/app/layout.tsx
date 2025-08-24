@@ -5,13 +5,13 @@
 import { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
-import Script from 'next/script';
 
 // Importar estilos globales
 import './globals.css';
 
 // Importar providers optimizados
 import { AppProviders } from '../providers/AppProviders';
+import ClientScripts from '../components/ClientScripts';
 
 // ============================================================================
 // CONFIGURACIÓN DE FUENTE
@@ -482,107 +482,10 @@ export default function RootLayout({
           }}
         />
 
-        {/* Script para manejar tema oscuro */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  const theme = localStorage.getItem('theme');
-                  if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    document.documentElement.classList.add('dark');
-                  } else {
-                    document.documentElement.classList.remove('dark');
-                  }
-                } catch (e) {
-                  console.warn('Error setting theme:', e);
-                }
-              })();
-            `
-          }}
-        />
+        {/* Client-side scripts moved to ClientScripts component */}
 
-        {/* Google Analytics 4 */}
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            
-            gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', {
-              page_title: 'Rifa Silverado Z71 2024 - Página Principal',
-              page_location: window.location.href,
-              custom_map: {
-                'custom_parameter_1': 'rifa_silverado'
-              }
-            });
-
-            // Custom events for rifa
-            gtag('event', 'page_view', {
-              event_category: 'rifa_engagement',
-              event_label: 'home_page_load',
-              page_title: document.title
-            });
-          `}
-        </Script>
-
-        {/* Enhanced ecommerce tracking */}
-        <Script id="ecommerce-tracking" strategy="afterInteractive">
-          {`
-            // Track rifa-specific events
-            window.raffleTracking = {
-              ticketSelected: function(ticketNumber, totalSelected) {
-                gtag('event', 'select_item', {
-                  event_category: 'rifa_tickets',
-                  event_label: 'ticket_' + ticketNumber,
-                  value: totalSelected,
-                  items: [{
-                    item_id: 'ticket_' + ticketNumber,
-                    item_name: 'Boleto Rifa Silverado',
-                    item_category: 'raffle_ticket',
-                    quantity: 1,
-                    price: 10
-                  }]
-                });
-              },
-              
-              purchaseStarted: function(ticketCount, totalAmount) {
-                gtag('event', 'begin_checkout', {
-                  event_category: 'rifa_conversion',
-                  currency: 'USD',
-                  value: totalAmount,
-                  items: [{
-                    item_id: 'raffle_tickets',
-                    item_name: 'Boletos Rifa Silverado Z71',
-                    item_category: 'raffle',
-                    quantity: ticketCount,
-                    price: totalAmount / ticketCount
-                  }]
-                });
-              },
-              
-              purchaseCompleted: function(orderId, ticketCount, amount) {
-                gtag('event', 'purchase', {
-                  transaction_id: orderId,
-                  value: amount,
-                  currency: 'USD',
-                  event_category: 'rifa_conversion',
-                  items: [{
-                    item_id: 'raffle_tickets',
-                    item_name: 'Boletos Rifa Silverado Z71',
-                    item_category: 'raffle',
-                    quantity: ticketCount,
-                    price: amount / ticketCount
-                  }]
-                });
-              }
-            };
-          `}
-        </Script>
+        {/* Client-side Analytics */}
+        <ClientScripts />
 
         {/* Preload de recursos críticos */}
         <link rel="preload" href="/premios/premio-rifa.png" as="image" />
