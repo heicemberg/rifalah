@@ -8,7 +8,7 @@ import { useRealTimeTickets, useTicketStats } from '../hooks/useRealTimeTickets'
 import ComprehensivePurchaseModal from '../components/ComprehensivePurchaseModal';
 import OrganicNotifications from '../components/OrganicNotifications';
 import TicketGrid from '../components/TicketGrid';
-import SoundEffects from '../components/SoundEffects';
+// import SoundEffects from '../components/SoundEffects'; // Temporalmente deshabilitado
 
 // ============================================================================
 // PÁGINA PRINCIPAL UNIFICADA - RIFA SILVERADO Z71 2024 🇲🇽
@@ -73,8 +73,8 @@ export default function RifaSilveradoPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-red-50">
-      {/* Sounds Effects */}
-      <SoundEffects />
+      {/* Sounds Effects - Temporalmente deshabilitado */}
+      {/* <SoundEffects /> */}
       
       {/* Organic Notifications */}
       <OrganicNotifications />

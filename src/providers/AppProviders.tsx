@@ -6,7 +6,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { ErrorBoundary, ContextErrorBoundary } from '../components/ErrorBoundary';
-import { SoundProvider } from '../components/SoundEffects';
+// import { SoundProvider } from '../components/SoundEffects'; // Temporalmente deshabilitado
 import { useRaffleStore } from '../stores/raffle-store';
 
 // ============================================================================
@@ -116,11 +116,7 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
       <HydrationProvider>
         <ContextErrorBoundary contextName="Store">
           <StoreInitializer>
-            <ContextErrorBoundary contextName="Audio">
-              <SoundProvider>
-                {children}
-              </SoundProvider>
-            </ContextErrorBoundary>
+            {children}
           </StoreInitializer>
         </ContextErrorBoundary>
       </HydrationProvider>
