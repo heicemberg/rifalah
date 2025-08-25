@@ -18,6 +18,8 @@ const nextConfig: NextConfig = {
   },
   
   // Deshabilitar telemetría y trace para evitar problemas
+  outputFileTracingRoot: process.cwd(),
+  outputFileTracingIncludes: {},
   experimental: {
     optimizePackageImports: [
       'lucide-react',
@@ -26,9 +28,14 @@ const nextConfig: NextConfig = {
     ],
   },
   
-  // Configuración para evitar archivos problemáticos
-  outputFileTracingIncludes: {},
-  outputFileTracingExcludes: {},
+  // Move outputFileTracingExcludes out of experimental
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/@swc/core-linux-x64-gnu',
+      'node_modules/@swc/core-linux-x64-musl',
+      'node_modules/@esbuild/linux-x64',
+    ],
+  },
   
   // Configuración de Webpack para better tree shaking
   webpack: (config, { isServer }) => {

@@ -8,8 +8,10 @@ import React, { useCallback, useMemo, useEffect, useState, useRef } from 'react'
 
 // Importar desde archivos anteriores
 import { useRaffleStore } from '../stores/raffle-store';
+import { useRealTimeTickets } from '../hooks/useRealTimeTickets';
 import { formatTicketNumber, cn } from '../lib/utils';
 import { TOTAL_TICKETS } from '../lib/constants';
+import { Truck, Gift, Zap, Trophy, Star, DollarSign, Gamepad2 } from 'lucide-react';
 
 // ============================================================================
 // TIPOS Y CONSTANTES
@@ -156,25 +158,25 @@ const TicketCell: React.FC<TicketCellProps> = React.memo(({
                    cellSize <= CELL_SIZE_TABLET ? 'text-base' : 'text-lg';
   
   const cellClasses = cn(
-    'flex items-center justify-center font-bold cursor-pointer',
-    'border-2 rounded-lg transition-all duration-200 select-none',
-    'hover:scale-105 active:scale-95 shadow-sm hover:shadow-md',
+    'flex items-center justify-center font-bold cursor-pointer relative overflow-hidden',
+    'border-2 rounded-xl transition-all duration-300 select-none backdrop-blur-sm',
+    'hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl transform',
     fontSize,
     {
-      // Disponible - Blanco con borde verde intenso
-      'bg-white border-green-500 text-gray-900 hover:border-green-600 hover:bg-green-100 hover:text-green-900 shadow-md': 
+      // Disponible - Efecto glassmorphism premium
+      'bg-gradient-to-br from-white/95 to-slate-50/90 border-emerald-400 text-slate-800 hover:border-emerald-500 hover:from-emerald-50/95 hover:to-emerald-100/90 hover:text-emerald-900 shadow-emerald-200/50 hover:shadow-emerald-300/60': 
         isAvailable && !isSelected,
       
-      // Seleccionado - Verde muy intenso
-      'bg-gradient-to-br from-green-600 to-green-700 border-green-800 text-white hover:from-green-700 hover:to-green-800 shadow-xl ring-2 ring-green-400 ring-opacity-50': 
+      // Seleccionado - Verde premium con animación
+      'bg-gradient-to-br from-emerald-500 to-green-600 border-emerald-700 text-white hover:from-emerald-600 hover:to-green-700 shadow-xl shadow-emerald-500/40 ring-4 ring-emerald-400/50 animate-pulse-slow': 
         isSelected,
       
-      // Vendido - Rojo intenso
-      'bg-gradient-to-br from-red-600 to-red-700 border-red-800 text-white cursor-not-allowed shadow-lg': 
+      // Vendido - Rojo premium con patrón
+      'bg-gradient-to-br from-red-500 to-red-600 border-red-700 text-white cursor-not-allowed shadow-xl shadow-red-500/30': 
         isSold,
       
-      // Reservado - Amarillo intenso
-      'bg-gradient-to-br from-yellow-400 to-yellow-500 border-yellow-600 text-yellow-900 cursor-not-allowed shadow-lg': 
+      // Reservado - Amarillo premium
+      'bg-gradient-to-br from-amber-400 to-yellow-500 border-amber-600 text-amber-900 cursor-not-allowed shadow-xl shadow-amber-500/30': 
         isReserved,
     }
   );
@@ -202,7 +204,21 @@ const TicketCell: React.FC<TicketCellProps> = React.memo(({
         'Disponible'
       }`}
     >
-      {formatTicketNumber(ticketNumber)}
+      {/* Efectos de brillo para tickets seleccionados */}
+      {isSelected && (
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
+      )}
+      
+      {/* Patrón sutil para tickets vendidos */}
+      {isSold && (
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.1)_25%,rgba(255,255,255,0.1)_50%,transparent_50%,transparent_75%,rgba(255,255,255,0.1)_75%)] bg-[length:8px_8px]"></div>
+        </div>
+      )}
+      
+      <span className="relative z-10 font-black">
+        {formatTicketNumber(ticketNumber)}
+      </span>
     </div>
   );
 });
@@ -334,27 +350,18 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
     return () => window.removeEventListener('resize', updateContainerHeight);
   }, []);
   
-  // Generar números vendidos aleatoriamente para demo
-  const randomSoldTickets = useMemo(() => {
-    const sold = [];
-    const totalSold = Math.floor(Math.random() * 1500) + 800; // Entre 800-2300 vendidos
-    const usedNumbers = new Set();
-    
-    while (sold.length < totalSold) {
-      const randomTicket = Math.floor(Math.random() * TOTAL_TICKETS) + 1;
-      if (!usedNumbers.has(randomTicket)) {
-        sold.push(randomTicket);
-        usedNumbers.add(randomTicket);
-      }
-    }
-    
-    return sold.sort((a, b) => a - b);
-  }, []); // Solo generar una vez al montar
+  // Hook para sincronización en tiempo real
+  const {
+    stats,
+    formatMexicanNumber,
+    formatPriceMXN,
+    calculatePrice,
+    PRECIO_POR_BOLETO_MXN
+  } = useRealTimeTickets();
   
-  // Combinar tickets vendidos del store con los aleatorios
-  const allSoldTickets = useMemo(() => {
-    return [...new Set([...soldTickets, ...randomSoldTickets])];
-  }, [soldTickets, randomSoldTickets]);
+  // Usar datos reales del hook (sin números aleatorios)
+  const allSoldTickets = soldTickets;
+  const allReservedTickets = reservedTickets;
   
   // Generar filas visibles
   const visibleRows = useMemo(() => {
@@ -397,43 +404,113 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
   
   return (
     <div className="w-full">
-      {/* Leyenda */}
-      <div className="flex flex-wrap justify-center gap-4 mb-4 p-4 bg-white/95 backdrop-blur-sm rounded-2xl border-2 border-gray-200 shadow-lg">
-        <div className="flex items-center gap-3">
-          <div className="w-5 h-5 bg-white border-2 border-green-500 rounded-lg shadow-md"></div>
-          <span className="text-sm font-semibold text-gray-800">Disponible</span>
+      {/* Leyenda Premium */}
+      <div className="flex flex-wrap justify-center gap-6 mb-6 p-6 bg-gradient-to-r from-slate-50/95 to-emerald-50/95 backdrop-blur-sm rounded-3xl border-2 border-emerald-200/60 shadow-xl">
+        <div className="flex items-center gap-3 bg-white/80 px-4 py-2 rounded-2xl border border-emerald-200 shadow-md">
+          <div className="w-6 h-6 bg-gradient-to-br from-white/95 to-slate-50/90 border-2 border-emerald-400 rounded-xl shadow-lg"></div>
+          <span className="text-sm font-bold text-emerald-800">Disponible</span>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-5 h-5 bg-green-600 border-2 border-green-800 rounded-lg shadow-md"></div>
-          <span className="text-sm font-semibold text-gray-800">Seleccionado</span>
+        <div className="flex items-center gap-3 bg-emerald-500/10 px-4 py-2 rounded-2xl border border-emerald-300 shadow-md">
+          <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-green-600 border-2 border-emerald-700 rounded-xl shadow-lg"></div>
+          <span className="text-sm font-bold text-emerald-800">Seleccionado</span>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-5 h-5 bg-yellow-500 border-2 border-yellow-600 rounded-lg shadow-md"></div>
-          <span className="text-sm font-semibold text-gray-800">Reservado</span>
+        <div className="flex items-center gap-3 bg-amber-500/10 px-4 py-2 rounded-2xl border border-amber-300 shadow-md">
+          <div className="w-6 h-6 bg-gradient-to-br from-amber-400 to-yellow-500 border-2 border-amber-600 rounded-xl shadow-lg"></div>
+          <span className="text-sm font-bold text-amber-800">Reservado</span>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-5 h-5 bg-red-600 border-2 border-red-800 rounded-lg shadow-md"></div>
-          <span className="text-sm font-semibold text-gray-800">Vendido</span>
+        <div className="flex items-center gap-3 bg-red-500/10 px-4 py-2 rounded-2xl border border-red-300 shadow-md">
+          <div className="w-6 h-6 bg-gradient-to-br from-red-500 to-red-600 border-2 border-red-700 rounded-xl shadow-lg"></div>
+          <span className="text-sm font-bold text-red-800">Vendido</span>
         </div>
       </div>
       
-      {/* Información del grid */}
-      <div className="flex flex-wrap justify-center gap-6 mb-6 text-sm bg-gradient-to-r from-blue-50/80 to-purple-50/80 backdrop-blur-sm p-4 rounded-2xl border border-gray-200 shadow-sm">
+      {/* SECCIÓN DE PREMIOS - NUEVA */}
+      <div className="mb-8">
+        <div className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 rounded-3xl p-6 border-2 border-yellow-500/30 shadow-2xl relative overflow-hidden">
+          {/* Efectos de fondo */}
+          <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/10 via-transparent to-red-600/10"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-400/10 rounded-full blur-3xl"></div>
+          
+          <div className="relative z-10">
+            <div className="text-center mb-6">
+              <h3 className="text-2xl font-black text-yellow-400 mb-2 flex items-center justify-center gap-3">
+                <Trophy className="w-8 h-8 text-yellow-500" />
+                🏆 UN SOLO GANADOR - TRES INCREÍBLES PREMIOS 🏆
+                <Trophy className="w-8 h-8 text-yellow-500" />
+              </h3>
+              <p className="text-slate-300 text-sm">¡El afortunado se llevará TODO esto!</p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Camioneta */}
+              <div className="bg-gradient-to-br from-red-600/20 to-red-700/30 rounded-2xl p-6 border border-red-500/40 backdrop-blur-sm">
+                <div className="text-center">
+                  <Truck className="w-12 h-12 text-red-400 mx-auto mb-3" />
+                  <h4 className="text-lg font-black text-white mb-2">Chevrolet Silverado Z71 2024</h4>
+                  <div className="text-red-300 text-sm mb-2">Camioneta 0 kilómetros</div>
+                  <div className="text-2xl font-black text-red-400">~$810,000 MXN</div>
+                  <div className="text-xs text-slate-400 mt-1">Valor aproximado</div>
+                </div>
+              </div>
+
+              {/* PS5 */}
+              <div className="bg-gradient-to-br from-blue-600/20 to-blue-700/30 rounded-2xl p-6 border border-blue-500/40 backdrop-blur-sm">
+                <div className="text-center">
+                  <Gamepad2 className="w-12 h-12 text-blue-400 mx-auto mb-3" />
+                  <h4 className="text-lg font-black text-white mb-2">PlayStation 5</h4>
+                  <div className="text-blue-300 text-sm mb-2">Consola nueva en caja</div>
+                  <div className="text-2xl font-black text-blue-400">~$12,000 MXN</div>
+                  <div className="text-xs text-slate-400 mt-1">Valor aproximado</div>
+                </div>
+              </div>
+
+              {/* Efectivo */}
+              <div className="bg-gradient-to-br from-green-600/20 to-green-700/30 rounded-2xl p-6 border border-green-500/40 backdrop-blur-sm">
+                <div className="text-center">
+                  <DollarSign className="w-12 h-12 text-green-400 mx-auto mb-3" />
+                  <h4 className="text-lg font-black text-white mb-2">$3,000 USD en Efectivo</h4>
+                  <div className="text-green-300 text-sm mb-2">Dinero en efectivo</div>
+                  <div className="text-2xl font-black text-green-400">~$54,000 MXN</div>
+                  <div className="text-xs text-slate-400 mt-1">Al tipo de cambio actual</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 text-center">
+              <div className="bg-gradient-to-r from-yellow-600/30 to-yellow-500/30 rounded-xl p-4 border border-yellow-500/50">
+                <div className="text-yellow-300 font-bold text-lg">
+                  🎯 VALOR TOTAL DEL PREMIO: ~$876,000 MXN
+                </div>
+                <div className="text-yellow-400 text-sm mt-1">
+                  Solo {formatPriceMXN(PRECIO_POR_BOLETO_MXN)} por boleto - ¡Puede cambiar tu vida!
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Información del grid con datos reales */}
+      <div className="flex flex-wrap justify-center gap-6 mb-6 text-sm bg-gradient-to-r from-emerald-50/80 to-slate-50/80 backdrop-blur-sm p-4 rounded-2xl border border-gray-200 shadow-sm">
         <div className="text-center">
-          <div className="text-lg font-black text-gray-900">{TOTAL_TICKETS.toLocaleString()}</div>
-          <div className="text-xs font-medium text-gray-600">Total</div>
+          <div className="text-lg font-black text-gray-900">{formatMexicanNumber(stats.totalTickets)}</div>
+          <div className="text-xs font-medium text-gray-600">Total Boletos</div>
         </div>
         <div className="text-center">
           <div className="text-lg font-black text-green-600">{selectedTickets.length}</div>
           <div className="text-xs font-medium text-gray-600">Seleccionados</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-black text-red-600">{allSoldTickets.length}</div>
+          <div className="text-lg font-black text-red-600">{formatMexicanNumber(stats.soldTickets)}</div>
           <div className="text-xs font-medium text-gray-600">Vendidos</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-black text-blue-600">{TOTAL_TICKETS - allSoldTickets.length - reservedTickets.length}</div>
+          <div className="text-lg font-black text-blue-600">{formatMexicanNumber(stats.availableTickets)}</div>
           <div className="text-xs font-medium text-gray-600">Disponibles</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg font-black text-purple-600">{stats.soldPercentage.toFixed(1)}%</div>
+          <div className="text-xs font-medium text-gray-600">Progreso</div>
         </div>
       </div>
       
@@ -490,40 +567,70 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
       )}
       
       {/* Estado cuando no hay tickets disponibles */}
-      {(TOTAL_TICKETS - allSoldTickets.length - reservedTickets.length) === 0 && (
-        <div className="mt-6 p-6 bg-red-50 rounded-lg border border-red-200 text-center">
-          <div className="text-red-600 text-lg font-bold mb-2">
-            ¡Todos los boletos están vendidos!
+      {stats.availableTickets === 0 && (
+        <div className="mt-6 p-8 bg-gradient-to-r from-red-600/20 to-red-700/30 rounded-3xl border-2 border-red-500/50 text-center backdrop-blur-sm">
+          <div className="text-red-300 text-2xl font-black mb-4 flex items-center justify-center gap-3">
+            <Trophy className="w-8 h-8 text-yellow-400" />
+            ¡RIFA AGOTADA!
+            <Trophy className="w-8 h-8 text-yellow-400" />
           </div>
-          <div className="text-red-700 text-sm">
-            Gracias por tu interés. Mantente atento para futuras rifas.
+          <div className="text-red-200 text-lg mb-2">
+            Todos los {formatMexicanNumber(stats.totalTickets)} boletos están vendidos
+          </div>
+          <div className="text-red-300 text-sm">
+            Gracias por tu interés. El sorteo se realizará pronto.
           </div>
         </div>
       )}
       
-      {/* Botón flotante de compra */}
+      {/* Botón flotante de compra con precios reales mexicanos */}
       {selectedTickets.length > 0 && onOpenPurchaseModal && (
         <div className="fixed bottom-6 right-6 z-40">
           <div className="relative">
-            {/* Pulso animado */}
-            <div className="absolute -inset-2 bg-gradient-to-r from-emerald-400 to-green-500 rounded-2xl opacity-40 animate-ping"></div>
+            {/* Pulso animado múltiple */}
+            <div className="absolute -inset-3 bg-gradient-to-r from-emerald-400 to-green-500 rounded-3xl opacity-30 animate-ping"></div>
+            <div className="absolute -inset-2 bg-gradient-to-r from-yellow-400 to-emerald-500 rounded-2xl opacity-40 animate-pulse"></div>
             
-            <div className="relative bg-gradient-to-r from-slate-800 to-slate-700 hover:from-slate-700 hover:to-slate-600 text-white rounded-2xl shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-emerald-500/50">
-              <div className="p-4 min-w-[200px]">
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="bg-emerald-500 rounded-full p-2">
-                    <span className="text-xl font-bold text-white">{selectedTickets.length}</span>
+            <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 hover:from-slate-800 hover:to-emerald-800 text-white rounded-3xl shadow-2xl shadow-emerald-500/20 transform hover:scale-105 transition-all duration-300 border-2 border-emerald-400/60 backdrop-blur-sm">
+              <div className="p-5 min-w-[240px]">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="bg-gradient-to-r from-emerald-500 to-green-500 rounded-full p-3 shadow-lg">
+                    <span className="text-xl font-black text-white">{selectedTickets.length}</span>
                   </div>
                   <div className="text-left">
-                    <div className="text-sm font-medium text-slate-300">Boletos seleccionados</div>
-                    <div className="text-lg font-bold text-emerald-400">${(selectedTickets.length * 10).toLocaleString()} USD</div>
+                    <div className="text-sm font-bold text-emerald-300">Boletos Seleccionados</div>
+                    <div className="text-xl font-black text-white">
+                      {formatPriceMXN(calculatePrice(selectedTickets.length))}
+                    </div>
+                    {selectedTickets.length >= 5 && (
+                      <div className="text-xs text-yellow-400 font-semibold">
+                        🎉 ¡Con descuento!
+                      </div>
+                    )}
                   </div>
                 </div>
+                
+                {/* Información adicional */}
+                <div className="mb-4 p-2 bg-emerald-600/20 rounded-lg border border-emerald-500/30">
+                  <div className="text-xs text-emerald-200 text-center">
+                    💰 Precio por boleto: {formatPriceMXN(PRECIO_POR_BOLETO_MXN)}
+                  </div>
+                  {selectedTickets.length >= 5 && (
+                    <div className="text-xs text-yellow-300 text-center mt-1">
+                      Ahorras: {formatPriceMXN((selectedTickets.length * PRECIO_POR_BOLETO_MXN) - calculatePrice(selectedTickets.length))}
+                    </div>
+                  )}
+                </div>
+                
                 <button
                   onClick={() => onOpenPurchaseModal(selectedTickets.length)}
-                  className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold py-3 px-4 rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition-colors shadow-md transform hover:scale-105"
+                  className="w-full bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-700 hover:from-emerald-700 hover:via-green-700 hover:to-emerald-800 text-white font-black py-4 px-4 rounded-2xl transition-all duration-300 shadow-xl shadow-emerald-500/30 hover:shadow-emerald-500/50 transform hover:scale-105 border border-emerald-400/50"
                 >
-                  🛒 Comprar Ahora
+                  <div className="flex items-center justify-center gap-2">
+                    <Gift className="w-5 h-5" />
+                    <span>¡Comprar Ahora!</span>
+                    <Zap className="w-5 h-5 animate-pulse" />
+                  </div>
                 </button>
               </div>
             </div>

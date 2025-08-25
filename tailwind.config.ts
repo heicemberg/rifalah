@@ -58,6 +58,8 @@ const config: Config = {
         'mexican-flag': 'mexicanFlag 3s ease-in-out infinite',
         'fiesta': 'fiesta 1s ease-in-out',
         'mariachi': 'mariachi 2s ease-in-out infinite',
+        'spin-slow': 'spin 3s linear infinite',
+        'shimmer': 'shimmer 2s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -100,6 +102,10 @@ const config: Config = {
         mariachi: {
           '0%, 100%': { transform: 'translateY(0px)' },
           '50%': { transform: 'translateY(-5px)' },
+        },
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
         },
       },
       backgroundImage: {

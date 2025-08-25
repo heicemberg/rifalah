@@ -32,6 +32,18 @@ Since this is a TypeScript project, you can run type checking with:
 npx tsc --noEmit
 ```
 
+### Netlify Deployment Commands
+```bash
+npm run netlify:build    # Production build optimized for Netlify
+npm run netlify:dev      # Development server for Netlify
+npm run serve            # Serve static build locally
+npm run clean            # Clean build artifacts
+```
+
+### Build Output
+- Static export build outputs to `out/` directory
+- Netlify deployment uses static site generation
+
 ## Architecture Overview
 
 This is a **Next.js 15** React application for a Mexican truck raffle system ("Rifa de Camioneta"). The application uses TypeScript and follows modern React patterns.
@@ -147,3 +159,10 @@ The application uses a sophisticated Zustand store (`src/stores/raffle-store.ts`
 - **TypeScript**: Strict mode enabled with path aliases (`@/*` → `./src/*`)
 - **Tailwind**: Custom Mexican-themed colors and animations
 - **PostCSS**: Dual configuration files (`.js` and `.mjs`) for compatibility
+- **Netlify**: Configured with security headers, caching rules, and SPA routing
+
+## important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.

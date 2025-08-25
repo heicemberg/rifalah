@@ -27,7 +27,11 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(npm update)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(timeout 120s npm run build)",
+      "Bash(npm run netlify:build:*)",
+      "Read(/C:\\c\\Users\\Administrador\\.continue/**)",
+      "Bash(npm run clean:*)"
     ],
     "deny": [],
     "ask": [],

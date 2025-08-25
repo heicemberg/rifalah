@@ -219,6 +219,52 @@ const FormStep: React.FC<{
           {errors.paymentMethod && (
             <p className="text-red-600 text-xs mt-1">{errors.paymentMethod}</p>
           )}
+          
+          {/* Logos de métodos de pago */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-center gap-6 flex-wrap opacity-60">
+              <div className="flex items-center gap-1">
+                <Image
+                  src="/logos/bancoppel.png"
+                  alt="BanCoppel"
+                  width={40}
+                  height={24}
+                  className="object-contain"
+                />
+                <span className="text-xs text-gray-500">BanCoppel</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Image
+                  src="/logos/bancoazteca.png"
+                  alt="Banco Azteca"
+                  width={40}
+                  height={24}
+                  className="object-contain"
+                />
+                <span className="text-xs text-gray-500">Banco Azteca</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Image
+                  src="/logos/oxxo.png"
+                  alt="OXXO"
+                  width={40}
+                  height={24}
+                  className="object-contain"
+                />
+                <span className="text-xs text-gray-500">OXXO</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Image
+                  src="/logos/binance.svg"
+                  alt="Binance"
+                  width={40}
+                  height={24}
+                  className="object-contain"
+                />
+                <span className="text-xs text-gray-500">Binance</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <button
@@ -785,7 +831,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="text-2xl">🎫</div>
+            <Image
+              src="/logos/Rifasilverado.png"
+              alt="Rifa Silverado"
+              width={48}
+              height={48}
+              className="object-contain"
+            />
             <div>
               <h2 className="text-lg font-bold text-gray-800">
                 Finalizar Compra

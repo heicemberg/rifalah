@@ -1,391 +1,642 @@
-'use client';
+'use client'
 
-import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useTickets } from '../stores/raffle-store';
-import { useRealTimeTickets, useTicketStats } from '../hooks/useRealTimeTickets';
-import ComprehensivePurchaseModal from '../components/ComprehensivePurchaseModal';
-import OrganicNotifications from '../components/OrganicNotifications';
-import TicketGrid from '../components/TicketGrid';
-import { Truck, Calendar, Users, Trophy, Shield, Zap, ArrowRight, Play } from 'lucide-react';
+import { useState, useEffect } from 'react'
+import Image from 'next/image'
+import { useRaffleStore } from '@/stores/raffle-store'
+import { useRealTimeTickets } from '@/hooks/useRealTimeTickets'
+import { 
+  ArrowRight, 
+  Gift, 
+  Shield, 
+  CheckCircle, 
+  Clock,
+  Star,
+  TrendingUp,
+  Users,
+  MapPin,
+  Trophy,
+  Zap,
+  Heart,
+  Target
+} from 'lucide-react'
+import ComprehensivePurchaseModal from '@/components/ComprehensivePurchaseModal'
+import TicketGrid from '@/components/TicketGrid'
+import OrganicNotifications from '@/components/OrganicNotifications'
 
-// ============================================================================
-// PÁGINA PRINCIPAL REDISEÑADA - RIFA SILVERADO Z71 2024 🇲🇽
-// ============================================================================
-
-export default function RifaSilveradoPage() {
-  const { selectedTickets } = useTickets();
-  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
-  const [selectedTicketAmount, setSelectedTicketAmount] = useState(1);
-  const [hasPromotionalDiscount, setHasPromotionalDiscount] = useState(false);
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-
-  // Hook centralizado para tickets en tiempo real
+export default function NewRaffePage() {
+  const [mounted, setMounted] = useState(false)
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false)
+  
   const { 
     stats, 
     formatMexicanNumber, 
     formatPriceMXN,
-    calculatePrice,
-    PRECIO_POR_BOLETO_MXN,
-    PREMIO_TOTAL_MXN 
-  } = useRealTimeTickets();
+    PRECIO_POR_BOLETO_MXN
+  } = useRealTimeTickets()
 
-  const {
-    urgencyMessage,
-    urgencyColor
-  } = useTicketStats();
+  const soldCount = stats.soldTickets
+  const availableCount = stats.availableTickets
+  const soldPercentage = Math.round((soldCount / stats.totalTickets) * 100)
+  
+  const isNearlyFull = soldPercentage >= 80
+  const isCritical = soldPercentage >= 95
 
-  // Contador regresivo hasta 24 Nov 2025
   useEffect(() => {
-    const SORTEO_DATE = new Date('2025-11-24T20:00:00-06:00').getTime();
-    
-    const updateCountdown = () => {
-      const now = Date.now();
-      const difference = SORTEO_DATE - now;
+    setMounted(true)
+  }, [])
 
-      if (difference <= 0) {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-        return;
-      }
-
-      setTimeLeft({
-        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-        minutes: Math.floor((difference / 1000 / 60) % 60),
-        seconds: Math.floor((difference / 1000) % 60)
-      });
-    };
-
-    updateCountdown();
-    const timer = setInterval(updateCountdown, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const openPurchaseModal = (tickets = 1, hasDiscount = false) => {
-    setSelectedTicketAmount(tickets);
-    setHasPromotionalDiscount(hasDiscount);
-    setIsPurchaseModalOpen(true);
-  };
-
-  const totalSelected = selectedTickets.length;
-  const totalPrice = calculatePrice(totalSelected);
+  if (!mounted) {
+    return <div className="min-h-screen bg-black"></div>
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-      {/* Organic Notifications */}
-      <OrganicNotifications />
-
-      {/* BARRA DE URGENCIA PREMIUM */}
-      <div className="bg-gradient-to-r from-red-600 via-red-500 to-red-600 text-white py-3 px-4 shadow-lg">
-        <div className="container mx-auto">
-          <div className="flex items-center justify-center gap-3 text-sm font-bold animate-pulse">
-            <Zap className="w-4 h-4 text-yellow-300" />
-            <span className="uppercase tracking-wider">🔥 {urgencyMessage} - Solo quedan {formatMexicanNumber(stats.availableTickets)} boletos 🔥</span>
-            <Zap className="w-4 h-4 text-yellow-300" />
+    <main className="bg-black text-white font-sans">
+      {/* HEADER MINIMALISTA */}
+      <header className="fixed top-0 w-full z-50 bg-black/90 backdrop-blur-sm border-b border-white/10">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Image
+                src="/logos/Rifasilverado.png"
+                alt="Rifa Silverado"
+                width={32}
+                height={32}
+                className="object-contain"
+              />
+              <span className="font-black text-xl">RIFA SILVERADO</span>
+            </div>
+            <button 
+              onClick={() => setShowPurchaseModal(true)}
+              className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-black px-6 py-2 rounded-lg font-bold text-sm hover:scale-105 transition-transform"
+            >
+              COMPRAR AHORA
+            </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* HERO SECTION PREMIUM */}
-      <section className="relative min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-20">
-          <div 
-            className="w-full h-full"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-            }}
+      {/* HERO SECTION - ELEGANTE CON IMAGEN DE FONDO */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        {/* Imagen de Fondo con Overlay */}
+        <div className="absolute inset-0">
+          <Image
+            src="/premios/premio-rifa.png"
+            alt="Chevrolet Silverado Z71 2024"
+            fill
+            className="object-cover object-center"
+            priority
           />
+          <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/70 to-black/85"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/60"></div>
         </div>
-        
-        <div className="container mx-auto px-4 py-20 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-16 items-center min-h-screen">
+
+        <div className="container mx-auto px-4 py-20 relative z-10 mt-16">
+          <div className="max-w-4xl mx-auto text-center text-white">
             
-            {/* Contenido Principal */}
-            <div className="text-center lg:text-left space-y-8">
-              {/* Badge Premium */}
-              <div className="inline-flex items-center gap-2 bg-emerald-600/20 text-emerald-400 px-4 py-2 rounded-full border border-emerald-500/30">
-                <Trophy className="w-4 h-4" />
-                <span className="text-sm font-semibold">Rifa Oficial Autorizada</span>
+            {/* Badge de Verificación */}
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 text-yellow-400 px-6 py-3 rounded-full border border-yellow-500/30 font-bold text-sm mb-8 backdrop-blur-sm">
+              <Shield className="w-5 h-5" />
+              <span>RIFA VERIFICADA • 100% LEGAL</span>
+              <Shield className="w-5 h-5" />
+            </div>
+
+            {/* Título Principal Impactante */}
+            <h1 className="text-5xl lg:text-7xl font-black leading-tight mb-6">
+              <span className="block text-white mb-2">GANA TU</span>
+              <span className="block bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 bg-clip-text text-transparent">
+                SILVERADO Z71 2024
+              </span>
+            </h1>
+
+            {/* Subtítulo Profesional */}
+            <p className="text-xl lg:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
+              Camioneta Nueva + PlayStation 5 + $54,000 MXN en efectivo
+            </p>
+
+            {/* Precio Destacado */}
+            <div className="bg-gradient-to-r from-red-600/20 to-red-500/20 backdrop-blur-sm rounded-2xl p-6 border border-red-500/30 mb-8 max-w-md mx-auto">
+              <div className="text-sm text-gray-300 mb-2">PRECIO POR BOLETO</div>
+              <div className="text-4xl font-black text-yellow-400">{formatPriceMXN(PRECIO_POR_BOLETO_MXN)}</div>
+              <div className="text-sm text-gray-400">Valor total del premio: $876,000 MXN</div>
+            </div>
+
+            {/* Contador de Boletos Elegante */}
+            <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto mb-8">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="text-2xl font-black text-red-400">{formatMexicanNumber(soldCount)}</div>
+                <div className="text-sm text-gray-300">Boletos Vendidos</div>
               </div>
-
-              {/* Título Principal */}
-              <h1 className="text-5xl lg:text-7xl font-black text-white leading-tight">
-                <span className="text-emerald-400">GANA</span> una
-                <br />
-                <span className="bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 bg-clip-text text-transparent">
-                  Silverado Z71
-                </span>
-                <br />
-                <span className="text-white">2024</span>
-              </h1>
-
-              {/* Subtítulo Premium */}
-              <p className="text-xl lg:text-2xl text-slate-300 max-w-xl leading-relaxed">
-                <strong className="text-white">Camioneta completamente nueva</strong> valorada en 
-                <span className="text-yellow-400 font-bold"> $890,000 MXN</span>. 
-                Sorteo 100% transparente y legal.
-              </p>
-
-              {/* Estadísticas Impactantes */}
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-                  <div className="text-2xl font-bold text-yellow-400">{formatMexicanNumber(stats.soldTickets)}</div>
-                  <div className="text-sm text-slate-400">Boletos Vendidos</div>
-                </div>
-                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-                  <div className="text-2xl font-bold text-emerald-400">{stats.soldPercentage}%</div>
-                  <div className="text-sm text-slate-400">Completado</div>
-                </div>
-                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 col-span-2 lg:col-span-1">
-                  <div className="text-2xl font-bold text-red-400">{formatMexicanNumber(stats.availableTickets)}</div>
-                  <div className="text-sm text-slate-400">Disponibles</div>
-                </div>
-              </div>
-
-              {/* CTAs Principales */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={() => openPurchaseModal(1, false)}
-                  className="group bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white px-8 py-4 rounded-2xl font-bold text-lg shadow-2xl shadow-emerald-500/25 transition-all duration-300 hover:scale-105 hover:shadow-emerald-500/40"
-                >
-                  <span className="flex items-center justify-center gap-3">
-                    <Truck className="w-6 h-6" />
-                    Comprar Boletos Ahora
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                </button>
-                
-                <button 
-                  className="group bg-white/10 hover:bg-white/20 text-white border border-white/20 hover:border-white/30 px-8 py-4 rounded-2xl font-semibold text-lg backdrop-blur-sm transition-all duration-300"
-                  onClick={() => {
-                    const videoSection = document.getElementById('video-section');
-                    videoSection?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                >
-                  <span className="flex items-center justify-center gap-3">
-                    <Play className="w-5 h-5" />
-                    Ver Video del Premio
-                  </span>
-                </button>
-              </div>
-
-              {/* Precio Destacado */}
-              <div className="bg-gradient-to-r from-yellow-600/20 to-yellow-500/20 rounded-2xl p-6 border border-yellow-500/30">
-                <div className="text-center">
-                  <div className="text-yellow-400 text-sm font-semibold uppercase tracking-wider">Precio por Boleto</div>
-                  <div className="text-4xl font-black text-white mt-2">
-                    ${PRECIO_POR_BOLETO_MXN} <span className="text-xl text-slate-400">MXN</span>
-                  </div>
-                  <div className="text-slate-300 text-sm mt-1">+ Descuentos por cantidad</div>
-                </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="text-2xl font-black text-green-400">{formatMexicanNumber(availableCount)}</div>
+                <div className="text-sm text-gray-300">Disponibles</div>
               </div>
             </div>
 
-            {/* Imagen del Premio */}
-            <div className="relative">
-              <div className="relative z-10 transform hover:scale-105 transition-transform duration-700">
-                {/* Glow Effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-yellow-500 blur-3xl opacity-20 scale-110"></div>
+            {/* CTA Principal Prominente */}
+            <button
+              onClick={() => setShowPurchaseModal(true)}
+              className="inline-flex items-center gap-4 bg-gradient-to-r from-red-600 via-red-500 to-red-600 hover:from-red-500 hover:to-red-700 text-white px-12 py-6 rounded-2xl font-black text-xl shadow-2xl shadow-red-500/30 transition-all duration-300 hover:scale-105 hover:shadow-red-500/50 border-2 border-red-400/50 mb-8"
+            >
+              <Gift className="w-8 h-8" />
+              <div>
+                <div>COMPRAR BOLETOS</div>
+                <div className="text-sm opacity-90 font-normal">Desde {formatPriceMXN(PRECIO_POR_BOLETO_MXN)}</div>
+              </div>
+              <ArrowRight className="w-6 h-6" />
+            </button>
+
+            {/* Información de Confianza */}
+            <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-400">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-400" />
+                <span>Sorteo ante Notario Público</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-blue-400" />
+                <span>Transmisión en vivo</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-yellow-400" />
+                <span>Proceso transparente</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* BARRA DE ESTADÍSTICAS EN VIVO */}
+      <section className="py-8 bg-gradient-to-r from-gray-900 to-black border-y border-gray-800">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <TrendingUp className="w-5 h-5 text-green-400" />
+                <span className="text-sm text-gray-400 uppercase font-semibold">Vendidos</span>
+              </div>
+              <div className="text-2xl lg:text-3xl font-black text-green-400">{formatMexicanNumber(soldCount)}</div>
+              <div className="text-xs text-gray-500">de {formatMexicanNumber(stats.totalTickets)}</div>
+            </div>
+            
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Users className="w-5 h-5 text-blue-400" />
+                <span className="text-sm text-gray-400 uppercase font-semibold">Participantes</span>
+              </div>
+              <div className="text-2xl lg:text-3xl font-black text-blue-400">{formatMexicanNumber(Math.floor(soldCount * 0.8))}</div>
+              <div className="text-xs text-gray-500">personas</div>
+            </div>
+
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <MapPin className="w-5 h-5 text-yellow-400" />
+                <span className="text-sm text-gray-400 uppercase font-semibold">Ciudades</span>
+              </div>
+              <div className="text-2xl lg:text-3xl font-black text-yellow-400">32</div>
+              <div className="text-xs text-gray-500">estados MX</div>
+            </div>
+
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Heart className="w-5 h-5 text-red-400" />
+                <span className="text-sm text-gray-400 uppercase font-semibold">Progreso</span>
+              </div>
+              <div className="text-2xl lg:text-3xl font-black text-red-400">{soldPercentage}%</div>
+              <div className="w-full bg-gray-800 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-gradient-to-r from-red-500 to-red-400 h-2 rounded-full transition-all duration-1000"
+                  style={{ width: `${soldPercentage}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECCIÓN DE PREMIOS - 3 CARDS JERÁRQUICAS */}
+      <section className="py-20 bg-gradient-to-b from-black to-gray-900">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl lg:text-5xl font-black text-white mb-4">
+              <span className="text-yellow-400">PREMIOS</span> INCREÍBLES
+            </h2>
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+              Un solo ganador se lleva todo. No dividimos premios.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* Premio Principal - Silverado */}
+            <div className="lg:col-span-2 bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 backdrop-blur-sm rounded-3xl p-8 border border-yellow-500/30 hover:scale-105 transition-all duration-500 group">
+              <div className="text-center">
+                <div className="inline-flex items-center gap-2 bg-yellow-500/20 text-yellow-400 px-4 py-2 rounded-full border border-yellow-500/30 font-bold text-sm mb-6">
+                  <Trophy className="w-4 h-4" />
+                  <span>PREMIO PRINCIPAL</span>
+                </div>
                 
-                {/* Imagen Principal */}
-                <div className="relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-3xl p-8 border border-white/20">
+                <div className="relative mb-6">
                   <Image
                     src="/premios/premio-rifa.png"
-                    alt="Chevrolet Silverado Z71 2024 - Premio Principal"
+                    alt="Silverado Z71 2024"
                     width={600}
-                    height={400}
-                    className="w-full h-auto rounded-2xl shadow-2xl"
-                    priority
+                    height={300}
+                    className="w-full rounded-2xl shadow-2xl group-hover:scale-105 transition-transform duration-500"
                   />
-                  
-                  {/* Badge del Precio */}
-                  <div className="absolute -top-4 -right-4 bg-gradient-to-r from-yellow-500 to-yellow-400 text-slate-900 px-6 py-3 rounded-2xl font-black text-lg shadow-2xl rotate-3">
-                    Valor: $890,000 MXN
+                  <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-2 rounded-xl font-bold text-sm">
+                    NUEVA 0KM
                   </div>
+                </div>
+
+                <h3 className="text-3xl font-black text-white mb-4">Chevrolet Silverado Z71 2024</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm text-gray-300 mb-6">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                    <span>Motor V8 Potente</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                    <span>Tracción 4x4</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                    <span>Papeles Incluidos</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                    <span>Seguro 1 Año</span>
+                  </div>
+                </div>
+                <div className="text-2xl font-black text-yellow-400">Valor: $750,000 MXN</div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {/* PlayStation 5 */}
+              <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 backdrop-blur-sm rounded-2xl p-6 border border-blue-500/30 hover:scale-105 transition-all duration-500">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl">🎮</span>
+                  </div>
+                  <h3 className="text-xl font-black text-white mb-2">PlayStation 5</h3>
+                  <p className="text-sm text-gray-400 mb-4">Consola nueva en caja</p>
+                  <div className="text-lg font-black text-blue-400">Valor: $12,000 MXN</div>
+                </div>
+              </div>
+
+              {/* Dinero en Efectivo */}
+              <div className="bg-gradient-to-br from-green-500/20 to-green-600/10 backdrop-blur-sm rounded-2xl p-6 border border-green-500/30 hover:scale-105 transition-all duration-500">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl">💵</span>
+                  </div>
+                  <h3 className="text-xl font-black text-white mb-2">$3,000 USD</h3>
+                  <p className="text-sm text-gray-400 mb-4">En pesos mexicanos</p>
+                  <div className="text-lg font-black text-green-400">Valor: $54,000 MXN</div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <div className="w-8 h-12 border-2 border-white/30 rounded-full flex justify-center">
-            <div className="w-1 h-3 bg-white/50 rounded-full mt-2"></div>
+          {/* Valor Total */}
+          <div className="text-center mt-12">
+            <div className="inline-block bg-gradient-to-r from-red-600/20 to-red-500/20 backdrop-blur-sm rounded-2xl p-8 border border-red-500/30">
+              <div className="text-sm text-gray-300 mb-2">VALOR TOTAL DE TODOS LOS PREMIOS</div>
+              <div className="text-5xl font-black bg-gradient-to-r from-yellow-400 to-yellow-300 bg-clip-text text-transparent">
+                $876,000 MXN
+              </div>
+              <div className="text-sm text-gray-400 mt-2">Para un solo ganador</div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* CONTADOR REGRESIVO PREMIUM */}
-      <section className="bg-gradient-to-r from-slate-800 to-slate-900 py-16">
+      {/* MAPA DE BOLETOS COMPACTO */}
+      <section className="py-20 bg-gray-900">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-4">Sorteo en Vivo</h2>
-            <p className="text-xl text-slate-300">24 de Noviembre 2025 • 8:00 PM (México)</p>
+            <h2 className="text-4xl font-black text-white mb-4">
+              ELIGE TUS <span className="text-yellow-400">NÚMEROS</span>
+            </h2>
+            <p className="text-gray-400">Selecciona tus boletos de la suerte</p>
           </div>
           
-          <div className="flex justify-center">
-            <div className="grid grid-cols-4 gap-4 lg:gap-8">
-              {[
-                { value: timeLeft.days, label: 'Días' },
-                { value: timeLeft.hours, label: 'Horas' },
-                { value: timeLeft.minutes, label: 'Minutos' },
-                { value: timeLeft.seconds, label: 'Segundos' }
-              ].map((item, index) => (
-                <div key={index} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/20">
-                  <div className="text-4xl lg:text-6xl font-black text-yellow-400 mb-2">
-                    {item.value.toString().padStart(2, '0')}
+          <TicketGrid onOpenPurchaseModal={() => setShowPurchaseModal(true)} />
+        </div>
+      </section>
+
+      {/* PROCESO DE COMPRA EN 3 PASOS */}
+      <section className="py-20 bg-black">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl lg:text-5xl font-black text-white mb-4">
+              PROCESO DE <span className="text-yellow-400">COMPRA</span>
+            </h2>
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+              Un proceso simple y seguro en solo 3 pasos. Tu dinero está protegido hasta el momento del sorteo.
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto">
+            <div className="grid lg:grid-cols-3 gap-8">
+              {/* Paso 1 */}
+              <div className="relative group">
+                <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 backdrop-blur-sm rounded-3xl p-8 border border-yellow-500/30 hover:scale-105 transition-all duration-500 text-center">
+                  <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span className="text-3xl font-black text-black">1</span>
                   </div>
-                  <div className="text-sm lg:text-base text-slate-300 uppercase tracking-wider">
-                    {item.label}
+                  <h3 className="text-2xl font-black text-white mb-4">SELECCIONA</h3>
+                  <p className="text-gray-300 mb-6">
+                    Elige tus números de la suerte desde 1 hasta 10,000. Puedes comprar desde 1 boleto.
+                  </p>
+                  <div className="flex items-center justify-center gap-2 text-sm text-yellow-400">
+                    <Target className="w-4 h-4" />
+                    <span>Selección instantánea</span>
                   </div>
                 </div>
-              ))}
+                {/* Línea conectora */}
+                <div className="hidden lg:block absolute top-1/2 -right-4 w-8 h-0.5 bg-gradient-to-r from-yellow-500 to-gray-600"></div>
+              </div>
+
+              {/* Paso 2 */}
+              <div className="relative group">
+                <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 backdrop-blur-sm rounded-3xl p-8 border border-blue-500/30 hover:scale-105 transition-all duration-500 text-center">
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span className="text-3xl font-black text-white">2</span>
+                  </div>
+                  <h3 className="text-2xl font-black text-white mb-4">PAGA SEGURO</h3>
+                  <p className="text-gray-300 mb-6">
+                    Realiza tu pago con BanCoppel, Banco Azteca, OXXO o transferencia bancaria.
+                  </p>
+                  <div className="flex items-center justify-center gap-2 text-sm text-blue-400">
+                    <Shield className="w-4 h-4" />
+                    <span>100% Seguro</span>
+                  </div>
+                </div>
+                {/* Línea conectora */}
+                <div className="hidden lg:block absolute top-1/2 -right-4 w-8 h-0.5 bg-gradient-to-r from-blue-500 to-gray-600"></div>
+              </div>
+
+              {/* Paso 3 */}
+              <div className="relative group">
+                <div className="bg-gradient-to-br from-green-500/20 to-green-600/10 backdrop-blur-sm rounded-3xl p-8 border border-green-500/30 hover:scale-105 transition-all duration-500 text-center">
+                  <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span className="text-3xl font-black text-white">3</span>
+                  </div>
+                  <h3 className="text-2xl font-black text-white mb-4">¡PARTICIPA!</h3>
+                  <p className="text-gray-300 mb-6">
+                    Recibe confirmación por WhatsApp y participa en el sorteo oficial.
+                  </p>
+                  <div className="flex items-center justify-center gap-2 text-sm text-green-400">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Confirmación instantánea</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA Final del Proceso */}
+            <div className="text-center mt-12">
+              <button
+                onClick={() => setShowPurchaseModal(true)}
+                className="inline-flex items-center gap-4 bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 text-black px-16 py-6 rounded-2xl font-black text-2xl shadow-2xl shadow-yellow-500/30 transition-all duration-300 hover:scale-105 hover:shadow-yellow-500/50 border-2 border-yellow-400/50"
+              >
+                <Zap className="w-8 h-8" />
+                <span>COMENZAR AHORA</span>
+                <ArrowRight className="w-6 h-6" />
+              </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* SECCIÓN DE CARACTERÍSTICAS PREMIUM */}
-      <section className="py-20 bg-white">
+      {/* SECCIÓN DE CONFIANZA MEXICANA */}
+      <section className="py-20 bg-gradient-to-b from-gray-900 to-black">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-bold text-slate-800 mb-6">
-              ¿Por qué elegir nuestra rifa?
+            <h2 className="text-4xl lg:text-5xl font-black text-white mb-4">
+              <span className="text-green-400">TRANSPARENCIA</span> TOTAL
             </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Somos la rifa más confiable de México con miles de ganadores satisfechos
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+              Cumplimos con todas las regulaciones mexicanas para rifas y sorteos
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                icon: Shield,
-                title: "100% Legal y Transparente",
-                description: "Registrados ante las autoridades mexicanas. Sorteo público con notario.",
-                color: "text-emerald-600"
-              },
-              {
-                icon: Trophy,
-                title: "Premio Garantizado",
-                description: "Camioneta nueva 0km con todos los papeles incluidos y seguro.",
-                color: "text-yellow-600"
-              },
-              {
-                icon: Users,
-                title: "Miles de Participantes",
-                description: "Más de 50,000 personas han participado en nuestras rifas anteriores.",
-                color: "text-blue-600"
-              },
-              {
-                icon: Calendar,
-                title: "Fecha Fija de Sorteo",
-                description: "24 de Noviembre 2025 en vivo por YouTube y Facebook.",
-                color: "text-red-600"
-              },
-              {
-                icon: Truck,
-                title: "Entrega Inmediata",
-                description: "El ganador recibe su premio máximo 48 horas después del sorteo.",
-                color: "text-purple-600"
-              },
-              {
-                icon: Zap,
-                title: "Pago Instantáneo",
-                description: "Múltiples métodos de pago: OXXO, bancos mexicanos, transferencias.",
-                color: "text-orange-600"
-              }
-            ].map((feature, index) => (
-              <div key={index} className="group bg-slate-50 hover:bg-white rounded-2xl p-8 border border-slate-200 hover:border-slate-300 transition-all duration-300 hover:shadow-xl">
-                <div className={`${feature.color} mb-4`}>
-                  <feature.icon className="w-12 h-12" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-800 mb-3">{feature.title}</h3>
-                <p className="text-slate-600 leading-relaxed">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* SECCIÓN DE SELECCIÓN DE TICKETS MEJORADA */}
-      <section className="py-20 bg-slate-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-bold text-slate-800 mb-6">
-              Elige tus Números de la Suerte
-            </h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-8">
-              Selecciona tus boletos favoritos o deja que el sistema elija por ti
-            </p>
-
-            {/* Selección Rápida Premium */}
-            <div className="flex flex-wrap justify-center gap-4 mb-12">
-              {[1, 5, 10, 25, 50].map(count => (
-                <button
-                  key={count}
-                  onClick={() => openPurchaseModal(count, count >= 10)}
-                  className={`group relative px-6 py-3 rounded-xl font-bold transition-all duration-300 ${
-                    count >= 10 
-                      ? 'bg-gradient-to-r from-yellow-500 to-yellow-400 text-slate-900 shadow-lg shadow-yellow-500/25 hover:shadow-yellow-500/40' 
-                      : 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40'
-                  } hover:scale-105`}
-                >
-                  {count >= 10 && (
-                    <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                      ¡AHORRO!
+          <div className="max-w-6xl mx-auto">
+            {/* Certificaciones Principales */}
+            <div className="grid lg:grid-cols-2 gap-12 mb-16">
+              {/* Notario Público */}
+              <div className="bg-gradient-to-br from-green-500/20 to-green-600/10 backdrop-blur-sm rounded-3xl p-8 border border-green-500/30">
+                <div className="flex items-start gap-6">
+                  <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center flex-shrink-0">
+                    <span className="text-2xl">⚖️</span>
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-white mb-4">Sorteo ante Notario Público</h3>
+                    <p className="text-gray-300 mb-4">
+                      El sorteo se realizará en presencia de un Notario Público certificado en México, 
+                      garantizando la legalidad y transparencia del proceso.
+                    </p>
+                    <div className="flex items-center gap-2 text-green-400 font-semibold">
+                      <CheckCircle className="w-5 h-5" />
+                      <span>Certificado Legal</span>
                     </div>
-                  )}
-                  <span className="flex items-center gap-2">
-                    {count} {count === 1 ? 'Boleto' : 'Boletos'}
-                    <span className="text-sm opacity-75">
-                      {formatPriceMXN(calculatePrice(count))}
-                    </span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Grid de Tickets */}
-          <div className="bg-white rounded-2xl p-8 shadow-xl">
-            <TicketGrid />
-          </div>
-
-          {/* Información de Selección */}
-          {totalSelected > 0 && (
-            <div className="mt-8 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-2xl p-6">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div>
-                  <div className="text-2xl font-bold">
-                    {totalSelected} {totalSelected === 1 ? 'boleto seleccionado' : 'boletos seleccionados'}
-                  </div>
-                  <div className="text-emerald-100">
-                    Total a pagar: <span className="font-bold text-xl">{formatPriceMXN(totalPrice)}</span>
                   </div>
                 </div>
-                <button
-                  onClick={() => setIsPurchaseModalOpen(true)}
-                  className="bg-white text-emerald-600 px-8 py-4 rounded-xl font-bold hover:bg-slate-50 transition-colors shadow-lg"
-                >
-                  Proceder al Pago →
-                </button>
+              </div>
+
+              {/* Transmisión en Vivo */}
+              <div className="bg-gradient-to-br from-red-500/20 to-red-600/10 backdrop-blur-sm rounded-3xl p-8 border border-red-500/30">
+                <div className="flex items-start gap-6">
+                  <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center flex-shrink-0">
+                    <span className="text-2xl">📺</span>
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-white mb-4">Transmisión en Vivo</h3>
+                    <p className="text-gray-300 mb-4">
+                      Todo el proceso del sorteo será transmitido en vivo por Facebook e Instagram 
+                      para que todos los participantes puedan ver el momento exacto.
+                    </p>
+                    <div className="flex items-center gap-2 text-red-400 font-semibold">
+                      <CheckCircle className="w-5 h-5" />
+                      <span>100% Transparente</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          )}
+
+            {/* Métodos de Pago Mexicanos */}
+            <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 backdrop-blur-sm rounded-3xl p-8 border border-blue-500/30 mb-12">
+              <h3 className="text-3xl font-black text-white mb-8 text-center">
+                Métodos de Pago <span className="text-blue-400">Mexicanos</span>
+              </h3>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
+                  <div className="w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                    <Image
+                      src="/logos/bancoppel.png"
+                      alt="BanCoppel"
+                      width={56}
+                      height={32}
+                      className="object-contain"
+                    />
+                  </div>
+                  <div className="text-white font-bold text-sm">BanCoppel</div>
+                  <div className="text-gray-400 text-xs">Transferencia</div>
+                </div>
+                
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
+                  <div className="w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                    <Image
+                      src="/logos/bancoazteca.png"
+                      alt="Banco Azteca"
+                      width={56}
+                      height={32}
+                      className="object-contain"
+                    />
+                  </div>
+                  <div className="text-white font-bold text-sm">Banco Azteca</div>
+                  <div className="text-gray-400 text-xs">Depósito</div>
+                </div>
+                
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
+                  <div className="w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                    <Image
+                      src="/logos/oxxo.png"
+                      alt="OXXO"
+                      width={56}
+                      height={32}
+                      className="object-contain"
+                    />
+                  </div>
+                  <div className="text-white font-bold text-sm">OXXO</div>
+                  <div className="text-gray-400 text-xs">Efectivo</div>
+                </div>
+                
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
+                  <div className="w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                    <Image
+                      src="/logos/binance.svg"
+                      alt="Binance"
+                      width={56}
+                      height={32}
+                      className="object-contain"
+                    />
+                  </div>
+                  <div className="text-white font-bold text-sm">Binance Pay</div>
+                  <div className="text-gray-400 text-xs">Crypto</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Estadísticas de Confianza */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="text-center">
+                <div className="text-4xl font-black text-yellow-400 mb-2">100%</div>
+                <div className="text-white font-semibold mb-1">Legal</div>
+                <div className="text-xs text-gray-500">Regulación mexicana</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-4xl font-black text-green-400 mb-2">24/7</div>
+                <div className="text-white font-semibold mb-1">Soporte</div>
+                <div className="text-xs text-gray-500">WhatsApp disponible</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-4xl font-black text-blue-400 mb-2">+5K</div>
+                <div className="text-white font-semibold mb-1">Participantes</div>
+                <div className="text-xs text-gray-500">En rifas anteriores</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-4xl font-black text-red-400 mb-2">0</div>
+                <div className="text-white font-semibold mb-1">Quejas</div>
+                <div className="text-xs text-gray-500">Historial limpio</div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* MODAL DE COMPRA */}
+      {/* FOOTER CON INFORMACIÓN LEGAL */}
+      <footer className="bg-black border-t border-gray-800 py-12">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Logo y Descripción */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Image
+                  src="/logos/Rifasilverado.png"
+                  alt="Rifa Silverado"
+                  width={40}
+                  height={40}
+                  className="object-contain"
+                />
+                <span className="font-black text-xl text-white">RIFA SILVERADO</span>
+              </div>
+              <p className="text-gray-400 text-sm mb-4">
+                Rifa legal y transparente de Chevrolet Silverado Z71 2024. 
+                Sorteo ante Notario Público con transmisión en vivo.
+              </p>
+              <div className="flex items-center gap-2 text-green-400 text-sm">
+                <Shield className="w-4 h-4" />
+                <span>Certificado Legal en México</span>
+              </div>
+            </div>
+
+            {/* Contacto */}
+            <div>
+              <h3 className="font-black text-white text-lg mb-4">Contacto</h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-gray-400 text-sm">
+                  <span>📱</span>
+                  <span>WhatsApp: +52 55 1234 5678</span>
+                </div>
+                <div className="flex items-center gap-3 text-gray-400 text-sm">
+                  <span>📧</span>
+                  <span>info@rifasilverado.mx</span>
+                </div>
+                <div className="flex items-center gap-3 text-gray-400 text-sm">
+                  <span>📍</span>
+                  <span>Ciudad de México, México</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h3 className="font-black text-white text-lg mb-4">Información Legal</h3>
+              <div className="space-y-2 text-gray-400 text-sm">
+                <div>• Registro ante Hacienda</div>
+                <div>• Cumplimiento CNBV</div>
+                <div>• Notario Público certificado</div>
+                <div>• Transmisión verificable</div>
+                <div>• Política de privacidad</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-800 pt-8 mt-8">
+            <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
+              <p className="text-gray-500 text-sm">
+                © 2024 Rifa Silverado. Todos los derechos reservados.
+              </p>
+              <p className="text-gray-500 text-sm">
+                Sorteo programado para cuando se completen todos los boletos.
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {/* Modales */}
       <ComprehensivePurchaseModal 
-        isOpen={isPurchaseModalOpen}
-        onClose={() => setIsPurchaseModalOpen(false)}
-        initialTickets={selectedTicketAmount}
-        hasDiscount={hasPromotionalDiscount}
+        isOpen={showPurchaseModal}
+        onClose={() => setShowPurchaseModal(false)}
       />
-    </div>
-  );
+      
+      {/* Live Activities */}
+      <OrganicNotifications />
+    </main>
+  )
 }
