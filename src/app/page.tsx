@@ -470,60 +470,60 @@ export default function NewRaffePage() {
                 Métodos de Pago <span className="text-blue-400">Mexicanos</span>
               </h3>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div className="w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                <div className="bg-white rounded-xl p-6 text-center shadow-lg">
+                  <div className="w-32 h-24 flex items-center justify-center mx-auto mb-4">
                     <Image
                       src="/logos/bancoppel.png"
                       alt="BanCoppel"
-                      width={56}
-                      height={32}
+                      width={200}
+                      height={120}
                       className="object-contain"
                     />
                   </div>
-                  <div className="text-white font-bold text-sm">BanCoppel</div>
-                  <div className="text-gray-400 text-xs">Transferencia</div>
+                  <div className="text-gray-800 font-bold text-sm">BanCoppel</div>
+                  <div className="text-gray-600 text-xs">Transferencia</div>
                 </div>
                 
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div className="w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                <div className="bg-white rounded-xl p-6 text-center shadow-lg">
+                  <div className="w-32 h-24 flex items-center justify-center mx-auto mb-4">
                     <Image
                       src="/logos/bancoazteca.png"
                       alt="Banco Azteca"
-                      width={56}
-                      height={32}
+                      width={200}
+                      height={140}
                       className="object-contain"
                     />
                   </div>
-                  <div className="text-white font-bold text-sm">Banco Azteca</div>
-                  <div className="text-gray-400 text-xs">Depósito</div>
+                  <div className="text-gray-800 font-bold text-sm">Banco Azteca</div>
+                  <div className="text-gray-600 text-xs">Depósito</div>
                 </div>
                 
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div className="w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                <div className="bg-white rounded-xl p-6 text-center shadow-lg">
+                  <div className="w-32 h-24 flex items-center justify-center mx-auto mb-4">
                     <Image
                       src="/logos/oxxo.png"
                       alt="OXXO"
-                      width={56}
-                      height={32}
+                      width={100}
+                      height={60}
                       className="object-contain"
                     />
                   </div>
-                  <div className="text-white font-bold text-sm">OXXO</div>
-                  <div className="text-gray-400 text-xs">Efectivo</div>
+                  <div className="text-gray-800 font-bold text-sm">OXXO</div>
+                  <div className="text-gray-600 text-xs">Efectivo</div>
                 </div>
                 
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                  <div className="w-16 h-16 flex items-center justify-center mx-auto mb-3">
+                <div className="bg-white rounded-xl p-6 text-center shadow-lg">
+                  <div className="w-32 h-24 flex items-center justify-center mx-auto mb-4">
                     <Image
                       src="/logos/binance.svg"
                       alt="Binance"
-                      width={56}
-                      height={32}
+                      width={300}
+                      height={260}
                       className="object-contain"
                     />
                   </div>
-                  <div className="text-white font-bold text-sm">Binance Pay</div>
-                  <div className="text-gray-400 text-xs">Crypto</div>
+                  <div className="text-gray-800 font-bold text-sm">Binance Pay</div>
+                  <div className="text-gray-600 text-xs">Crypto</div>
                 </div>
               </div>
             </div>
