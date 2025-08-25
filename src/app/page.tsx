@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import { useRaffleStore } from '@/stores/raffle-store'
 import { useRealTimeTickets } from '@/hooks/useRealTimeTickets'
@@ -24,7 +24,6 @@ import TicketGrid from '@/components/TicketGrid'
 import OrganicNotifications from '@/components/OrganicNotifications'
 
 export default function NewRaffePage() {
-  const [mounted, setMounted] = useState(false)
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   
   const { 
@@ -40,14 +39,6 @@ export default function NewRaffePage() {
   
   const isNearlyFull = soldPercentage >= 80
   const isCritical = soldPercentage >= 95
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return <div className="min-h-screen bg-black"></div>
-  }
 
   return (
     <main className="bg-black text-white font-sans">
