@@ -17,9 +17,7 @@ const nextConfig: NextConfig = {
     ],
   },
   
-  // Headers manejados por Netlify en modo export
-  
-  // Configuración experimental para mejor rendimiento
+  // Deshabilitar telemetría y trace para evitar problemas
   experimental: {
     optimizePackageImports: [
       'lucide-react',
@@ -27,6 +25,10 @@ const nextConfig: NextConfig = {
       'zustand'
     ],
   },
+  
+  // Configuración para evitar archivos problemáticos
+  outputFileTracingIncludes: {},
+  outputFileTracingExcludes: {},
   
   // Configuración de Webpack para better tree shaking
   webpack: (config, { isServer }) => {

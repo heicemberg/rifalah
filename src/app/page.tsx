@@ -81,7 +81,7 @@ export default function RifaSilveradoPage() {
         <div className="container mx-auto">
           <div className="flex items-center justify-center gap-3 text-sm font-bold animate-pulse">
             <Zap className="w-4 h-4 text-yellow-300" />
-            <span className="uppercase tracking-wider">🔥 {urgencyMessage} - Solo quedan {stats.availableCount} boletos 🔥</span>
+            <span className="uppercase tracking-wider">🔥 {urgencyMessage} - Solo quedan {formatMexicanNumber(stats.availableTickets)} boletos 🔥</span>
             <Zap className="w-4 h-4 text-yellow-300" />
           </div>
         </div>
@@ -131,7 +131,7 @@ export default function RifaSilveradoPage() {
               {/* Estadísticas Impactantes */}
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-                  <div className="text-2xl font-bold text-yellow-400">{formatMexicanNumber(stats.soldCount)}</div>
+                  <div className="text-2xl font-bold text-yellow-400">{formatMexicanNumber(stats.soldTickets)}</div>
                   <div className="text-sm text-slate-400">Boletos Vendidos</div>
                 </div>
                 <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
@@ -139,7 +139,7 @@ export default function RifaSilveradoPage() {
                   <div className="text-sm text-slate-400">Completado</div>
                 </div>
                 <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 col-span-2 lg:col-span-1">
-                  <div className="text-2xl font-bold text-red-400">{formatMexicanNumber(stats.availableCount)}</div>
+                  <div className="text-2xl font-bold text-red-400">{formatMexicanNumber(stats.availableTickets)}</div>
                   <div className="text-sm text-slate-400">Disponibles</div>
                 </div>
               </div>
@@ -383,8 +383,8 @@ export default function RifaSilveradoPage() {
       <ComprehensivePurchaseModal 
         isOpen={isPurchaseModalOpen}
         onClose={() => setIsPurchaseModalOpen(false)}
-        initialTicketAmount={selectedTicketAmount}
-        hasPromotionalDiscount={hasPromotionalDiscount}
+        initialTickets={selectedTicketAmount}
+        hasDiscount={hasPromotionalDiscount}
       />
     </div>
   );
