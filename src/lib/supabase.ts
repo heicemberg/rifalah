@@ -5,10 +5,10 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Variables de entorno - Reemplaza con tus credenciales reales
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'YOUR_SUPABASE_URL';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key_for_build';
 
-// Cliente de Supabase
+// Cliente de Supabase con URLs válidas para builds
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // ============================================================================

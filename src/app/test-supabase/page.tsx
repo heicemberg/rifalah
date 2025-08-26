@@ -12,15 +12,26 @@ export default function TestSupabasePage() {
   const [isTestingInsert, setIsTestingInsert] = useState(false);
 
   useEffect(() => {
+    // Solo ejecutar en el cliente
+    if (typeof window === 'undefined') return;
+    
     // Verificar variables de entorno
     setEnvVars({
       url: process.env.NEXT_PUBLIC_SUPABASE_URL || 'NOT_SET',
       key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'NOT_SET'
     });
 
-    // Probar conexión a Supabase
+    // Probar conexión a Supabase solo si tenemos URL válida
     const testConnection = async () => {
       try {
+        // Skip if using placeholder URL
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        if (!url || url.includes('placeholder') || url === 'NOT_SET') {
+          setConnectionStatus('error');
+          setErrorMessage('Supabase URL not configured properly');
+          return;
+        }
+        
         const { data, error } = await supabase.from('customers').select('count').limit(1);
         
         if (error) {
