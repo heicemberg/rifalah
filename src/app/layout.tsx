@@ -402,7 +402,7 @@ export default function RootLayout({
 
         {/* Contenido principal */}
         <AppProviders>
-          <div id="app-root" className="min-h-screen bg-gray-50">
+          <div id="app-root">
             {children}
           </div>
         </AppProviders>
