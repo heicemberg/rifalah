@@ -9,6 +9,7 @@ import React, { useCallback, useMemo, useEffect, useState, useRef } from 'react'
 // Importar desde archivos anteriores
 import { useRaffleStore } from '../stores/raffle-store';
 import { useRealTimeTickets } from '../hooks/useRealTimeTickets';
+import { useSupabaseSync } from '../hooks/useSupabaseSync';
 import { formatTicketNumber, cn } from '../lib/utils';
 import { TOTAL_TICKETS } from '../lib/constants';
 import { Truck, Gift, Zap, Trophy, Star, DollarSign, Gamepad2 } from 'lucide-react';
@@ -37,6 +38,11 @@ interface VirtualizedRowProps {
   onTicketClick: (ticketNumber: number) => void;
   cellSize: number;
   rowHeight: number;
+  filterSettings: {
+    hideOccupied: boolean;
+    showOnlyAvailable: boolean;
+    showOnlySelected: boolean;
+  };
 }
 
 // Configuración de virtualización mejorada - NÚMEROS MÁS GRANDES
@@ -140,18 +146,34 @@ const useVirtualization = (
 };
 
 // ============================================================================
-// COMPONENTE DE CELDA INDIVIDUAL
+// COMPONENTE DE CELDA INDIVIDUAL CON FILTROS
 // ============================================================================
 
-const TicketCell: React.FC<TicketCellProps> = React.memo(({
+const TicketCell: React.FC<TicketCellProps & { shouldHide?: boolean }> = React.memo(({
   ticketNumber,
   isSelected,
   isSold,
   isReserved,
   onTicketClick,
-  cellSize
+  cellSize,
+  shouldHide = false
 }) => {
   const isAvailable = !isSold && !isReserved;
+  
+  // Si debe ocultarse, renderizar celda vacía
+  if (shouldHide) {
+    return (
+      <div
+        style={{
+          width: cellSize,
+          height: cellSize,
+          minWidth: cellSize,
+          minHeight: cellSize
+        }}
+        className="opacity-30"
+      />
+    );
+  }
   
   // Ajustar tamaño de fuente según el tamaño de celda
   const fontSize = cellSize <= CELL_SIZE_MOBILE ? 'text-sm' : 
@@ -237,7 +259,8 @@ const VirtualizedRow: React.FC<VirtualizedRowProps> = React.memo(({
   reservedTickets,
   onTicketClick,
   cellSize,
-  rowHeight
+  rowHeight,
+  filterSettings
 }) => {
   const tickets = [];
   
@@ -245,15 +268,36 @@ const VirtualizedRow: React.FC<VirtualizedRowProps> = React.memo(({
     const ticketNumber = startTicket + i;
     
     if (ticketNumber <= TOTAL_TICKETS) {
+      const isSelected = selectedTickets.includes(ticketNumber);
+      const isSold = soldTickets.includes(ticketNumber);
+      const isReserved = reservedTickets.includes(ticketNumber);
+      const isAvailable = !isSold && !isReserved;
+      
+      // Determinar si debe ocultarse según los filtros
+      let shouldHide = false;
+      
+      if (filterSettings.hideOccupied && (isSold || isReserved)) {
+        shouldHide = true;
+      }
+      
+      if (filterSettings.showOnlyAvailable && !isAvailable) {
+        shouldHide = true;
+      }
+      
+      if (filterSettings.showOnlySelected && !isSelected) {
+        shouldHide = true;
+      }
+      
       tickets.push(
         <TicketCell
           key={ticketNumber}
           ticketNumber={ticketNumber}
-          isSelected={selectedTickets.includes(ticketNumber)}
-          isSold={soldTickets.includes(ticketNumber)}
-          isReserved={reservedTickets.includes(ticketNumber)}
+          isSelected={isSelected}
+          isSold={isSold}
+          isReserved={isReserved}
           onTicketClick={onTicketClick}
           cellSize={cellSize}
+          shouldHide={shouldHide}
         />
       );
     } else {
@@ -305,9 +349,20 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
     deselectTicket
   } = useRaffleStore();
   
+  // Hook de sincronización con Supabase
+  const { isConnected, fomoPercentage } = useSupabaseSync();
+  
   // Refs y estado local
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(800);
+  
+  // FILTROS PARA TICKETS - NUEVO ESTADO
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterSettings, setFilterSettings] = useState({
+    hideOccupied: false, // Ocultar tickets vendidos/reservados
+    showOnlyAvailable: false, // Solo mostrar disponibles
+    showOnlySelected: false // Solo mostrar seleccionados
+  });
   
   // Configuración responsive
   const { columnsPerRow, cellSize } = useResponsiveConfig();
@@ -385,6 +440,7 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
             onTicketClick={handleTicketClick}
             cellSize={cellSize}
             rowHeight={rowHeight}
+            filterSettings={filterSettings}
           />
         );
       }
@@ -404,24 +460,138 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
   
   return (
     <div className="w-full">
-      {/* Leyenda Premium */}
-      <div className="flex flex-wrap justify-center gap-6 mb-6 p-6 bg-gradient-to-r from-slate-50/95 to-emerald-50/95 backdrop-blur-sm rounded-3xl border-2 border-emerald-200/60 shadow-xl">
-        <div className="flex items-center gap-3 bg-white/80 px-4 py-2 rounded-2xl border border-emerald-200 shadow-md">
-          <div className="w-6 h-6 bg-gradient-to-br from-white/95 to-slate-50/90 border-2 border-emerald-400 rounded-xl shadow-lg"></div>
-          <span className="text-sm font-bold text-emerald-800">Disponible</span>
+      {/* Leyenda Premium con Filtros */}
+      <div className="mb-6 p-6 bg-gradient-to-r from-slate-50/95 to-emerald-50/95 backdrop-blur-sm rounded-3xl border-2 border-emerald-200/60 shadow-xl">
+        {/* Leyenda de colores */}
+        <div className="flex flex-wrap justify-center gap-6 mb-4">
+          <div className="flex items-center gap-3 bg-white/80 px-4 py-2 rounded-2xl border border-emerald-200 shadow-md">
+            <div className="w-6 h-6 bg-gradient-to-br from-white/95 to-slate-50/90 border-2 border-emerald-400 rounded-xl shadow-lg"></div>
+            <span className="text-sm font-bold text-emerald-800">Disponible</span>
+          </div>
+          <div className="flex items-center gap-3 bg-emerald-500/10 px-4 py-2 rounded-2xl border border-emerald-300 shadow-md">
+            <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-green-600 border-2 border-emerald-700 rounded-xl shadow-lg"></div>
+            <span className="text-sm font-bold text-emerald-800">Seleccionado</span>
+          </div>
+          <div className="flex items-center gap-3 bg-amber-500/10 px-4 py-2 rounded-2xl border border-amber-300 shadow-md">
+            <div className="w-6 h-6 bg-gradient-to-br from-amber-400 to-yellow-500 border-2 border-amber-600 rounded-xl shadow-lg"></div>
+            <span className="text-sm font-bold text-amber-800">Reservado</span>
+          </div>
+          <div className="flex items-center gap-3 bg-red-500/10 px-4 py-2 rounded-2xl border border-red-300 shadow-md">
+            <div className="w-6 h-6 bg-gradient-to-br from-red-500 to-red-600 border-2 border-red-700 rounded-xl shadow-lg"></div>
+            <span className="text-sm font-bold text-red-800">Vendido</span>
+          </div>
         </div>
-        <div className="flex items-center gap-3 bg-emerald-500/10 px-4 py-2 rounded-2xl border border-emerald-300 shadow-md">
-          <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-green-600 border-2 border-emerald-700 rounded-xl shadow-lg"></div>
-          <span className="text-sm font-bold text-emerald-800">Seleccionado</span>
+
+        {/* Botón para mostrar/ocultar filtros */}
+        <div className="text-center mb-4">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
+            </svg>
+            {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+          </button>
         </div>
-        <div className="flex items-center gap-3 bg-amber-500/10 px-4 py-2 rounded-2xl border border-amber-300 shadow-md">
-          <div className="w-6 h-6 bg-gradient-to-br from-amber-400 to-yellow-500 border-2 border-amber-600 rounded-xl shadow-lg"></div>
-          <span className="text-sm font-bold text-amber-800">Reservado</span>
-        </div>
-        <div className="flex items-center gap-3 bg-red-500/10 px-4 py-2 rounded-2xl border border-red-300 shadow-md">
-          <div className="w-6 h-6 bg-gradient-to-br from-red-500 to-red-600 border-2 border-red-700 rounded-xl shadow-lg"></div>
-          <span className="text-sm font-bold text-red-800">Vendido</span>
-        </div>
+
+        {/* Panel de filtros */}
+        {showFilters && (
+          <div className="bg-white/60 rounded-2xl p-4 border border-gray-200/50 backdrop-blur-sm animate-slide-down">
+            <h4 className="text-lg font-bold text-gray-800 mb-3 text-center">🔍 Filtros de Visualización</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              
+              <div className="space-y-2">
+                <label className="flex items-center gap-3 p-3 bg-gradient-to-r from-red-50 to-red-100 rounded-xl border border-red-200 cursor-pointer hover:shadow-md transition-all">
+                  <input
+                    type="checkbox"
+                    checked={filterSettings.hideOccupied}
+                    onChange={(e) => setFilterSettings(prev => ({ 
+                      ...prev, 
+                      hideOccupied: e.target.checked,
+                      showOnlyAvailable: e.target.checked ? false : prev.showOnlyAvailable 
+                    }))}
+                    className="w-4 h-4 text-red-600 rounded focus:ring-red-500"
+                  />
+                  <div>
+                    <span className="text-sm font-bold text-red-800">Ocultar Ocupados</span>
+                    <p className="text-xs text-red-600">Esconder vendidos y reservados</p>
+                  </div>
+                </label>
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-3 p-3 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200 cursor-pointer hover:shadow-md transition-all">
+                  <input
+                    type="checkbox"
+                    checked={filterSettings.showOnlyAvailable}
+                    onChange={(e) => setFilterSettings(prev => ({ 
+                      ...prev, 
+                      showOnlyAvailable: e.target.checked,
+                      hideOccupied: e.target.checked ? false : prev.hideOccupied,
+                      showOnlySelected: e.target.checked ? false : prev.showOnlySelected
+                    }))}
+                    className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                  />
+                  <div>
+                    <span className="text-sm font-bold text-emerald-800">Solo Disponibles</span>
+                    <p className="text-xs text-emerald-600">Ver únicamente números libres</p>
+                  </div>
+                </label>
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200 cursor-pointer hover:shadow-md transition-all">
+                  <input
+                    type="checkbox"
+                    checked={filterSettings.showOnlySelected}
+                    onChange={(e) => setFilterSettings(prev => ({ 
+                      ...prev, 
+                      showOnlySelected: e.target.checked,
+                      showOnlyAvailable: e.target.checked ? false : prev.showOnlyAvailable,
+                      hideOccupied: e.target.checked ? false : prev.hideOccupied
+                    }))}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    disabled={selectedTickets.length === 0}
+                  />
+                  <div>
+                    <span className={`text-sm font-bold ${selectedTickets.length === 0 ? 'text-gray-400' : 'text-blue-800'}`}>
+                      Solo Seleccionados
+                    </span>
+                    <p className={`text-xs ${selectedTickets.length === 0 ? 'text-gray-400' : 'text-blue-600'}`}>
+                      Ver solo tus {selectedTickets.length} tickets
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Botón para limpiar filtros */}
+            <div className="text-center mt-4">
+              <button
+                onClick={() => setFilterSettings({ hideOccupied: false, showOnlyAvailable: false, showOnlySelected: false })}
+                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                Limpiar Filtros
+              </button>
+            </div>
+
+            {/* Indicador del estado de conexión */}
+            <div className="mt-3 text-center">
+              <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                isConnected 
+                  ? 'bg-green-100 text-green-800 border border-green-200' 
+                  : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+              }`}>
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                {isConnected 
+                  ? `✅ Conectado a BD • ${fomoPercentage}% vendido` 
+                  : '⚠️ Modo offline • Usando datos locales'
+                }
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       
       {/* SECCIÓN DE PREMIOS - NUEVA */}

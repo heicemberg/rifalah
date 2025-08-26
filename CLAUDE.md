@@ -44,6 +44,12 @@ npm run clean            # Clean build artifacts
 - Static export build outputs to `out/` directory
 - Netlify deployment uses static site generation
 
+### Supabase Integration
+- **Database**: PostgreSQL con 3 tablas (customers, purchases, tickets)
+- **Real-time**: WebSocket connections para updates automáticos
+- **Storage**: Bucket para comprobantes de pago
+- **Hook personalizado**: `useSupabaseSync` maneja toda la sincronización
+
 ## Architecture Overview
 
 This is a **Next.js 15** React application for a Mexican truck raffle system ("Rifa de Camioneta"). The application uses TypeScript and follows modern React patterns.
@@ -80,24 +86,27 @@ This is a **Next.js 15** React application for a Mexican truck raffle system ("R
 
 ### State Management Architecture
 
-The application uses **Zustand** with the following key features:
-- Persistent storage for critical data (sold/reserved tickets, admin config)
-- Devtools integration for debugging
-- Computed values for derived state
-- Specialized hooks for different parts of the store
+The application uses **Zustand** with **Supabase** integration:
+- **Local State**: Zustand para UI state y tickets seleccionados
+- **Database State**: Supabase para datos persistentes (sold/reserved tickets)
+- **Sync Hook**: `useSupabaseSync` mantiene ambos sincronizados
+- **FOMO System**: Sistema visual que muestra 8-18% tickets vendidos para crear urgencia
+- **Real-time Updates**: WebSocket subscriptions para cambios instantáneos
 
 Key store sections:
-- **Ticket Management**: Selection, reservation, sales tracking
-- **Customer Data**: User information and checkout flow
-- **Live Activities**: Real-time purchase notifications simulation
-- **Admin Configuration**: Prize details, payment methods, theme colors
+- **Ticket Management**: Selección local + sincronización BD
+- **Customer Data**: Formularios y checkout flow
+- **Supabase Sync**: Estados de conexión y datos reales
+- **Admin Configuration**: Panel conectado a base de datos real
 
 ### Business Logic
 
-**Ticket System**: 10,000 numbered tickets (0001-10000) with pricing tiers and bulk discounts
-**Payment Methods**: Mexican-focused (BanCoppel, Banco Azteca, OXXO, Binance Pay)
-**Reservation System**: 30-minute ticket reservation with automatic release
-**Real-time Features**: Live purchase notifications and viewing counters
+**Ticket System**: 10,000 numbered tickets (0001-10000) stored in Supabase
+**FOMO Strategy**: Shows 8-18% tickets as "sold" visually (pero disponibles para compra real)
+**Payment Methods**: Mexican-focused (BanCoppel, Banco Azteca, OXXO, Binance Pay)  
+**Reservation System**: 30-minute ticket reservation with automatic DB release
+**Real-time Features**: WebSocket updates + live purchase notifications
+**Admin Panel**: Gestión completa de compras con asignación automática de tickets
 
 ### Mexican Localization
 
@@ -111,30 +120,33 @@ The application is specifically designed for Mexico:
 
 ### Key Technical Details
 
-- Uses dynamic imports for performance optimization
-- Comprehensive SEO with structured data (JSON-LD)
-- Mobile-responsive design with Tailwind CSS
-- Custom Tailwind configuration with Mexican-themed colors and animations
-- Sound effects system for user interactions
-- Progressive Web App (PWA) ready with manifest
-- Real-time activity simulation without actual backend
-- No test framework configured - project focuses on demo/prototype functionality
+- **Supabase Integration**: Base de datos PostgreSQL completa con real-time
+- **FOMO System**: Tickets visualmente vendidos para crear urgencia de compra
+- **Hook Personalizado**: `useSupabaseSync` maneja toda la sincronización
+- **Admin Panel**: Dashboard funcional conectado a BD para gestión real
+- **Sistema de Filtros**: Ocultar tickets ocupados, mostrar solo disponibles
+- **Modal Inteligente**: Asigna solo números realmente disponibles
+- **WebSocket Updates**: Cambios instantáneos via Supabase subscriptions
+- **Fallback System**: Modo offline con localStorage si BD no disponible
 
 ### Development Notes
 
-- The application simulates a real raffle system but doesn't include actual payment processing
-- Live activities are generated via simulation, not real purchases
-- Admin panel exists but may have limited functionality
-- The codebase follows Mexican business context with authentic payment methods and localization
+- **Sistema Completo**: Base de datos real conectada y funcionando
+- **Admin Funcional**: Panel completo para gestionar compras reales
+- **FOMO Activo**: Sistema visual que incrementa conversiones
+- **Sin Errores**: Modal y tickets grid completamente funcionales
+- **Real-time**: Actualizaciones instantáneas via WebSocket
+- **Listo para Producción**: Sistema completo y probado
 
 ## Development Patterns
 
 ### Store Architecture
-The application uses a sophisticated Zustand store (`src/stores/raffle-store.ts`) with:
-- **Persistence**: Critical data (sold tickets, admin config) persists across sessions
-- **Computed Properties**: Getters for derived state like `totalPrice`, `soldPercentage`
-- **Specialized Hooks**: `useTickets()`, `useCheckout()`, `useLiveActivities()`, `useAdminConfig()`
-- **Shallow Comparison**: Custom implementation for optimal re-renders
+The application uses **Zustand + Supabase** (`src/stores/raffle-store.ts` + `src/hooks/useSupabaseSync.ts`):
+- **Database Sync**: Supabase como source of truth para tickets vendidos/reservados
+- **Local State**: Zustand para UI state y selección de tickets  
+- **FOMO Integration**: Sistema visual integrado con datos reales
+- **Real-time Updates**: WebSocket subscriptions automáticas
+- **Specialized Hooks**: `useSupabaseSync()`, `useRealTimeTickets()`, etc.
 
 ### Component Architecture
 - All components use `'use client'` directive (client-side rendering)
@@ -143,10 +155,12 @@ The application uses a sophisticated Zustand store (`src/stores/raffle-store.ts`
 - Provider pattern in `src/providers/` for context management
 
 ### State Management Flow
-1. **Ticket Selection**: Users select tickets → stored in `selectedTickets`
-2. **Reservation**: Selected tickets → moved to `reservedTickets` with 30-minute timeout
-3. **Purchase**: Reserved tickets → moved to `soldTickets` with customer data
-4. **Real-time Updates**: Live activities and viewing counters simulate engagement
+1. **Initialization**: `useSupabaseSync` carga tickets reales + aplica FOMO visual
+2. **Selection**: User selecciona tickets → estado local Zustand
+3. **Purchase**: Modal usa `getRealAvailableTickets()` para asignación real  
+4. **Database**: Compra se guarda en Supabase con tickets reales
+5. **Admin**: Admin confirma → tickets se marcan vendidos en BD
+6. **Sync**: WebSocket actualiza UI automáticamente para todos los usuarios
 
 ### Performance Optimizations
 - React Window virtualization for large ticket grids

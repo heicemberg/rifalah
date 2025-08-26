@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { useRaffleStore } from '@/stores/raffle-store'
 import { useRealTimeTickets } from '@/hooks/useRealTimeTickets'
+import { useSupabaseSync } from '@/hooks/useSupabaseSync'
 import { 
   ArrowRight, 
   Gift, 
@@ -32,6 +33,9 @@ export default function NewRaffePage() {
     formatPriceMXN,
     PRECIO_POR_BOLETO_MXN
   } = useRealTimeTickets()
+
+  // Hook de sincronización con Supabase
+  const { isConnected, fomoPercentage } = useSupabaseSync()
 
   const soldCount = stats.soldTickets
   const availableCount = stats.availableTickets

@@ -6,6 +6,7 @@ import { guardarCompra, subirCaptura, obtenerMetadata, type CompraCompleta } fro
 import toast from 'react-hot-toast';
 import { useRaffleStore } from '../stores/raffle-store';
 import { useRealTimeTickets } from '../hooks/useRealTimeTickets';
+import { useSupabaseSync } from '../hooks/useSupabaseSync';
 
 // Tipos para la estructura de datos
 interface TicketData {
@@ -119,6 +120,8 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
   const { availableTickets, markTicketsAsSold } = useRaffleStore();
   // Hook para precios y formateo mexicano
   const { formatMexicanNumber, formatPriceMXN, calculatePrice: calculatePriceMXN, PRECIO_POR_BOLETO_MXN } = useRealTimeTickets();
+  // Hook para sincronización con Supabase y tickets reales
+  const { getRealAvailableTickets, isConnected } = useSupabaseSync();
   
   // Estados principales
   const [tickets, setTickets] = useState<number>(initialTickets);
@@ -328,28 +331,52 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
     }
   };
 
-  // Función para asignar números de boletos aleatorios
-  const asignarBoletos = useCallback((cantidad: number): number[] => {
-    if (availableTickets.length < cantidad) {
-      throw new Error(`Solo quedan ${availableTickets.length} boletos disponibles`);
+  // Función para asignar números de boletos aleatorios usando datos reales
+  const asignarBoletos = useCallback(async (cantidad: number): Promise<number[]> => {
+    try {
+      // Si está conectado a Supabase, usar tickets realmente disponibles
+      if (isConnected) {
+        const ticketsRealesDisponibles = await getRealAvailableTickets();
+        
+        if (ticketsRealesDisponibles.length < cantidad) {
+          throw new Error(`Solo hay ${ticketsRealesDisponibles.length} boletos realmente disponibles. No se pueden asignar ${cantidad} boletos.`);
+        }
+        
+        // Seleccionar números aleatorios de los realmente disponibles
+        const disponibles = [...ticketsRealesDisponibles];
+        const boletosSeleccionados: number[] = [];
+        
+        for (let i = 0; i < cantidad; i++) {
+          const randomIndex = Math.floor(Math.random() * disponibles.length);
+          const boletoSeleccionado = disponibles[randomIndex];
+          boletosSeleccionados.push(boletoSeleccionado);
+          disponibles.splice(randomIndex, 1);
+        }
+        
+        return boletosSeleccionados.sort((a, b) => a - b);
+      } else {
+        // Fallback para modo offline
+        if (availableTickets.length < cantidad) {
+          throw new Error(`Solo quedan ${availableTickets.length} boletos disponibles`);
+        }
+        
+        const disponibles = [...availableTickets];
+        const boletosSeleccionados: number[] = [];
+        
+        for (let i = 0; i < cantidad; i++) {
+          const randomIndex = Math.floor(Math.random() * disponibles.length);
+          const boletoSeleccionado = disponibles[randomIndex];
+          boletosSeleccionados.push(boletoSeleccionado);
+          disponibles.splice(randomIndex, 1);
+        }
+        
+        return boletosSeleccionados.sort((a, b) => a - b);
+      }
+    } catch (error) {
+      console.error('Error al asignar boletos:', error);
+      throw error;
     }
-    
-    // Crear una copia del array de boletos disponibles
-    const disponibles = [...availableTickets];
-    const boletosSeleccionados: number[] = [];
-    
-    // Seleccionar números aleatorios
-    for (let i = 0; i < cantidad; i++) {
-      const randomIndex = Math.floor(Math.random() * disponibles.length);
-      const boletoSeleccionado = disponibles[randomIndex];
-      boletosSeleccionados.push(boletoSeleccionado);
-      // Remover el boleto seleccionado para evitar duplicados
-      disponibles.splice(randomIndex, 1);
-    }
-    
-    // Ordenar los números para mostrarlos de forma organizada
-    return boletosSeleccionados.sort((a, b) => a - b);
-  }, [availableTickets]);
+  }, [availableTickets, isConnected, getRealAvailableTickets]);
 
   const formatearNumeroBoleto = (numero: number): string => {
     return numero.toString().padStart(4, '0');
@@ -404,14 +431,19 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
       // Mostrar toast de inicio
       toast.loading('Procesando tu compra...', { id: 'purchase' });
 
-      // 1. Asignar números de boletos aleatorios
+      // 1. Asignar números de boletos aleatorios usando datos reales
       let numerosAsignados: number[] = [];
       try {
-        numerosAsignados = asignarBoletos(tickets);
+        numerosAsignados = await asignarBoletos(tickets);
         setBoletosAsignados(numerosAsignados);
         toast.loading(`Boletos asignados: ${numerosAsignados.map(formatearNumeroBoleto).join(', ')}`, { id: 'purchase' });
       } catch (error) {
-        throw new Error(`Error al asignar boletos: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        // Si el error es por falta de boletos, mostrar mensaje específico
+        if (error instanceof Error && error.message.includes('boletos realmente disponibles')) {
+          throw new Error('¡Ups! Algunos números ya fueron tomados por otros compradores. Por favor intenta con menos boletos o inténtalo de nuevo.');
+        } else {
+          throw new Error(`Error al asignar boletos: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        }
       }
 
       // 2. Simular procesamiento

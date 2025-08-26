@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { obtenerCompras, actualizarEstadoCompra, type CompraConDetalles, verificarConexion } from '../lib/supabase';
+import { useSupabaseSync } from '../hooks/useSupabaseSync';
 import toast from 'react-hot-toast';
 
 // ============================================================================
@@ -19,6 +20,9 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<'todas' | 'pendiente' | 'confirmada' | 'cancelada'>('todas');
   const [busqueda, setBusqueda] = useState('');
+  
+  // Hook de sincronización con Supabase
+  const { isConnected, fomoPercentage, refreshData } = useSupabaseSync();
 
   // Cargar compras al montar el componente
   useEffect(() => {
@@ -29,14 +33,14 @@ export default function AdminPanel() {
     try {
       setLoading(true);
       
-      // Verificar conexión con Supabase primero
-      const conexionOk = await verificarConexion();
-      
-      if (conexionOk) {
+      if (isConnected) {
         // Cargar desde Supabase
         const comprasSupabase = await obtenerCompras();
         setCompras(comprasSupabase || []);
-        toast.success(`${comprasSupabase?.length || 0} compras cargadas desde Supabase`);
+        toast.success(`${comprasSupabase?.length || 0} compras cargadas desde Supabase • ${fomoPercentage}% vendido`);
+        
+        // Sincronizar datos de tickets también
+        await refreshData();
       } else {
         // Fallback a localStorage si Supabase no está disponible
         console.warn('Supabase no disponible, usando localStorage como fallback');
@@ -87,13 +91,13 @@ export default function AdminPanel() {
 
   const cambiarEstado = async (id: string, nuevoEstado: 'pendiente' | 'confirmada' | 'cancelada') => {
     try {
-      // Verificar conexión con Supabase
-      const conexionOk = await verificarConexion();
-      
-      if (conexionOk) {
+      if (isConnected) {
         // Actualizar en Supabase
         await actualizarEstadoCompra(id, nuevoEstado);
         toast.success(`Estado actualizado a: ${nuevoEstado}`);
+        
+        // Refrescar datos de tickets para mantener sincronización
+        await refreshData();
       } else {
         // Fallback a localStorage
         const comprasActuales = JSON.parse(localStorage.getItem('compras-registradas') || '[]');
@@ -255,9 +259,17 @@ export default function AdminPanel() {
               <p className="text-gray-600">
                 Gestiona todas las compras de boletos de la rifa
               </p>
-              <p className="text-sm text-yellow-600 mt-1">
-                📝 Usando localStorage - Datos almacenados localmente
-              </p>
+              <div className={`text-sm mt-2 px-3 py-1 rounded-full inline-flex items-center gap-2 ${
+                isConnected 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                {isConnected 
+                  ? `✅ Conectado a Supabase • ${fomoPercentage}% vendido (FOMO activo)` 
+                  : '⚠️ Modo offline • Usando localStorage'
+                }
+              </div>
             </div>
             {compras.length === 0 && (
               <button

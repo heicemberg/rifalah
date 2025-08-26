@@ -112,6 +112,10 @@ export interface RaffleActions {
   initializeTickets: () => void;
   resetStore: () => void;
   
+  // Acciones para sincronización con Supabase
+  setSoldTicketsFromDB: (tickets: number[]) => void;
+  setReservedTicketsFromDB: (tickets: number[]) => void;
+  
   // Funciones internas
   _updateAvailableTickets: () => void;
 }
@@ -139,7 +143,7 @@ export type RaffleStore = RaffleState & RaffleActions & RaffleComputed;
 const initialState: RaffleState = {
   tickets: [],
   selectedTickets: [],
-  soldTickets: Array.from({length: 3800}, (_, i) => i + 1),
+  soldTickets: [], // Inicializamos vacío para cargar desde Supabase
   reservedTickets: [],
   customerData: null,
   currentStep: 'selecting',
@@ -166,6 +170,17 @@ export const useRaffleStore = create<RaffleStore>()(
         // ========================================================================
         
         availableTickets: [],
+        
+        // Acciones para sincronización con Supabase
+        setSoldTicketsFromDB: (tickets: number[]) => {
+          set({ soldTickets: tickets });
+          get()._updateAvailableTickets();
+        },
+        
+        setReservedTicketsFromDB: (tickets: number[]) => {
+          set({ reservedTickets: tickets });
+          get()._updateAvailableTickets();
+        },
         
         // Helper para actualizar tickets disponibles
         _updateAvailableTickets: () => {
