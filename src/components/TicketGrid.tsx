@@ -160,6 +160,16 @@ const TicketCell: React.FC<TicketCellProps & { shouldHide?: boolean }> = React.m
 }) => {
   const isAvailable = !isSold && !isReserved;
   
+  // Ajustar tamaño de fuente según el tamaño de celda
+  const fontSize = cellSize <= CELL_SIZE_MOBILE ? 'text-sm' : 
+                   cellSize <= CELL_SIZE_TABLET ? 'text-base' : 'text-lg';
+
+  const handleClick = useCallback(() => {
+    if (isAvailable) {
+      onTicketClick(ticketNumber);
+    }
+  }, [isAvailable, ticketNumber, onTicketClick]);
+
   // Si debe ocultarse, renderizar celda vacía
   if (shouldHide) {
     return (
@@ -174,10 +184,6 @@ const TicketCell: React.FC<TicketCellProps & { shouldHide?: boolean }> = React.m
       />
     );
   }
-  
-  // Ajustar tamaño de fuente según el tamaño de celda
-  const fontSize = cellSize <= CELL_SIZE_MOBILE ? 'text-sm' : 
-                   cellSize <= CELL_SIZE_TABLET ? 'text-base' : 'text-lg';
   
   const cellClasses = cn(
     'flex items-center justify-center font-bold cursor-pointer relative overflow-hidden',
@@ -202,12 +208,6 @@ const TicketCell: React.FC<TicketCellProps & { shouldHide?: boolean }> = React.m
         isReserved,
     }
   );
-  
-  const handleClick = useCallback(() => {
-    if (isAvailable) {
-      onTicketClick(ticketNumber);
-    }
-  }, [isAvailable, ticketNumber, onTicketClick]);
   
   return (
     <div 
@@ -455,7 +455,8 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
     reservedTickets,
     handleTicketClick,
     cellSize,
-    rowHeight
+    rowHeight,
+    filterSettings
   ]);
   
   return (
