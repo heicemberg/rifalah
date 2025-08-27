@@ -31,7 +31,10 @@
       "Bash(timeout 120s npm run build)",
       "Bash(npm run netlify:build:*)",
       "Read(/C:\\c\\Users\\Administrador\\.continue/**)",
-      "Bash(npm run clean:*)"
+      "Bash(npm run clean:*)",
+      "Bash(timeout:*)",
+      "Bash(git rm:*)",
+      "Bash(npx next:*)"
     ],
     "deny": [],
     "ask": [],

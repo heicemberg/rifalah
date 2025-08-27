@@ -1,132 +1,64 @@
 // ============================================================================
-// CONFIGURACIÓN DE SUPABASE PARA RIFA SILVERADO Z71 2024 - VERSIÓN DEFINITIVA  
-// OPTIMIZADO PARA NETLIFY Y PRODUCCIÓN
+// CONFIGURACIÓN DE SUPABASE - SOLUCIÓN PROBADA PARA NETLIFY
+// Basada en las mejores prácticas de la comunidad para evitar errores de conexión
 // ============================================================================
 
 import { createClient } from '@supabase/supabase-js';
-import { createBrowserClient } from '@supabase/ssr';
+import type { Database } from './database.types';
 
-// Función para validar configuración
-function validateSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
-  console.log('🔧 Verificando configuración de Supabase...');
-  console.log('URL:', url ? `${url.slice(0, 30)}...` : 'NO DEFINIDA');
-  console.log('ANON_KEY:', key ? `${key.slice(0, 30)}...` : 'NO DEFINIDA');
-  
-  if (!url || url.includes('placeholder')) {
-    console.error('❌ NEXT_PUBLIC_SUPABASE_URL no está configurada correctamente');
-    throw new Error('NEXT_PUBLIC_SUPABASE_URL no configurada');
-  }
-  
-  if (!key || key.includes('placeholder') || !key.startsWith('eyJ')) {
-    console.error('❌ NEXT_PUBLIC_SUPABASE_ANON_KEY no es válida (debe empezar con eyJ)');
-    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY no válida');
-  }
-  
-  return { url, key };
+// ============================================================================
+// CONFIGURACIÓN DE VARIABLES DE ENTORNO CON VALIDACIÓN
+// ============================================================================
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+if (!supabaseUrl) {
+  throw new Error(
+    'NEXT_PUBLIC_SUPABASE_URL no está definida. ' +
+    'Asegúrate de configurarla en las variables de entorno de Netlify.'
+  );
 }
 
-// Variables de entorno validadas (solo en tiempo de ejecución)
-let supabaseUrl: string;
-let supabaseAnonKey: string;
-
-// Solo validar en tiempo de ejecución, no durante el build
-if (typeof window !== 'undefined' || process.env.NODE_ENV !== 'production') {
-  try {
-    const config = validateSupabaseConfig();
-    supabaseUrl = config.url;
-    supabaseAnonKey = config.key;
-  } catch (error) {
-    // Fallback para el build estático
-    supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-    console.warn('⚠️ Usando configuración de fallback durante el build');
-  }
-} else {
-  // Durante el build estático, usar valores directos
-  supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-}
-
-// Cliente de Supabase optimizado para Netlify
-function createSupabaseClient() {
-  const url = supabaseUrl || 'https://placeholder.supabase.co';
-  const key = supabaseAnonKey || 'placeholder-key';
-  
-  // Usar createBrowserClient para mejor compatibilidad con SSR/SSG
-  if (typeof window !== 'undefined') {
-    return createBrowserClient(url, key, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: false
-      },
-      db: {
-        schema: 'public'
-      },
-      global: {
-        headers: {
-          'X-Client-Info': 'rifa-silverado@1.0.0'
-        },
-        // Configuración específica para Netlify
-        fetch: (...args) => fetch(...args)
-      }
-    });
-  }
-  
-  // Fallback para SSR/build time
-  return createClient(url, key, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false
-    },
-    db: {
-      schema: 'public'
-    },
-    global: {
-      headers: {
-        'X-Client-Info': 'rifa-silverado@1.0.0'
-      },
-      fetch: (...args) => fetch(...args)
-    }
-  });
-}
-
-export const supabase = createSupabaseClient();
-
-// Test de conexión al inicializar
-async function testSupabaseConnection() {
-  try {
-    console.log('🔄 Probando conexión con Supabase...');
-    const { data, error } = await supabase.from('customers').select('count', { count: 'exact', head: true });
-    
-    if (error) {
-      console.error('❌ Error de conexión Supabase:', error.message);
-      return false;
-    }
-    
-    console.log('✅ Conexión con Supabase establecida correctamente');
-    return true;
-  } catch (err) {
-    console.error('❌ Error crítico de Supabase:', err);
-    return false;
-  }
-}
-
-// Ejecutar test de conexión (solo en cliente)
-if (typeof window !== 'undefined') {
-  testSupabaseConnection().then(connected => {
-    if (!connected) {
-      console.warn('⚠️ Fallback: Usando modo offline hasta que se resuelva la conexión');
-    }
-  });
+if (!supabaseAnonKey) {
+  throw new Error(
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY no está definida. ' +
+    'Asegúrate de configurarla en las variables de entorno de Netlify.'
+  );
 }
 
 // ============================================================================
-// TIPOS DE DATOS PARA LA BASE DE DATOS NORMALIZADA
+// SINGLETON PATTERN PARA EVITAR MÚLTIPLES CONEXIONES
+// ============================================================================
+
+let supabaseInstance: ReturnType<typeof createClient<Database>> | null = null;
+
+function getSupabaseClient() {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'rifa-silverado@1.0.0',
+        },
+      },
+    });
+    
+    console.log('✅ Supabase client initialized');
+  }
+  
+  return supabaseInstance;
+}
+
+// Exportar el cliente singleton
+export const supabase = getSupabaseClient();
+
+// ============================================================================
+// TIPOS DE DATOS PARA LA BASE DE DATOS
 // ============================================================================
 
 export interface Customer {
@@ -170,9 +102,7 @@ export interface Ticket {
   created_at?: string;
 }
 
-// Tipo para el input de compra completa
 export interface CompraCompleta {
-  // Datos del cliente
   nombre: string;
   apellidos: string;
   telefono: string;
@@ -180,50 +110,74 @@ export interface CompraCompleta {
   estado: string;
   ciudad: string;
   info_adicional?: string;
-  
-  // Información de la compra
   cantidad_boletos: number;
   numeros_boletos: number[];
   precio_unitario: number;
   precio_total: number;
   descuento_aplicado?: number;
-  
-  // Método de pago
   metodo_pago: string;
   referencia_pago?: string;
   captura_comprobante_url?: string;
-  
-  // Metadata
   navegador?: string;
   dispositivo?: string;
   ip_address?: string;
   user_agent?: string;
 }
 
-// Tipo para consultas con datos combinados
 export interface CompraConDetalles extends Purchase {
   customer: Customer;
   tickets: Ticket[];
 }
 
 // ============================================================================
-// FUNCIONES PARA INTERACTUAR CON LA BASE DE DATOS
+// FUNCIONES DE BASE DE DATOS CON MANEJO ROBUSTO DE ERRORES
 // ============================================================================
 
 /**
- * Guarda una compra completa usando el esquema normalizado
+ * Verificar conexión con manejo de errores específicos
+ */
+export async function verificarConexion(): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('count', { count: 'exact', head: true });
+
+    if (error) {
+      console.error('❌ Error de conexión Supabase:', error.message);
+      
+      // Errores específicos de base de datos pausada
+      if (error.message.includes('database is paused') || 
+          error.message.includes('project is paused') ||
+          error.message.includes('timeout')) {
+        console.error('🚨 Base de datos pausada. Revisa tu plan de Supabase.');
+        throw new Error('Base de datos pausada. Contacta al administrador o actualiza el plan.');
+      }
+      
+      return false;
+    }
+
+    console.log('✅ Conexión Supabase exitosa');
+    return true;
+  } catch (error) {
+    console.error('❌ Error crítico de conexión:', error);
+    return false;
+  }
+}
+
+/**
+ * Guarda una compra completa con manejo robusto de errores
  */
 export async function guardarCompra(datosCompra: CompraCompleta) {
   try {
-    console.log('Intentando guardar compra con datos:', datosCompra);
-    
     // Verificar conexión primero
-    const conexionOk = await verificarConexion();
-    if (!conexionOk) {
-      throw new Error('No se pudo conectar con la base de datos');
+    const isConnected = await verificarConexion();
+    if (!isConnected) {
+      throw new Error('No se pudo establecer conexión con la base de datos. Intenta más tarde.');
     }
 
-    // Iniciar transacción usando RPC o múltiples operaciones
+    console.log('💾 Guardando compra:', datosCompra);
+
+    // Crear cliente
     const { data: customer, error: customerError } = await supabase
       .from('customers')
       .insert([{
@@ -237,11 +191,11 @@ export async function guardarCompra(datosCompra: CompraCompleta) {
       .single();
 
     if (customerError) {
-      console.error('Error al crear cliente:', customerError);
+      console.error('❌ Error al crear cliente:', customerError);
       throw new Error(`Error al crear cliente: ${customerError.message}`);
     }
 
-    // Crear la compra
+    // Crear compra
     const { data: purchase, error: purchaseError } = await supabase
       .from('purchases')
       .insert([{
@@ -262,33 +216,46 @@ export async function guardarCompra(datosCompra: CompraCompleta) {
       .single();
 
     if (purchaseError) {
-      console.error('Error al crear compra:', purchaseError);
+      console.error('❌ Error al crear compra:', purchaseError);
       throw new Error(`Error al crear compra: ${purchaseError.message}`);
     }
-
-    // NO crear tickets aún - se asignarán cuando el admin confirme la compra
-    // Los tickets se asignan solo en actualizarEstadoCompra cuando estado = 'confirmada'
 
     const resultado = {
       customer,
       purchase,
-      tickets: [] // Sin tickets hasta que se confirme
+      tickets: []
     };
 
-    console.log('Compra guardada exitosamente:', resultado);
+    console.log('✅ Compra guardada exitosamente');
     return resultado;
   } catch (error) {
-    console.error('Error completo en guardarCompra:', error);
+    console.error('❌ Error completo en guardarCompra:', error);
     throw error;
   }
 }
 
 /**
- * Sube un archivo (captura de pantalla) a Supabase Storage
+ * Obtener metadata del dispositivo
+ */
+export function obtenerMetadata() {
+  if (typeof window === 'undefined') return {};
+  
+  return {
+    navegador: navigator.userAgent,
+    dispositivo: /Mobi|Android/i.test(navigator.userAgent) ? 'móvil' : 'escritorio',
+    user_agent: navigator.userAgent,
+    timestamp: new Date().toISOString(),
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    idioma: navigator.language,
+    pantalla: `${screen.width}x${screen.height}`,
+  };
+}
+
+/**
+ * Subir archivo a Supabase Storage
  */
 export async function subirCaptura(archivo: File, nombreCliente: string): Promise<string | null> {
   try {
-    // Generar nombre único para el archivo
     const timestamp = new Date().getTime();
     const extension = archivo.name.split('.').pop();
     const nombreArchivo = `capturas/${nombreCliente.replace(/\s+/g, '_')}_${timestamp}.${extension}`;
@@ -298,25 +265,24 @@ export async function subirCaptura(archivo: File, nombreCliente: string): Promis
       .upload(nombreArchivo, archivo);
 
     if (error) {
-      console.error('Error al subir archivo:', error);
+      console.error('❌ Error al subir archivo:', error);
       throw error;
     }
 
-    // Obtener URL pública del archivo
     const { data: publicUrlData } = supabase.storage
       .from('comprobantes')
       .getPublicUrl(nombreArchivo);
 
-    console.log('Archivo subido exitosamente:', publicUrlData.publicUrl);
+    console.log('✅ Archivo subido exitosamente');
     return publicUrlData.publicUrl;
   } catch (error) {
-    console.error('Error en subirCaptura:', error);
+    console.error('❌ Error en subirCaptura:', error);
     return null;
   }
 }
 
 /**
- * Obtiene todas las compras con detalles del cliente y tickets (para el admin)
+ * Obtener todas las compras (para admin)
  */
 export async function obtenerCompras(): Promise<CompraConDetalles[]> {
   try {
@@ -330,19 +296,19 @@ export async function obtenerCompras(): Promise<CompraConDetalles[]> {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error al obtener compras:', error);
+      console.error('❌ Error al obtener compras:', error);
       throw error;
     }
 
     return data as CompraConDetalles[];
   } catch (error) {
-    console.error('Error en obtenerCompras:', error);
+    console.error('❌ Error en obtenerCompras:', error);
     throw error;
   }
 }
 
 /**
- * Actualiza el estado de una compra
+ * Actualizar estado de una compra
  */
 export async function actualizarEstadoCompra(
   purchaseId: string, 
@@ -351,7 +317,6 @@ export async function actualizarEstadoCompra(
   verificadoPor?: string
 ) {
   try {
-    // 1. Obtener datos de la compra antes de actualizar
     const { data: purchaseData, error: getError } = await supabase
       .from('purchases')
       .select(`
@@ -363,7 +328,6 @@ export async function actualizarEstadoCompra(
 
     if (getError) throw getError;
 
-    // 2. Actualizar el estado de la compra
     const updates: Partial<Purchase> = {
       status: estado,
       notes: notas,
@@ -383,10 +347,9 @@ export async function actualizarEstadoCompra(
 
     if (updateError) throw updateError;
 
-    // 3. Si se confirma la compra, asignar números de tickets
+    // Asignar tickets si se confirma
     let tickets: Ticket[] = [];
     if (estado === 'confirmada') {
-      // Calcular cantidad de boletos basado en el total y precio unitario
       const cantidadBoletos = Math.round(updatedPurchase.total_amount / updatedPurchase.unit_price);
       
       try {
@@ -397,8 +360,7 @@ export async function actualizarEstadoCompra(
         );
         console.log(`✅ Compra confirmada y ${tickets.length} tickets asignados`);
       } catch (ticketError) {
-        console.error('Error al asignar tickets:', ticketError);
-        // Revertir el estado si no se pudieron asignar tickets
+        console.error('❌ Error al asignar tickets:', ticketError);
         await supabase
           .from('purchases')
           .update({ status: 'pendiente' })
@@ -408,7 +370,7 @@ export async function actualizarEstadoCompra(
       }
     }
 
-    // 4. Si se cancela, liberar cualquier ticket asignado
+    // Liberar tickets si se cancela
     if (estado === 'cancelada') {
       await supabase
         .from('tickets')
@@ -423,7 +385,6 @@ export async function actualizarEstadoCompra(
       console.log('🔄 Tickets liberados por cancelación');
     }
 
-    // 5. Obtener datos completos actualizados
     const { data: finalData, error: finalError } = await supabase
       .from('purchases')
       .select(`
@@ -436,137 +397,16 @@ export async function actualizarEstadoCompra(
 
     if (finalError) throw finalError;
 
-    console.log('Compra actualizada:', finalData);
+    console.log('✅ Compra actualizada');
     return finalData as CompraConDetalles;
   } catch (error) {
-    console.error('Error en actualizarEstadoCompra:', error);
+    console.error('❌ Error en actualizarEstadoCompra:', error);
     throw error;
   }
 }
 
 /**
- * Obtiene información del navegador y dispositivo
- */
-export function obtenerMetadata() {
-  if (typeof window === 'undefined') return {};
-  
-  return {
-    navegador: navigator.userAgent,
-    dispositivo: /Mobi|Android/i.test(navigator.userAgent) ? 'móvil' : 'escritorio',
-    user_agent: navigator.userAgent,
-    timestamp: new Date().toISOString(),
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    idioma: navigator.language,
-    pantalla: `${screen.width}x${screen.height}`,
-  };
-}
-
-// ============================================================================
-// CONFIGURACIÓN INICIAL
-// ============================================================================
-
-/**
- * Verifica la conexión con Supabase
- */
-export async function verificarConexion() {
-  try {
-    const { data, error } = await supabase
-      .from('customers')
-      .select('count', { count: 'exact', head: true });
-
-    if (error) {
-      console.error('Error de conexión:', error);
-      return false;
-    }
-
-    console.log('Conexión con Supabase exitosa');
-    return true;
-  } catch (error) {
-    console.error('Error al verificar conexión:', error);
-    return false;
-  }
-}
-
-// ============================================================================
-// FUNCIONES ADICIONALES PARA EL ESQUEMA NORMALIZADO
-// ============================================================================
-
-/**
- * Obtiene tickets disponibles
- */
-export async function obtenerTicketsDisponibles(): Promise<Ticket[]> {
-  try {
-    const { data, error } = await supabase
-      .from('tickets')
-      .select('*')
-      .eq('status', 'disponible')
-      .order('number');
-
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Error al obtener tickets disponibles:', error);
-    throw error;
-  }
-}
-
-/**
- * Reserva tickets temporalmente
- */
-export async function reservarTickets(numeros: number[], customerId?: string): Promise<Ticket[]> {
-  try {
-    const updates = numeros.map(numero => ({
-      number: numero,
-      status: 'reservado' as const,
-      customer_id: customerId,
-      reserved_at: new Date().toISOString()
-    }));
-
-    const { data, error } = await supabase
-      .from('tickets')
-      .upsert(updates, { 
-        onConflict: 'number',
-        ignoreDuplicates: false 
-      })
-      .select();
-
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Error al reservar tickets:', error);
-    throw error;
-  }
-}
-
-/**
- * Libera reservas expiradas (llamar periódicamente)
- */
-export async function liberarReservasExpiradas(minutos: number = 30): Promise<number> {
-  try {
-    const tiempoExpiracion = new Date();
-    tiempoExpiracion.setMinutes(tiempoExpiracion.getMinutes() - minutos);
-
-    const { data, error } = await supabase
-      .from('tickets')
-      .update({
-        status: 'disponible',
-        customer_id: null,
-        reserved_at: null
-      })
-      .eq('status', 'reservado')
-      .lt('reserved_at', tiempoExpiracion.toISOString())
-      .select();
-
-    if (error) throw error;
-    return data?.length || 0;
-  } catch (error) {
-    console.error('Error al liberar reservas:', error);
-    throw error;
-  }
-}
-
-/**
- * Asigna números de tickets disponibles automáticamente para una compra
+ * Asignar números de tickets disponibles automáticamente
  */
 export async function asignarNumerosDisponibles(
   purchaseId: string, 
@@ -574,7 +414,6 @@ export async function asignarNumerosDisponibles(
   cantidadBoletos: number
 ): Promise<Ticket[]> {
   try {
-    // 1. Obtener tickets disponibles en orden numérico
     const { data: ticketsDisponibles, error: selectError } = await supabase
       .from('tickets')
       .select('*')
@@ -588,7 +427,6 @@ export async function asignarNumerosDisponibles(
       throw new Error(`Solo hay ${ticketsDisponibles?.length || 0} tickets disponibles, necesitas ${cantidadBoletos}`);
     }
 
-    // 2. Marcar tickets como vendidos y asignar al cliente
     const numerosAsignados = ticketsDisponibles.map(t => t.number);
     const ahora = new Date().toISOString();
 
@@ -608,7 +446,7 @@ export async function asignarNumerosDisponibles(
     console.log(`✅ Asignados ${ticketsActualizados?.length} tickets:`, numerosAsignados);
     return ticketsActualizados || [];
   } catch (error) {
-    console.error('Error al asignar números:', error);
+    console.error('❌ Error al asignar números:', error);
     throw error;
   }
 }
