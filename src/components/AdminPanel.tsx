@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { obtenerCompras, actualizarEstadoCompra, type CompraConDetalles, verificarConexion } from '../lib/supabase';
+import { obtenerCompras, actualizarEstadoCompra, type CompraConDetalles } from '../lib/supabase';
 import { useSupabaseSync } from '../hooks/useSupabaseSync';
 import toast from 'react-hot-toast';
 

@@ -4,7 +4,6 @@
 // ============================================================================
 
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from './database.types';
 
 // ============================================================================
 // CONFIGURACIÓN DE VARIABLES DE ENTORNO CON VALIDACIÓN
@@ -31,11 +30,11 @@ if (!supabaseAnonKey) {
 // SINGLETON PATTERN PARA EVITAR MÚLTIPLES CONEXIONES
 // ============================================================================
 
-let supabaseInstance: ReturnType<typeof createClient<Database>> | null = null;
+let supabaseInstance: ReturnType<typeof createClient> | null = null;
 
 function getSupabaseClient() {
   if (!supabaseInstance) {
-    supabaseInstance = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
@@ -55,7 +54,7 @@ function getSupabaseClient() {
 }
 
 // Exportar el cliente singleton
-export const supabase = getSupabaseClient();
+export const supabase = getSupabaseClient() as any;
 
 // ============================================================================
 // TIPOS DE DATOS PARA LA BASE DE DATOS
@@ -427,7 +426,7 @@ export async function asignarNumerosDisponibles(
       throw new Error(`Solo hay ${ticketsDisponibles?.length || 0} tickets disponibles, necesitas ${cantidadBoletos}`);
     }
 
-    const numerosAsignados = ticketsDisponibles.map(t => t.number);
+    const numerosAsignados = ticketsDisponibles.map((t: any) => t.number);
     const ahora = new Date().toISOString();
 
     const { data: ticketsActualizados, error: updateError } = await supabase

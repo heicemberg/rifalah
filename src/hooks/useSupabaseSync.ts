@@ -3,9 +3,8 @@
 // ============================================================================
 
 import { useEffect, useState } from 'react';
-import { supabase, obtenerTicketsDisponibles, verificarConexion } from '../lib/supabase';
+import { supabase, verificarConexion } from '../lib/supabase';
 import { useRaffleStore } from '../stores/raffle-store';
-import { randomBetween } from '../lib/utils';
 import toast from 'react-hot-toast';
 
 export function useSupabaseSync() {
@@ -15,14 +14,10 @@ export function useSupabaseSync() {
   
   // Store actions
   const { 
-    soldTickets, 
-    reservedTickets,
     _updateAvailableTickets,
     setSoldTicketsFromDB,
     setReservedTicketsFromDB
   } = useRaffleStore(state => ({
-    soldTickets: state.soldTickets,
-    reservedTickets: state.reservedTickets,
     _updateAvailableTickets: state._updateAvailableTickets,
     setSoldTicketsFromDB: state.setSoldTicketsFromDB,
     setReservedTicketsFromDB: state.setReservedTicketsFromDB
@@ -95,7 +90,7 @@ export function useSupabaseSync() {
         console.error('Error al obtener tickets vendidos:', soldError);
         toast.error('Error al cargar tickets vendidos');
       } else {
-        const realSoldTickets = soldTicketsData?.map(t => t.number) || [];
+        const realSoldTickets = soldTicketsData?.map((t: any) => t.number) || [];
         
         // Aplicar sistema FOMO
         const visualSoldTickets = generateFomoTickets(realSoldTickets);
@@ -115,7 +110,7 @@ export function useSupabaseSync() {
       if (reservedError) {
         console.error('Error al obtener tickets reservados:', reservedError);
       } else {
-        const reservedNumbers = reservedTicketsData?.map(t => t.number) || [];
+        const reservedNumbers = reservedTicketsData?.map((t: any) => t.number) || [];
         setReservedTicketsFromDB(reservedNumbers);
       }
 
@@ -180,7 +175,7 @@ export function useSupabaseSync() {
           schema: 'public',
           table: 'tickets'
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Cambio en tickets:', payload);
           // Recargar datos cuando hay cambios
           loadInitialData();
@@ -198,7 +193,7 @@ export function useSupabaseSync() {
           schema: 'public',
           table: 'purchases'
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Cambio en compras:', payload);
           // Mostrar notificación de nueva compra si es insert
           if (payload.eventType === 'INSERT') {
@@ -248,7 +243,7 @@ export function useSupabaseSync() {
         return [];
       }
 
-      const unavailableNumbers = new Set(unavailableTickets?.map(t => t.number) || []);
+      const unavailableNumbers = new Set(unavailableTickets?.map((t: any) => t.number) || []);
       const availableTickets: number[] = [];
 
       for (let i = 1; i <= 10000; i++) {

@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   // Configuración para despliegue estático
   output: 'export',
   trailingSlash: true,
-  distDir: 'out',
+  distDir: 'dist',
   
   // Configuración de imágenes para modo estático
   images: {
@@ -18,8 +18,6 @@ const nextConfig: NextConfig = {
   },
   
   // Deshabilitar telemetría y trace para evitar problemas
-  outputFileTracingRoot: process.cwd(),
-  outputFileTracingIncludes: {},
   experimental: {
     optimizePackageImports: [
       'lucide-react',
@@ -28,14 +26,6 @@ const nextConfig: NextConfig = {
     ],
   },
   
-  // Move outputFileTracingExcludes out of experimental
-  outputFileTracingExcludes: {
-    '*': [
-      'node_modules/@swc/core-linux-x64-gnu',
-      'node_modules/@swc/core-linux-x64-musl',
-      'node_modules/@esbuild/linux-x64',
-    ],
-  },
   
   // Configuración de Webpack para better tree shaking
   webpack: (config, { isServer }) => {

@@ -5,8 +5,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { devtools } from 'zustand/middleware';
-import { subscribeWithSelector } from 'zustand/middleware';
-import { useMemo, useCallback } from 'react';
+import { useCallback } from 'react';
 
 // Implementación propia de shallow comparison para mayor control
 const shallow = <T>(a: T, b: T): boolean => {
