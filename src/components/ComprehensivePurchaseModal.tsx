@@ -334,12 +334,17 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
   // Función para asignar números de boletos aleatorios usando datos reales
   const asignarBoletos = useCallback(async (cantidad: number): Promise<number[]> => {
     try {
+      console.log(`🎫 Intentando asignar ${cantidad} boletos...`);
+      
       // Si está conectado a Supabase, usar tickets realmente disponibles
       if (isConnected) {
+        console.log('✅ Conectado a Supabase, obteniendo tickets reales...');
         const ticketsRealesDisponibles = await getRealAvailableTickets();
+        console.log(`📊 Tickets realmente disponibles: ${ticketsRealesDisponibles.length}`);
         
         if (ticketsRealesDisponibles.length < cantidad) {
-          throw new Error(`Solo hay ${ticketsRealesDisponibles.length} boletos realmente disponibles. No se pueden asignar ${cantidad} boletos.`);
+          console.warn(`⚠️ Solo hay ${ticketsRealesDisponibles.length} tickets disponibles vs ${cantidad} solicitados`);
+          throw new Error(`Solo hay ${ticketsRealesDisponibles.length} boletos disponibles en este momento. Intenta con menos boletos.`);
         }
         
         // Seleccionar números aleatorios de los realmente disponibles
@@ -353,14 +358,20 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
           disponibles.splice(randomIndex, 1);
         }
         
+        console.log(`🎯 Boletos asignados desde BD: ${boletosSeleccionados.sort((a, b) => a - b)}`);
         return boletosSeleccionados.sort((a, b) => a - b);
       } else {
-        // Fallback para modo offline
-        if (availableTickets.length < cantidad) {
-          throw new Error(`Solo quedan ${availableTickets.length} boletos disponibles`);
+        // Fallback para modo offline - usar todos los números del 1 al 10000
+        console.log('⚠️ Modo offline, usando simulación de tickets...');
+        
+        // Generar lista completa de tickets disponibles para simulación
+        const todosLosTickets = Array.from({ length: 10000 }, (_, i) => i + 1);
+        
+        if (todosLosTickets.length < cantidad) {
+          throw new Error(`Solo quedan ${todosLosTickets.length} boletos disponibles`);
         }
         
-        const disponibles = [...availableTickets];
+        const disponibles = [...todosLosTickets];
         const boletosSeleccionados: number[] = [];
         
         for (let i = 0; i < cantidad; i++) {
@@ -370,10 +381,11 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
           disponibles.splice(randomIndex, 1);
         }
         
+        console.log(`🎯 Boletos asignados offline: ${boletosSeleccionados.sort((a, b) => a - b)}`);
         return boletosSeleccionados.sort((a, b) => a - b);
       }
     } catch (error) {
-      console.error('Error al asignar boletos:', error);
+      console.error('❌ Error al asignar boletos:', error);
       throw error;
     }
   }, [availableTickets, isConnected, getRealAvailableTickets]);
@@ -394,13 +406,15 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
       newErrors.payment = 'Selecciona un método de pago';
     }
 
-    // Solo validar nombre y teléfono/email (uno de los dos)
-    if (!customerData.nombre.trim()) {
+    // Validación más flexible: solo nombre es obligatorio
+    if (!customerData.nombre || !customerData.nombre.trim()) {
       newErrors.nombre = 'Ingresa tu nombre';
     }
     
-    if (!customerData.telefono.trim() && !customerData.email.trim()) {
-      newErrors.contacto = 'Ingresa tu teléfono o email';
+    // Al menos uno de los dos métodos de contacto
+    if ((!customerData.telefono || !customerData.telefono.trim()) && 
+        (!customerData.email || !customerData.email.trim())) {
+      newErrors.contacto = 'Ingresa tu teléfono o email para contactarte';
     }
 
     if (!acceptedTerms) {
@@ -946,6 +960,15 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                 />
                 {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
               </div>
+
+              {/* Mensaje de error para contacto */}
+              {errors.contacto && (
+                <div className="md:col-span-2">
+                  <p className="text-red-500 text-sm bg-red-50 p-2 rounded-lg border border-red-200">
+                    {errors.contacto}
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
