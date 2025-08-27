@@ -26,25 +26,48 @@ function validateSupabaseConfig() {
   return { url, key };
 }
 
-// Variables de entorno validadas
-const { url: supabaseUrl, key: supabaseAnonKey } = validateSupabaseConfig();
+// Variables de entorno validadas (solo en tiempo de ejecución)
+let supabaseUrl: string;
+let supabaseAnonKey: string;
+
+// Solo validar en tiempo de ejecución, no durante el build
+if (typeof window !== 'undefined' || process.env.NODE_ENV !== 'production') {
+  try {
+    const config = validateSupabaseConfig();
+    supabaseUrl = config.url;
+    supabaseAnonKey = config.key;
+  } catch (error) {
+    // Fallback para el build estático
+    supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    console.warn('⚠️ Usando configuración de fallback durante el build');
+  }
+} else {
+  // Durante el build estático, usar valores directos
+  supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+}
 
 // Cliente de Supabase con configuración robusta
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: false
-  },
-  db: {
-    schema: 'public'
-  },
-  global: {
-    headers: {
-      'X-Client-Info': 'rifa-silverado@1.0.0'
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co', 
+  supabaseAnonKey || 'placeholder-key', 
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false
+    },
+    db: {
+      schema: 'public'
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'rifa-silverado@1.0.0'
+      }
     }
   }
-});
+);
 
 // Test de conexión al inicializar
 async function testSupabaseConnection() {
