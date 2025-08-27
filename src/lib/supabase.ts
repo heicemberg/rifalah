@@ -167,7 +167,7 @@ export async function verificarConexion(): Promise<boolean> {
 /**
  * Guarda una compra completa con manejo robusto de errores
  */
-export async function guardarCompra(datosCompra: CompraCompleta) {
+export async function guardarCompra(datosCompra: CompraCompleta): Promise<{ customer: Customer; purchase: Purchase; tickets: Ticket[] }> {
   try {
     // Verificar conexión primero
     const isConnected = await verificarConexion();

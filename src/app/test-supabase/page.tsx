@@ -68,7 +68,7 @@ export default function TestSupabasePage() {
       };
 
       const resultado = await guardarCompra(datosTest);
-      setTestResult(`✅ ¡Inserción exitosa!\nCustomer ID: ${resultado.customer?.id}\nPurchase ID: ${resultado.purchase?.id}\nEmail: ${resultado.customer?.email}`);
+      setTestResult(`✅ ¡Inserción exitosa!\nCustomer ID: ${resultado.customer.id}\nPurchase ID: ${resultado.purchase.id}\nEmail: ${resultado.customer.email}`);
     } catch (error: any) {
       setTestResult(`❌ Error al insertar datos:\n${error.message}`);
       console.error('Error completo:', error);
