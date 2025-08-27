@@ -1,15 +1,78 @@
 // ============================================================================
-// CONFIGURACIÓN DE SUPABASE PARA RIFA SILVERADO Z71 2024
+// CONFIGURACIÓN DE SUPABASE PARA RIFA SILVERADO Z71 2024 - VERSIÓN DEFINITIVA
 // ============================================================================
 
 import { createClient } from '@supabase/supabase-js';
 
-// Variables de entorno - Reemplaza con tus credenciales reales
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key_for_build';
+// Función para validar configuración
+function validateSupabaseConfig() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  
+  console.log('🔧 Verificando configuración de Supabase...');
+  console.log('URL:', url ? `${url.slice(0, 30)}...` : 'NO DEFINIDA');
+  console.log('ANON_KEY:', key ? `${key.slice(0, 30)}...` : 'NO DEFINIDA');
+  
+  if (!url || url.includes('placeholder')) {
+    console.error('❌ NEXT_PUBLIC_SUPABASE_URL no está configurada correctamente');
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL no configurada');
+  }
+  
+  if (!key || key.includes('placeholder') || !key.startsWith('eyJ')) {
+    console.error('❌ NEXT_PUBLIC_SUPABASE_ANON_KEY no es válida (debe empezar con eyJ)');
+    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY no válida');
+  }
+  
+  return { url, key };
+}
 
-// Cliente de Supabase con URLs válidas para builds
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Variables de entorno validadas
+const { url: supabaseUrl, key: supabaseAnonKey } = validateSupabaseConfig();
+
+// Cliente de Supabase con configuración robusta
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false
+  },
+  db: {
+    schema: 'public'
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'rifa-silverado@1.0.0'
+    }
+  }
+});
+
+// Test de conexión al inicializar
+async function testSupabaseConnection() {
+  try {
+    console.log('🔄 Probando conexión con Supabase...');
+    const { data, error } = await supabase.from('customers').select('count', { count: 'exact', head: true });
+    
+    if (error) {
+      console.error('❌ Error de conexión Supabase:', error.message);
+      return false;
+    }
+    
+    console.log('✅ Conexión con Supabase establecida correctamente');
+    return true;
+  } catch (err) {
+    console.error('❌ Error crítico de Supabase:', err);
+    return false;
+  }
+}
+
+// Ejecutar test de conexión (solo en cliente)
+if (typeof window !== 'undefined') {
+  testSupabaseConnection().then(connected => {
+    if (!connected) {
+      console.warn('⚠️ Fallback: Usando modo offline hasta que se resuelva la conexión');
+    }
+  });
+}
 
 // ============================================================================
 // TIPOS DE DATOS PARA LA BASE DE DATOS NORMALIZADA
