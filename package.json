@@ -13,7 +13,7 @@
     "netlify:build": "next build",
     "netlify:dev": "next dev",
     "postbuild": "echo 'Build completed successfully for Netlify deployment'",
-    "clean": "rm -rf .next out dist",
+    "clean": "rmdir /s /q .next 2>nul || rmdir /s /q out 2>nul || rmdir /s /q dist 2>nul || echo cleaned",
     "prebuild": "npm run clean"
   },
   "dependencies": {

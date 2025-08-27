@@ -9,20 +9,23 @@ import { createClient } from '@supabase/supabase-js';
 // CONFIGURACIÓN DE VARIABLES DE ENTORNO CON VALIDACIÓN
 // ============================================================================
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl) {
-  throw new Error(
+// Durante el build, las variables pueden no estar disponibles
+const isBuildTime = typeof window === 'undefined' && !supabaseUrl;
+
+if (!isBuildTime && !supabaseUrl) {
+  console.warn(
     'NEXT_PUBLIC_SUPABASE_URL no está definida. ' +
-    'Asegúrate de configurarla en las variables de entorno de Netlify.'
+    'Verifica la configuración de la extensión Supabase en Netlify.'
   );
 }
 
-if (!supabaseAnonKey) {
-  throw new Error(
+if (!isBuildTime && !supabaseAnonKey) {
+  console.warn(
     'NEXT_PUBLIC_SUPABASE_ANON_KEY no está definida. ' +
-    'Asegúrate de configurarla en las variables de entorno de Netlify.'
+    'Verifica la configuración de la extensión Supabase en Netlify.'
   );
 }
 
@@ -34,20 +37,31 @@ let supabaseInstance: ReturnType<typeof createClient> | null = null;
 
 function getSupabaseClient() {
   if (!supabaseInstance) {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true
-      },
-      global: {
-        headers: {
-          'X-Client-Info': 'rifa-silverado@1.0.0',
+    // Si no tenemos las variables, crear un cliente mock para build time
+    if (!supabaseUrl || !supabaseAnonKey) {
+      if (isBuildTime) {
+        console.log('⏳ Build time: usando cliente Supabase mock');
+        supabaseInstance = {} as any; // Mock client para build
+      } else {
+        console.error('❌ Variables de Supabase no disponibles en runtime');
+        supabaseInstance = {} as any;
+      }
+    } else {
+      supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true
         },
-      },
-    });
-    
-    console.log('✅ Supabase client initialized');
+        global: {
+          headers: {
+            'X-Client-Info': 'rifa-silverado@1.0.0',
+          },
+        },
+      });
+      
+      console.log('✅ Supabase client initialized');
+    }
   }
   
   return supabaseInstance;
