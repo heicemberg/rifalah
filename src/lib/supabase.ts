@@ -1,8 +1,10 @@
 // ============================================================================
-// CONFIGURACIÓN DE SUPABASE PARA RIFA SILVERADO Z71 2024 - VERSIÓN DEFINITIVA
+// CONFIGURACIÓN DE SUPABASE PARA RIFA SILVERADO Z71 2024 - VERSIÓN DEFINITIVA  
+// OPTIMIZADO PARA NETLIFY Y PRODUCCIÓN
 // ============================================================================
 
 import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 
 // Función para validar configuración
 function validateSupabaseConfig() {
@@ -48,14 +50,37 @@ if (typeof window !== 'undefined' || process.env.NODE_ENV !== 'production') {
   supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 }
 
-// Cliente de Supabase con configuración robusta
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co', 
-  supabaseAnonKey || 'placeholder-key', 
-  {
+// Cliente de Supabase optimizado para Netlify
+function createSupabaseClient() {
+  const url = supabaseUrl || 'https://placeholder.supabase.co';
+  const key = supabaseAnonKey || 'placeholder-key';
+  
+  // Usar createBrowserClient para mejor compatibilidad con SSR/SSG
+  if (typeof window !== 'undefined') {
+    return createBrowserClient(url, key, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false
+      },
+      db: {
+        schema: 'public'
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'rifa-silverado@1.0.0'
+        },
+        // Configuración específica para Netlify
+        fetch: (...args) => fetch(...args)
+      }
+    });
+  }
+  
+  // Fallback para SSR/build time
+  return createClient(url, key, {
     auth: {
-      persistSession: true,
-      autoRefreshToken: true,
+      persistSession: false,
+      autoRefreshToken: false,
       detectSessionInUrl: false
     },
     db: {
@@ -64,10 +89,13 @@ export const supabase = createClient(
     global: {
       headers: {
         'X-Client-Info': 'rifa-silverado@1.0.0'
-      }
+      },
+      fetch: (...args) => fetch(...args)
     }
-  }
-);
+  });
+}
+
+export const supabase = createSupabaseClient();
 
 // Test de conexión al inicializar
 async function testSupabaseConnection() {

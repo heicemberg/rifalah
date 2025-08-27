@@ -3,6 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { guardarCompra, subirCaptura, obtenerMetadata, type CompraCompleta } from '../lib/supabase';
+import { useSupabaseConnection } from '../hooks/useSupabaseConnection';
 import toast from 'react-hot-toast';
 import { useRaffleStore } from '../stores/raffle-store';
 import { useRealTimeTickets } from '../hooks/useRealTimeTickets';
@@ -122,6 +123,8 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
   const { formatMexicanNumber, formatPriceMXN, calculatePrice: calculatePriceMXN, PRECIO_POR_BOLETO_MXN } = useRealTimeTickets();
   // Hook para sincronización con Supabase y tickets reales
   const { getRealAvailableTickets, isConnected } = useSupabaseSync();
+  // Hook para manejo robusto de conexión a Supabase
+  const { isConnected: dbConnected, isLoading: dbLoading, error: dbError, retry: retryConnection } = useSupabaseConnection();
   
   // Estados principales
   const [tickets, setTickets] = useState<number>(initialTickets);
@@ -439,6 +442,24 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
       return;
     }
 
+    // Verificar conexión con la base de datos
+    if (!dbConnected) {
+      toast.error(
+        <div className="text-center">
+          <div className="font-bold text-red-600">❌ No se pudo conectar a la base de datos</div>
+          <div className="text-sm mt-2">{dbError || 'Problema de conexión con el servidor'}</div>
+          <button 
+            onClick={retryConnection}
+            className="mt-2 px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+          >
+            Reintentar conexión
+          </button>
+        </div>,
+        { duration: 8000 }
+      );
+      return;
+    }
+
     setIsLoading(true);
     
     try {
@@ -646,6 +667,24 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
               </div>
               <div className="text-base flex items-center">
                 📊 <span className="font-bold ml-2 bg-white/20 px-2 py-1 rounded-lg">{Math.round(progress)}% completo</span>
+              </div>
+              <div className="text-sm flex items-center">
+                {dbConnected ? (
+                  <span className="bg-green-500/20 text-green-100 px-2 py-1 rounded-full flex items-center">
+                    <div className="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
+                    BD Online
+                  </span>
+                ) : dbLoading ? (
+                  <span className="bg-yellow-500/20 text-yellow-100 px-2 py-1 rounded-full flex items-center">
+                    <div className="w-2 h-2 bg-yellow-400 rounded-full mr-1 animate-pulse"></div>
+                    Conectando...
+                  </span>
+                ) : (
+                  <span className="bg-red-500/20 text-red-100 px-2 py-1 rounded-full flex items-center">
+                    <div className="w-2 h-2 bg-red-400 rounded-full mr-1"></div>
+                    BD Offline
+                  </span>
+                )}
               </div>
             </div>
           </div>
