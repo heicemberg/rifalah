@@ -17,14 +17,17 @@ const nextConfig: NextConfig = {
     ],
   },
   
-  // Deshabilitar telemetría y trace para evitar problemas
+  // Deshabilitar telemetría y trace para evitar problemas  
   experimental: {
     optimizePackageImports: [
-      'lucide-react',
+      'lucide-react', 
       'react-hot-toast',
       'zustand'
     ],
   },
+  
+  // Deshabilitar generación de build traces para evitar errores de permisos
+  generateBuildId: () => 'build',
   
   
   // Configuración de Webpack para better tree shaking

@@ -5,7 +5,6 @@
 import { useEffect, useState } from 'react';
 import { supabase, verificarConexion } from '../lib/supabase';
 import { useRaffleStore } from '../stores/raffle-store';
-import toast from 'react-hot-toast';
 import { adminToast, publicToast, isCurrentUserAdmin } from '../lib/toast-utils';
 
 export function useSupabaseSync() {

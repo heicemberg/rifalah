@@ -563,7 +563,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
       };
 
       // 6. Guardar en Supabase
-      publicToast.loading('Procesando tu compra...', { id: 'purchase' });
+      publicToast.loading('Procesando tu compra...');
       const compraGuardada = await guardarCompra(datosSupabase);
 
       // 7. Backup en localStorage (opcional)

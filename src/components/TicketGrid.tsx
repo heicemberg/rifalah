@@ -12,7 +12,7 @@ import { useRealTimeTickets } from '../hooks/useRealTimeTickets';
 import { useSupabaseSync } from '../hooks/useSupabaseSync';
 import { formatTicketNumber, cn } from '../lib/utils';
 import { TOTAL_TICKETS } from '../lib/constants';
-import { Truck, Gift, Zap, Trophy, Star, DollarSign, Gamepad2 } from 'lucide-react';
+import { Gift, Zap, Trophy } from 'lucide-react';
 
 // ============================================================================
 // TIPOS Y CONSTANTES
@@ -416,7 +416,6 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
   
   // Usar datos reales del hook (sin números aleatorios)
   const allSoldTickets = soldTickets;
-  const allReservedTickets = reservedTickets;
   
   // Generar filas visibles
   const visibleRows = useMemo(() => {

@@ -35,7 +35,7 @@ export default function NewRaffePage() {
   } = useRealTimeTickets()
 
   // Hook de sincronización con Supabase
-  const { isConnected, fomoPercentage } = useSupabaseSync()
+  useSupabaseSync()
   
   // Acceder al store para obtener los tickets seleccionados
   const { selectedTickets } = useRaffleStore()
@@ -43,9 +43,6 @@ export default function NewRaffePage() {
   const soldCount = stats.soldTickets
   const availableCount = stats.availableTickets
   const soldPercentage = Math.round((soldCount / stats.totalTickets) * 100)
-  
-  const isNearlyFull = soldPercentage >= 80
-  const isCritical = soldPercentage >= 95
 
   return (
     <main className="bg-black text-white font-sans">
@@ -268,7 +265,7 @@ export default function NewRaffePage() {
                 </div>
                 <h3 className="text-xl font-black text-white mb-3">3. Compra Fácil</h3>
                 <p className="text-gray-300 text-sm">
-                  Cuando tengas tus números, haz clic en "Comprar Ahora" que aparece en la parte inferior derecha.
+                  Cuando tengas tus números, haz clic en &quot;Comprar Ahora&quot; que aparece en la parte inferior derecha.
                 </p>
               </div>
             </div>
