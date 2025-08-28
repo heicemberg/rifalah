@@ -460,7 +460,30 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
   ]);
   
   return (
-    <div className="w-full">
+    <div className="w-full" data-grid="ticket-grid">
+      {/* Título del Grid de Tickets */}
+      <div className="text-center mb-8">
+        <h2 className="text-4xl lg:text-5xl font-black text-white mb-4">
+          MAPA DE <span className="text-yellow-400">BOLETOS</span>
+        </h2>
+        <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-6">
+          Selecciona directamente los números que te traerán suerte. Cada boleto tiene el mismo chance de ganar.
+        </p>
+        
+        {/* Indicadores rápidos */}
+        <div className="flex flex-wrap justify-center gap-4 text-sm">
+          <div className="bg-green-500/20 text-green-300 px-4 py-2 rounded-full border border-green-500/30">
+            <span className="font-bold">{formatMexicanNumber(stats.availableTickets)}</span> disponibles
+          </div>
+          <div className="bg-red-500/20 text-red-300 px-4 py-2 rounded-full border border-red-500/30">
+            <span className="font-bold">{formatMexicanNumber(stats.soldTickets)}</span> vendidos
+          </div>
+          <div className="bg-yellow-500/20 text-yellow-300 px-4 py-2 rounded-full border border-yellow-500/30">
+            <span className="font-bold">{formatPriceMXN(PRECIO_POR_BOLETO_MXN)}</span> por boleto
+          </div>
+        </div>
+      </div>
+
       {/* Leyenda Premium con Filtros */}
       <div className="mb-6 p-6 bg-gradient-to-r from-slate-50/95 to-emerald-50/95 backdrop-blur-sm rounded-3xl border-2 border-emerald-200/60 shadow-xl">
         {/* Leyenda de colores */}
@@ -595,71 +618,6 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
         )}
       </div>
       
-      {/* SECCIÓN DE PREMIOS - NUEVA */}
-      <div className="mb-8">
-        <div className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 rounded-3xl p-6 border-2 border-yellow-500/30 shadow-2xl relative overflow-hidden">
-          {/* Efectos de fondo */}
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/10 via-transparent to-red-600/10"></div>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-400/10 rounded-full blur-3xl"></div>
-          
-          <div className="relative z-10">
-            <div className="text-center mb-6">
-              <h3 className="text-2xl font-black text-yellow-400 mb-2 flex items-center justify-center gap-3">
-                <Trophy className="w-8 h-8 text-yellow-500" />
-                🏆 UN SOLO GANADOR - TRES INCREÍBLES PREMIOS 🏆
-                <Trophy className="w-8 h-8 text-yellow-500" />
-              </h3>
-              <p className="text-slate-300 text-sm">¡El afortunado se llevará TODO esto!</p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-6">
-              {/* Camioneta */}
-              <div className="bg-gradient-to-br from-red-600/20 to-red-700/30 rounded-2xl p-6 border border-red-500/40 backdrop-blur-sm">
-                <div className="text-center">
-                  <Truck className="w-12 h-12 text-red-400 mx-auto mb-3" />
-                  <h4 className="text-lg font-black text-white mb-2">Chevrolet Silverado Z71 2024</h4>
-                  <div className="text-red-300 text-sm mb-2">Camioneta 0 kilómetros</div>
-                  <div className="text-2xl font-black text-red-400">~$810,000 MXN</div>
-                  <div className="text-xs text-slate-400 mt-1">Valor aproximado</div>
-                </div>
-              </div>
-
-              {/* PS5 */}
-              <div className="bg-gradient-to-br from-blue-600/20 to-blue-700/30 rounded-2xl p-6 border border-blue-500/40 backdrop-blur-sm">
-                <div className="text-center">
-                  <Gamepad2 className="w-12 h-12 text-blue-400 mx-auto mb-3" />
-                  <h4 className="text-lg font-black text-white mb-2">PlayStation 5</h4>
-                  <div className="text-blue-300 text-sm mb-2">Consola nueva en caja</div>
-                  <div className="text-2xl font-black text-blue-400">~$12,000 MXN</div>
-                  <div className="text-xs text-slate-400 mt-1">Valor aproximado</div>
-                </div>
-              </div>
-
-              {/* Efectivo */}
-              <div className="bg-gradient-to-br from-green-600/20 to-green-700/30 rounded-2xl p-6 border border-green-500/40 backdrop-blur-sm">
-                <div className="text-center">
-                  <DollarSign className="w-12 h-12 text-green-400 mx-auto mb-3" />
-                  <h4 className="text-lg font-black text-white mb-2">$3,000 USD en Efectivo</h4>
-                  <div className="text-green-300 text-sm mb-2">Dinero en efectivo</div>
-                  <div className="text-2xl font-black text-green-400">~$54,000 MXN</div>
-                  <div className="text-xs text-slate-400 mt-1">Al tipo de cambio actual</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 text-center">
-              <div className="bg-gradient-to-r from-yellow-600/30 to-yellow-500/30 rounded-xl p-4 border border-yellow-500/50">
-                <div className="text-yellow-300 font-bold text-lg">
-                  🎯 VALOR TOTAL DEL PREMIO: ~$876,000 MXN
-                </div>
-                <div className="text-yellow-400 text-sm mt-1">
-                  Solo {formatPriceMXN(PRECIO_POR_BOLETO_MXN)} por boleto - ¡Puede cambiar tu vida!
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Información del grid con datos reales */}
       <div className="flex flex-wrap justify-center gap-6 mb-6 text-sm bg-gradient-to-r from-emerald-50/80 to-slate-50/80 backdrop-blur-sm p-4 rounded-2xl border border-gray-200 shadow-sm">

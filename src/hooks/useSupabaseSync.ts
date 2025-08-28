@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { supabase, verificarConexion } from '../lib/supabase';
 import { useRaffleStore } from '../stores/raffle-store';
 import toast from 'react-hot-toast';
+import { adminToast, publicToast, isCurrentUserAdmin } from '../lib/toast-utils';
 
 export function useSupabaseSync() {
   const [isConnected, setIsConnected] = useState(false);
@@ -75,7 +76,12 @@ export function useSupabaseSync() {
       
       if (!connected) {
         console.warn('Supabase no disponible, usando datos locales');
-        toast.error('Base de datos no disponible, usando modo offline');
+        // Mostrar mensaje técnico solo a administradores
+        adminToast.error('Base de datos no disponible, usando modo offline');
+        // Mostrar mensaje genérico a usuarios normales si es necesario
+        if (!isCurrentUserAdmin()) {
+          // No mostrar nada a usuarios normales, funcionará en modo offline transparente
+        }
         setLoading(false);
         return;
       }
@@ -88,7 +94,8 @@ export function useSupabaseSync() {
 
       if (soldError) {
         console.error('Error al obtener tickets vendidos:', soldError);
-        toast.error('Error al cargar tickets vendidos');
+        // Mostrar error técnico solo a administradores
+        adminToast.error('Error al cargar tickets vendidos');
       } else {
         const realSoldTickets = soldTicketsData?.map((t: any) => t.number) || [];
         
@@ -99,6 +106,8 @@ export function useSupabaseSync() {
         setSoldTicketsFromDB(visualSoldTickets);
         
         console.log(`Cargados ${realSoldTickets.length} tickets reales, mostrando ${visualSoldTickets.length} (${fomoPercentage}%)`);
+        // Mostrar información técnica solo a administradores
+        adminToast.info(`Cargados ${realSoldTickets.length} tickets reales, mostrando ${visualSoldTickets.length} (${fomoPercentage}%)`);
       }
 
       // Obtener tickets reservados
@@ -109,6 +118,8 @@ export function useSupabaseSync() {
 
       if (reservedError) {
         console.error('Error al obtener tickets reservados:', reservedError);
+        // Mostrar error técnico solo a administradores
+        adminToast.error('Error al obtener tickets reservados');
       } else {
         const reservedNumbers = reservedTicketsData?.map((t: any) => t.number) || [];
         setReservedTicketsFromDB(reservedNumbers);
@@ -119,11 +130,13 @@ export function useSupabaseSync() {
         _updateAvailableTickets();
       }, 100);
       
-      toast.success(`Datos sincronizados: ${fomoPercentage}% vendido`);
+      // Mostrar mensaje de sincronización solo a administradores
+      adminToast.success(`Datos sincronizados: ${fomoPercentage}% vendido`);
       
     } catch (error) {
       console.error('Error al cargar datos iniciales:', error);
-      toast.error('Error al sincronizar con la base de datos');
+      // Mostrar error técnico solo a administradores
+      adminToast.error('Error al sincronizar con la base de datos');
       setIsConnected(false);
     } finally {
       setLoading(false);
@@ -195,9 +208,9 @@ export function useSupabaseSync() {
         },
         (payload: any) => {
           console.log('Cambio en compras:', payload);
-          // Mostrar notificación de nueva compra si es insert
+          // Mostrar notificación de nueva compra - esto SÍ es público y debe verse por todos
           if (payload.eventType === 'INSERT') {
-            toast.success('¡Nueva compra registrada!', {
+            publicToast.success('¡Nueva compra registrada!', {
               duration: 3000,
               icon: '🎉'
             });

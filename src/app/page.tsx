@@ -36,6 +36,9 @@ export default function NewRaffePage() {
 
   // Hook de sincronización con Supabase
   const { isConnected, fomoPercentage } = useSupabaseSync()
+  
+  // Acceder al store para obtener los tickets seleccionados
+  const { selectedTickets } = useRaffleStore()
 
   const soldCount = stats.soldTickets
   const availableCount = stats.availableTickets
@@ -60,12 +63,21 @@ export default function NewRaffePage() {
               />
               <span className="font-black text-xl">RIFA SILVERADO</span>
             </div>
-            <button 
-              onClick={() => setShowPurchaseModal(true)}
-              className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-black px-6 py-2 rounded-lg font-bold text-sm hover:scale-105 transition-transform"
-            >
-              COMPRAR AHORA
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setShowPurchaseModal(true)}
+                className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-black px-6 py-2 rounded-lg font-bold text-sm hover:scale-105 transition-transform"
+              >
+                COMPRAR AHORA
+              </button>
+              
+              {/* Indicador de tickets seleccionados */}
+              {selectedTickets.length > 0 && (
+                <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold animate-pulse">
+                  {selectedTickets.length}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -207,15 +219,94 @@ export default function NewRaffePage() {
         </div>
       </section>
 
-      {/* SECCIÓN DE PREMIOS - 3 CARDS JERÁRQUICAS */}
+      {/* MAPA DE BOLETOS - SECCIÓN PRINCIPAL */}
+      <section className="py-20 bg-gray-900">
+        <div className="container mx-auto px-4">
+          <TicketGrid onOpenPurchaseModal={() => setShowPurchaseModal(true)} />
+        </div>
+      </section>
+
+      {/* SECCIÓN "ELIGE TUS NÚMEROS" - AHORA DEBAJO DEL GRID */}
+      <section className="py-16 bg-gradient-to-b from-gray-900 via-slate-900 to-black relative overflow-hidden">
+        {/* Efectos de fondo decorativos */}
+        <div className="absolute top-0 left-0 w-64 h-64 bg-yellow-400/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl"></div>
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-black text-white mb-4">
+              ELIGE TUS <span className="text-yellow-400">NÚMEROS</span>
+            </h2>
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-8">
+              Selecciona los números que más te gusten del grid superior. Puedes elegir desde 1 hasta 100 boletos en una sola compra.
+            </p>
+            
+            {/* Instrucciones de uso */}
+            <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 backdrop-blur-sm rounded-2xl p-6 border border-blue-500/30">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Target className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-black text-white mb-3">1. Selecciona</h3>
+                <p className="text-gray-300 text-sm">
+                  Haz clic en los números que quieras del grid superior. Los números seleccionados se marcan en verde.
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 backdrop-blur-sm rounded-2xl p-6 border border-yellow-500/30">
+                <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Gift className="w-8 h-8 text-black" />
+                </div>
+                <h3 className="text-xl font-black text-white mb-3">2. Usa Filtros</h3>
+                <p className="text-gray-300 text-sm">
+                  Utiliza los filtros para ver solo números disponibles, ocultar ocupados o revisar tus selecciones.
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-green-500/20 to-green-600/10 backdrop-blur-sm rounded-2xl p-6 border border-green-500/30">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Zap className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-black text-white mb-3">3. Compra Fácil</h3>
+                <p className="text-gray-300 text-sm">
+                  Cuando tengas tus números, haz clic en "Comprar Ahora" que aparece en la parte inferior derecha.
+                </p>
+              </div>
+            </div>
+
+            {/* CTA para volver al grid */}
+            <div className="mt-12">
+              <div className="relative inline-block">
+                {/* Efecto de pulso animado */}
+                <div className="absolute -inset-2 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-3xl opacity-40 animate-pulse blur-sm"></div>
+                <button
+                  onClick={() => {
+                    document.querySelector('[data-grid="ticket-grid"]')?.scrollIntoView({ 
+                      behavior: 'smooth',
+                      block: 'center'
+                    });
+                  }}
+                  className="relative inline-flex items-center gap-3 bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 text-black px-8 py-4 rounded-2xl font-black text-lg shadow-2xl shadow-yellow-500/30 transition-all duration-300 hover:scale-105 hover:shadow-yellow-500/50 border-2 border-yellow-400/50"
+                >
+                  <Star className="w-6 h-6 animate-spin-slow" />
+                  <span>Volver al Grid de Números</span>
+                  <ArrowRight className="w-5 h-5 animate-bounce-gentle" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECCIÓN DE PREMIOS - REUBICADA Y MEJORADA */}
       <section className="py-20 bg-gradient-to-b from-black to-gray-900">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl lg:text-5xl font-black text-white mb-4">
-              <span className="text-yellow-400">PREMIOS</span> INCREÍBLES
+              <span className="text-yellow-400">UN SOLO GANADOR</span> • <span className="text-red-400">TRES PREMIOS</span>
             </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Un solo ganador se lleva todo. No dividimos premios.
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+              El afortunado ganador se llevará absolutamente todo. No dividimos premios, no hay segundo lugar. 
+              <span className="text-yellow-400 font-bold"> ¡Todo es para una sola persona!</span>
             </p>
           </div>
 
@@ -298,23 +389,9 @@ export default function NewRaffePage() {
               <div className="text-5xl font-black bg-gradient-to-r from-yellow-400 to-yellow-300 bg-clip-text text-transparent">
                 $876,000 MXN
               </div>
-              <div className="text-sm text-gray-400 mt-2">Para un solo ganador</div>
+              <div className="text-sm text-gray-400 mt-2">Para un solo ganador • Sin división de premios</div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* MAPA DE BOLETOS COMPACTO */}
-      <section className="py-20 bg-gray-900">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-black text-white mb-4">
-              ELIGE TUS <span className="text-yellow-400">NÚMEROS</span>
-            </h2>
-            <p className="text-gray-400">Selecciona tus boletos de la suerte</p>
-          </div>
-          
-          <TicketGrid onOpenPurchaseModal={() => setShowPurchaseModal(true)} />
         </div>
       </section>
 

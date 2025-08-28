@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { getSupabaseClient, getConnectionStatus } from '@/lib/supabase';
+import { adminToast } from '@/lib/toast-utils';
 
 interface ConnectionState {
   isConnected: boolean;
@@ -111,6 +112,7 @@ export function useSupabaseConnection() {
 
     try {
       console.log(`🔄 Testing Supabase connection (attempt ${attemptNumber + 1}/${MAX_RETRY_ATTEMPTS})`);
+      adminToast.info(`Probando conexión (intento ${attemptNumber + 1}/${MAX_RETRY_ATTEMPTS})`);
       
       const connected = await testConnection(signal);
       
@@ -126,12 +128,14 @@ export function useSupabaseConnection() {
       });
 
       console.log('✅ Supabase connection successful');
+      adminToast.success('Conexión Supabase exitosa');
       
     } catch (error) {
       if (signal.aborted) return;
 
       const errorMessage = error instanceof Error ? error.message : 'Unknown connection error';
       console.error(`❌ Connection attempt ${attemptNumber + 1} failed:`, errorMessage);
+      adminToast.error(`Intento ${attemptNumber + 1} falló: ${errorMessage}`);
 
       // Si hemos llegado al máximo de intentos
       if (attemptNumber >= MAX_RETRY_ATTEMPTS - 1) {

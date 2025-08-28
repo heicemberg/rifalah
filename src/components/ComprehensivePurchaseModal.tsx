@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { guardarCompra, subirCaptura, obtenerMetadata, type CompraCompleta } from '../lib/supabase';
 import { useSupabaseConnection } from '../hooks/useSupabaseConnection';
 import toast from 'react-hot-toast';
+import { publicToast } from '../lib/toast-utils';
 import { useRaffleStore } from '../stores/raffle-store';
 import { useRealTimeTickets } from '../hooks/useRealTimeTickets';
 import { useSupabaseSync } from '../hooks/useSupabaseSync';
@@ -562,7 +563,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
       };
 
       // 6. Guardar en Supabase
-      toast.loading('Guardando en base de datos...', { id: 'purchase' });
+      publicToast.loading('Procesando tu compra...', { id: 'purchase' });
       const compraGuardada = await guardarCompra(datosSupabase);
 
       // 7. Backup en localStorage (opcional)

@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { adminToast, isCurrentUserAdmin } from './toast-utils';
 
 // ============================================================================
 // CONFIGURACIÓN DE VARIABLES CON VALIDACIÓN COMPLETA
@@ -149,6 +150,7 @@ async function getSupabaseClient(): Promise<SupabaseClient> {
   for (let attempt = 0; attempt < MAX_CONNECTION_ATTEMPTS; attempt++) {
     try {
       console.log(`🔄 Attempting Supabase connection (${attempt + 1}/${MAX_CONNECTION_ATTEMPTS})`);
+      adminToast.info(`Conectando a BD (${attempt + 1}/${MAX_CONNECTION_ATTEMPTS})`);
       
       supabaseInstance = createSupabaseClient();
       
@@ -158,6 +160,7 @@ async function getSupabaseClient(): Promise<SupabaseClient> {
       }
       
       console.log('✅ Supabase client created successfully');
+      adminToast.success('Cliente Supabase creado exitosamente');
       connectionAttempts = 0; // Reset counter on success
       return supabaseInstance;
       
