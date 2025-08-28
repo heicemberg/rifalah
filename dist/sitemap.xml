@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url>
+<loc>https://rifa-silverado.mx</loc>
+<lastmod>2025-08-28T13:58:39.316Z</lastmod>
+<changefreq>daily</changefreq>
+<priority>1</priority>
+</url>
+<url>
+<loc>https://rifa-silverado.mx/admin</loc>
+<lastmod>2025-08-28T13:58:39.316Z</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.3</priority>
+</url>
+<url>
+<loc>https://rifa-silverado.mx/test-supabase</loc>
+<lastmod>2025-08-28T13:58:39.316Z</lastmod>
+<changefreq>monthly</changefreq>
+<priority>0.1</priority>
+</url>
+<url>
+<loc>https://rifa-silverado.mx/terminos</loc>
+<lastmod>2025-08-28T13:58:39.316Z</lastmod>
+<changefreq>monthly</changefreq>
+<priority>0.6</priority>
+</url>
+<url>
+<loc>https://rifa-silverado.mx/privacidad</loc>
+<lastmod>2025-08-28T13:58:39.316Z</lastmod>
+<changefreq>monthly</changefreq>
+<priority>0.6</priority>
+</url>
+</urlset>

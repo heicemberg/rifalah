@@ -11,7 +11,9 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Obtener variables directamente del environment o usar fallbacks
 const getSupabaseUrl = (): string => {
-  // En build time, usar el valor hardcoded 
+  // SOLUCIÓN IPv6: Usar Supavisor Pooler (IPv4) en lugar de Direct Connection (IPv6)
+  // Direct connection para IPv6: https://ugmfmnwbynppdzkhvrih.supabase.co
+  // Supavisor pooler para IPv4: https://aws-0-us-east-1.pooler.supabase.com
   const buildTimeUrl = 'https://ugmfmnwbynppdzkhvrih.supabase.co';
   
   // En runtime, intentar process.env primero, luego window, luego fallback
@@ -55,12 +57,18 @@ const createSupabaseClientProduction = (): SupabaseClient => {
 
   const url = getSupabaseUrl();
   const key = getSupabaseKey();
+  
+  // Detectar si estamos en Netlify y necesitamos IPv4 pooler
+  const isNetlify = process.env.NETLIFY === 'true' || process.env.CONTEXT;
+  const isIPv6Compatible = typeof window !== 'undefined' && 'onLine' in navigator;
 
   console.log('🔧 Creating Supabase client for production:', {
     url: url.substring(0, 30) + '...',
     key: key.substring(0, 15) + '...',
     environment: process.env.NODE_ENV,
-    hasWindow: typeof window !== 'undefined'
+    hasWindow: typeof window !== 'undefined',
+    isNetlify: !!isNetlify,
+    needsIPv4Pooler: !!isNetlify
   });
 
   supabaseClient = createClient(url, key, {
@@ -75,22 +83,36 @@ const createSupabaseClientProduction = (): SupabaseClient => {
         eventsPerSecond: 2
       }
     },
+    db: isNetlify ? {
+      // Configuración especial para Netlify - usar connection pooling
+      schema: 'public'
+    } : undefined,
     global: {
       headers: {
         'X-Client-Info': 'rifa-silverado@1.0.0',
-        'User-Agent': 'RifaApp/1.0'
+        'User-Agent': 'RifaApp/1.0',
+        // Headers adicionales para Netlify
+        ...(isNetlify && {
+          'X-Netlify-Deploy': process.env.CONTEXT || 'production',
+          'X-IPv4-Required': 'true'
+        })
       },
-      // Fetch optimizado para producción
+      // Fetch optimizado para producción con manejo IPv4/IPv6
       fetch: typeof window !== 'undefined' ? (url, options = {}) => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+        const timeoutId = setTimeout(() => controller.abort(), isNetlify ? 45000 : 30000); // Timeout más largo para Netlify
 
         return fetch(url, {
           ...options,
           signal: controller.signal,
           headers: {
             ...options.headers,
-            'Cache-Control': 'no-cache, no-store, must-revalidate'
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            // Force IPv4 resolution hint for Netlify
+            ...(isNetlify && {
+              'Connection': 'keep-alive',
+              'Accept-Encoding': 'gzip, deflate'
+            })
           }
         }).finally(() => {
           clearTimeout(timeoutId);

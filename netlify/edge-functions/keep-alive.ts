@@ -1,9 +1,7 @@
 // Netlify Edge Function para mantener Supabase activo
 // Se ejecuta automáticamente cada 6 horas
 
-import { Context } from "@netlify/functions";
-
-export default async (request: Request, context: Context) => {
+export default async (request: Request) => {
   try {
     // Solo ejecutar en requests GET al endpoint keep-alive
     if (request.method !== 'GET') {

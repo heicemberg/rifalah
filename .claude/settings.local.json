@@ -35,7 +35,10 @@
       "Bash(timeout:*)",
       "Bash(git rm:*)",
       "Bash(npx next:*)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "Bash(npm run serve:*)",
+      "Bash(npx serve:*)",
+      "Bash(nslookup:*)"
     ],
     "deny": [],
     "ask": [],

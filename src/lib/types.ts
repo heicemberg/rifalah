@@ -42,6 +42,10 @@ export interface Customer {
   email: string;
   /** Número de WhatsApp del cliente */
   whatsapp: string;
+  /** Ciudad del cliente */
+  city: string;
+  /** Estado/región del cliente */
+  state: string;
   /** Array de IDs de tickets seleccionados */
   selectedTickets: string[];
   /** Monto total a pagar */

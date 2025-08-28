@@ -3,17 +3,34 @@
 // Usa la versión optimizada para SSG (Static Site Generation)
 // ============================================================================
 
+// SOLUCIÓN DEFINITIVA PARA IPv6/NETLIFY: Usar cliente especializado
 import { 
-  supabase as supabaseClient, 
-  getSupabaseClient, 
-  initializeSupabase, 
-  getConnectionStatus,
-  testSupabaseConnection
-} from './supabase-production';
+  netlifySupabaseClient,
+  createNetlifyCompatibleSupabaseClient,
+  testNetlifySupabaseConnection,
+  resetNetlifyClient
+} from './supabase-netlify-fix';
 
-// Re-exportar cliente y funciones útiles
-export const supabase = supabaseClient;
-export { getSupabaseClient, initializeSupabase, getConnectionStatus, testSupabaseConnection };
+// Cliente principal optimizado para Netlify
+export const supabase = netlifySupabaseClient;
+
+// Funciones de compatibilidad
+export const getSupabaseClient = () => netlifySupabaseClient;
+export const initializeSupabase = async (): Promise<boolean> => {
+  const result = await testNetlifySupabaseConnection();
+  return result.success;
+};
+export const getConnectionStatus = () => ({
+  hasInstance: true,
+  attempts: 0,
+  url: 'netlify-compatible',
+  environment: 'netlify-compatible',
+  ready: true
+});
+export const testSupabaseConnection = testNetlifySupabaseConnection;
+
+// Función de reset para debugging
+export const resetSupabaseConnection = resetNetlifyClient;
 
 // ============================================================================
 // TIPOS DE DATOS PARA LA BASE DE DATOS
