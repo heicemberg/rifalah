@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { getConnectionStatus, initializeSupabase } from '@/lib/supabase-client';
+import { getConnectionStatus, initializeSupabase, testSupabaseConnection } from '@/lib/supabase';
 
 interface DebugInfo {
   environment: {
@@ -19,12 +19,18 @@ interface DebugInfo {
     nodeEnv: string;
     userAgent: string;
     location: string;
+    isNetlify: boolean;
+    windowSupabaseUrl: string;
+    windowSupabaseKey: string;
+    hasWindowVars: boolean;
+    buildTime: string;
   };
   connection: {
     hasInstance: boolean;
-    attempts: number;
+    attempts?: number;
     url: string;
     environment: string;
+    ready?: boolean;
   };
   errors: string[];
   logs: string[];
@@ -44,7 +50,7 @@ export default function NetlifyDebugPage() {
       try {
         logs.push('🔄 Iniciando diagnóstico...');
         
-        // Información del entorno
+        // Información del entorno expandida
         const envInfo = {
           hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
           hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -52,7 +58,13 @@ export default function NetlifyDebugPage() {
           supabaseKeyPreview: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 15) + '...' || 'NOT SET',
           nodeEnv: process.env.NODE_ENV || 'unknown',
           userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'Server-side',
-          location: typeof window !== 'undefined' ? window.location.href : 'Server-side'
+          location: typeof window !== 'undefined' ? window.location.href : 'Server-side',
+          // Información adicional de Netlify
+          isNetlify: typeof window !== 'undefined' && window.location.hostname.includes('netlify'),
+          windowSupabaseUrl: typeof window !== 'undefined' ? (window as any).__SUPABASE_URL__ : 'N/A',
+          windowSupabaseKey: typeof window !== 'undefined' ? ((window as any).__SUPABASE_KEY__?.substring(0, 15) + '...') : 'N/A',
+          hasWindowVars: typeof window !== 'undefined' && !!(window as any).__SUPABASE_URL__,
+          buildTime: new Date().toISOString()
         };
 
         logs.push('✅ Información del entorno recopilada');
@@ -79,24 +91,39 @@ export default function NetlifyDebugPage() {
           logs
         });
 
-        // Test de conexión
-        logs.push('🔄 Iniciando test de conexión...');
+        // Test de conexión mejorado
+        logs.push('🔄 Iniciando test de conexión avanzado...');
         setConnectionTest('🔄 Probando conexión a Supabase...');
         
         try {
+          // Test detallado de conexión
+          const testResult = await testSupabaseConnection();
+          
+          if (testResult.success) {
+            logs.push('✅ Test de conexión exitoso');
+            setConnectionTest('✅ Conexión exitosa a Supabase - Database respondiendo correctamente');
+          } else {
+            logs.push(`❌ Test de conexión falló: ${testResult.error}`);
+            setConnectionTest(`❌ Error: ${testResult.error}`);
+            errors.push(`Test de conexión falló: ${testResult.error}`);
+            
+            if (testResult.details) {
+              errors.push(`Detalles: ${JSON.stringify(testResult.details, null, 2)}`);
+            }
+          }
+          
+          // Test de inicialización adicional
           const initResult = await initializeSupabase();
           if (initResult) {
-            logs.push('✅ Inicialización exitosa');
-            setConnectionTest('✅ Conexión exitosa a Supabase');
+            logs.push('✅ Inicialización adicional exitosa');
           } else {
-            logs.push('❌ Inicialización falló');
-            setConnectionTest('❌ Error al inicializar Supabase');
-            errors.push('Inicialización de Supabase falló');
+            logs.push('⚠️ Inicialización adicional falló pero conexión directa funciona');
           }
+          
         } catch (error) {
-          logs.push(`❌ Error de conexión: ${error}`);
-          setConnectionTest(`❌ Error de conexión: ${error}`);
-          errors.push(`Error de conexión: ${error}`);
+          logs.push(`❌ Error crítico de conexión: ${error}`);
+          setConnectionTest(`❌ Error crítico: ${error}`);
+          errors.push(`Error crítico de conexión: ${error}`);
         }
 
         // Actualizar con logs finales
@@ -161,21 +188,30 @@ export default function NetlifyDebugPage() {
             <h2 className="text-2xl font-bold text-blue-400 mb-4">
               🌍 Variables de Entorno
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-4">
+              {/* Información básica del entorno */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <span className="font-semibold">NODE_ENV:</span>
                   <span className="ml-2 text-yellow-400">{debugInfo.environment.nodeEnv}</span>
                 </div>
                 <div>
+                  <span className="font-semibold">Es Netlify:</span>
+                  <span className={`ml-2 ${debugInfo.environment.isNetlify ? 'text-green-400' : 'text-gray-400'}`}>
+                    {debugInfo.environment.isNetlify ? '✅ Sí' : '❌ No'}
+                  </span>
+                </div>
+                <div className="md:col-span-2">
                   <span className="font-semibold">User Agent:</span>
                   <span className="ml-2 text-gray-300 text-sm">
-                    {debugInfo.environment.userAgent.substring(0, 60)}...
+                    {debugInfo.environment.userAgent.substring(0, 80)}...
                   </span>
                 </div>
               </div>
               
+              {/* Variables de entorno process.env */}
               <div className="border-t border-gray-600 pt-4">
+                <h4 className="text-lg font-semibold text-blue-300 mb-2">Variables process.env</h4>
                 <div className="space-y-2">
                   <div className="flex items-center">
                     <span className="font-semibold mr-2">SUPABASE_URL:</span>
@@ -201,6 +237,44 @@ export default function NetlifyDebugPage() {
                     </span>
                   </div>
                 </div>
+              </div>
+
+              {/* Variables de entorno window */}
+              <div className="border-t border-gray-600 pt-4">
+                <h4 className="text-lg font-semibold text-purple-300 mb-2">Variables window (Runtime)</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center">
+                    <span className="font-semibold mr-2">Window Variables:</span>
+                    {debugInfo.environment.hasWindowVars ? (
+                      <span className="text-green-400">✅ Disponibles</span>
+                    ) : (
+                      <span className="text-red-400">❌ NO disponibles</span>
+                    )}
+                  </div>
+                  
+                  <div className="ml-4 space-y-1">
+                    <div>
+                      <span className="font-mono text-sm text-gray-400">__SUPABASE_URL__:</span>
+                      <span className="ml-2 text-gray-300 font-mono text-xs">
+                        {debugInfo.environment.windowSupabaseUrl?.substring(0, 40) || 'N/A'}...
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-mono text-sm text-gray-400">__SUPABASE_KEY__:</span>
+                      <span className="ml-2 text-gray-300 font-mono text-xs">
+                        {debugInfo.environment.windowSupabaseKey || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Timestamp */}
+              <div className="border-t border-gray-600 pt-4">
+                <span className="font-semibold text-gray-400">Build Time:</span>
+                <span className="ml-2 text-gray-300 font-mono text-sm">
+                  {debugInfo.environment.buildTime}
+                </span>
               </div>
             </div>
           </div>

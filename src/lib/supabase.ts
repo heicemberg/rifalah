@@ -1,13 +1,19 @@
 // ============================================================================
-// CONFIGURACIÓN DE SUPABASE - SOLUCIÓN ROBUSTA PARA NETLIFY  
-// Importa la nueva configuración robusta con retry logic y validación completa
+// CONFIGURACIÓN DE SUPABASE - OPTIMIZADA PARA NETLIFY PRODUCTION
+// Usa la versión optimizada para SSG (Static Site Generation)
 // ============================================================================
 
-import { supabase as supabaseClient, getSupabaseClient, initializeSupabase, getConnectionStatus } from './supabase-client';
+import { 
+  supabase as supabaseClient, 
+  getSupabaseClient, 
+  initializeSupabase, 
+  getConnectionStatus,
+  testSupabaseConnection
+} from './supabase-production';
 
 // Re-exportar cliente y funciones útiles
 export const supabase = supabaseClient;
-export { getSupabaseClient, initializeSupabase, getConnectionStatus };
+export { getSupabaseClient, initializeSupabase, getConnectionStatus, testSupabaseConnection };
 
 // ============================================================================
 // TIPOS DE DATOS PARA LA BASE DE DATOS
