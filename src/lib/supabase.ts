@@ -1,74 +1,13 @@
 // ============================================================================
-// CONFIGURACIÓN DE SUPABASE - SOLUCIÓN PROBADA PARA NETLIFY
-// Basada en las mejores prácticas de la comunidad para evitar errores de conexión
+// CONFIGURACIÓN DE SUPABASE - SOLUCIÓN ROBUSTA PARA NETLIFY  
+// Importa la nueva configuración robusta con retry logic y validación completa
 // ============================================================================
 
-import { createClient } from '@supabase/supabase-js';
+import { supabase as supabaseClient, getSupabaseClient, initializeSupabase, getConnectionStatus } from './supabase-client';
 
-// ============================================================================
-// CONFIGURACIÓN DE VARIABLES DE ENTORNO CON VALIDACIÓN
-// ============================================================================
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-// Durante el build, las variables pueden no estar disponibles
-const isBuildTime = typeof window === 'undefined' && !supabaseUrl;
-
-if (!isBuildTime && !supabaseUrl) {
-  console.warn(
-    'NEXT_PUBLIC_SUPABASE_URL no está definida. ' +
-    'Verifica la configuración de la extensión Supabase en Netlify.'
-  );
-}
-
-if (!isBuildTime && !supabaseAnonKey) {
-  console.warn(
-    'NEXT_PUBLIC_SUPABASE_ANON_KEY no está definida. ' +
-    'Verifica la configuración de la extensión Supabase en Netlify.'
-  );
-}
-
-// ============================================================================
-// SINGLETON PATTERN PARA EVITAR MÚLTIPLES CONEXIONES
-// ============================================================================
-
-let supabaseInstance: ReturnType<typeof createClient> | null = null;
-
-function getSupabaseClient() {
-  if (!supabaseInstance) {
-    // Si no tenemos las variables, crear un cliente mock para build time
-    if (!supabaseUrl || !supabaseAnonKey) {
-      if (isBuildTime) {
-        console.log('⏳ Build time: usando cliente Supabase mock');
-        supabaseInstance = {} as any; // Mock client para build
-      } else {
-        console.error('❌ Variables de Supabase no disponibles en runtime');
-        supabaseInstance = {} as any;
-      }
-    } else {
-      supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          autoRefreshToken: true,
-          persistSession: true,
-          detectSessionInUrl: true
-        },
-        global: {
-          headers: {
-            'X-Client-Info': 'rifa-silverado@1.0.0',
-          },
-        },
-      });
-      
-      console.log('✅ Supabase client initialized');
-    }
-  }
-  
-  return supabaseInstance;
-}
-
-// Exportar el cliente singleton
-export const supabase = getSupabaseClient() as any;
+// Re-exportar cliente y funciones útiles
+export const supabase = supabaseClient;
+export { getSupabaseClient, initializeSupabase, getConnectionStatus };
 
 // ============================================================================
 // TIPOS DE DATOS PARA LA BASE DE DATOS

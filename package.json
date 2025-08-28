@@ -10,11 +10,13 @@
     "lint": "next lint",
     "serve": "npx serve out -p 3000",
     "build:static": "next build",
-    "netlify:build": "next build",
+    "netlify:build": "npm run validate-env && next build",
     "netlify:dev": "next dev",
     "postbuild": "echo 'Build completed successfully for Netlify deployment'",
     "clean": "rmdir /s /q .next 2>nul || rmdir /s /q out 2>nul || rmdir /s /q dist 2>nul || echo cleaned",
-    "prebuild": "npm run clean"
+    "prebuild": "npm run clean",
+    "validate-env": "node scripts/validate-env.js",
+    "debug-env": "node -e \"console.log('SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0,30) + '...'); console.log('ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0,20) + '...');\""
   },
   "dependencies": {
     "@netlify/functions": "4.2.2",

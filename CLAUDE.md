@@ -41,8 +41,8 @@ npm run clean            # Clean build artifacts
 ```
 
 ### Build Output
-- Static export build outputs to `out/` directory
-- Netlify deployment uses static site generation
+- Static export build outputs to `dist/` directory (configured via `distDir: 'dist'`)
+- Netlify deployment uses static site generation with `output: 'export'`
 
 ### Supabase Integration
 - **Database**: PostgreSQL con 3 tablas (customers, purchases, tickets)
@@ -58,7 +58,7 @@ This is a **Next.js 15** React application for a Mexican truck raffle system ("R
 
 **Frontend Framework**: Next.js 15 with App Router
 **State Management**: Zustand with persistence
-**Styling**: Tailwind CSS 4.x
+**Styling**: Tailwind CSS 3.x with PostCSS
 **Language**: TypeScript with strict mode
 **Real-time Features**: Custom real-time simulation system
 
@@ -171,9 +171,9 @@ The application uses **Zustand + Supabase** (`src/stores/raffle-store.ts` + `src
 ### Configuration Files
 - **ESLint**: Uses Next.js config with custom rules (warnings for TypeScript strict mode)
 - **TypeScript**: Strict mode enabled with path aliases (`@/*` → `./src/*`)
+- **Next.js**: Static export configuration with optimized builds (`output: 'export'`, `distDir: 'dist'`)
 - **Tailwind**: Custom Mexican-themed colors and animations
-- **PostCSS**: Dual configuration files (`.js` and `.mjs`) for compatibility
-- **Netlify**: Configured with security headers, caching rules, and SPA routing
+- **Netlify**: Configured with security headers, caching rules, and SPA routing to `/dist`
 
 ## important-instruction-reminders
 Do what has been asked; nothing more, nothing less.

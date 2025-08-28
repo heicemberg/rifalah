@@ -7,7 +7,11 @@
   NPM_VERSION = "10"
   NEXT_TELEMETRY_DISABLED = "1"
   DISABLE_TRACE = "1"
-  # Las variables de Supabase ahora son manejadas por la extensión Netlify-Supabase
+  
+  # Variables de Supabase - CRÍTICAS para evitar modo offline
+  # IMPORTANTE: También configurar en Netlify UI: Site settings > Environment variables
+  NEXT_PUBLIC_SUPABASE_URL = "https://ugmfmnwbynppdzkhvrih.supabase.co"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnbWZtbndieW5wcGR6a2h2cmloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4ODE4NzAsImV4cCI6MjA3MTQ1Nzg3MH0.MTNKqQCzmRETjULZ2PRx8mTK3hpR90tn6Pz36h1nMR4"
 
 [build.processing]
   skip_processing = false
@@ -37,7 +41,8 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff" 
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com"
+    # CSP optimizado para Supabase - CRÍTICO para evitar errores de conexión
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://ugmfmnwbynppdzkhvrih.supabase.co wss://ugmfmnwbynppdzkhvrih.supabase.co https://www.google-analytics.com; media-src 'self' https://ugmfmnwbynppdzkhvrih.supabase.co"
 
 [[headers]]
   for = "/dist/_next/static/*"

@@ -34,7 +34,8 @@
       "Bash(npm run clean:*)",
       "Bash(timeout:*)",
       "Bash(git rm:*)",
-      "Bash(npx next:*)"
+      "Bash(npx next:*)",
+      "Bash(npm run lint:*)"
     ],
     "deny": [],
     "ask": [],
