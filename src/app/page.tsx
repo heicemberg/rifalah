@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRaffleStore } from '@/stores/raffle-store'
 import { useRealTimeTickets } from '@/hooks/useRealTimeTickets'
 import { useSupabaseSync } from '@/hooks/useSupabaseSync'
+import SupabaseInitializer from '@/components/SupabaseInitializer'
 import { 
   ArrowRight, 
   Gift, 
@@ -46,6 +47,9 @@ export default function NewRaffePage() {
 
   return (
     <main className="bg-black text-white font-sans">
+      {/* INICIALIZADOR DE SUPABASE - SOLO VISIBLE CUANDO ES NECESARIO */}
+      <SupabaseInitializer />
+      
       {/* HEADER MINIMALISTA */}
       <header className="fixed top-0 w-full z-50 bg-black/90 backdrop-blur-sm border-b border-white/10">
         <div className="container mx-auto px-4 py-4">

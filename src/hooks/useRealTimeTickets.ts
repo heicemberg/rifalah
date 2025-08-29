@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRaffleStore } from '../stores/raffle-store';
+import { useSupabaseSync } from './useSupabaseSync';
 
 // ============================================================================
 // HOOK PARA SINCRONIZACIÓN EN TIEMPO REAL DE TICKETS
@@ -21,6 +22,7 @@ export interface TicketStats {
 
 export const useRealTimeTickets = () => {
   const { soldTickets, reservedTickets } = useRaffleStore();
+  const { realTicketsCount, isConnected, fomoPercentage } = useSupabaseSync();
   const [stats, setStats] = useState<TicketStats>({
     totalTickets: 10000,
     soldTickets: 0,
@@ -35,24 +37,50 @@ export const useRealTimeTickets = () => {
 
   const calculateStats = useCallback((): TicketStats => {
     const totalTickets = 10000;
-    const soldCount = soldTickets.length;
-    const reservedCount = reservedTickets.length;
-    const availableCount = totalTickets - soldCount - reservedCount;
-    const soldPercentage = (soldCount / totalTickets) * 100;
-    const availablePercentage = (availableCount / totalTickets) * 100;
+    
+    // Si estamos conectados a Supabase, usar datos reales + mostrados
+    if (isConnected) {
+      const soldCount = soldTickets.length; // Incluye FOMO
+      const realSoldCount = realTicketsCount; // Solo tickets realmente vendidos
+      const reservedCount = reservedTickets.length;
+      const availableCount = totalTickets - realSoldCount - reservedCount;
+      
+      // Para el porcentaje, usar los tickets mostrados (con FOMO)
+      const soldPercentage = (soldCount / totalTickets) * 100;
+      const availablePercentage = (availableCount / totalTickets) * 100;
 
-    return {
-      totalTickets,
-      soldTickets: soldCount,
-      availableTickets: availableCount,
-      reservedTickets: reservedCount,
-      soldPercentage: Math.round(soldPercentage * 100) / 100,
-      availablePercentage: Math.round(availablePercentage * 100) / 100,
-      isNearlyFull: soldPercentage > 85,
-      isCritical: soldPercentage > 95,
-      lastUpdate: new Date()
-    };
-  }, [soldTickets.length, reservedTickets.length]);
+      return {
+        totalTickets,
+        soldTickets: soldCount, // Mostrados (con FOMO)
+        availableTickets: availableCount, // Reales disponibles
+        reservedTickets: reservedCount,
+        soldPercentage: Math.round(soldPercentage * 100) / 100,
+        availablePercentage: Math.round(availablePercentage * 100) / 100,
+        isNearlyFull: soldPercentage > 85,
+        isCritical: soldPercentage > 95,
+        lastUpdate: new Date()
+      };
+    } else {
+      // Fallback para modo offline
+      const soldCount = soldTickets.length;
+      const reservedCount = reservedTickets.length;
+      const availableCount = totalTickets - soldCount - reservedCount;
+      const soldPercentage = (soldCount / totalTickets) * 100;
+      const availablePercentage = (availableCount / totalTickets) * 100;
+
+      return {
+        totalTickets,
+        soldTickets: soldCount,
+        availableTickets: availableCount,
+        reservedTickets: reservedCount,
+        soldPercentage: Math.round(soldPercentage * 100) / 100,
+        availablePercentage: Math.round(availablePercentage * 100) / 100,
+        isNearlyFull: soldPercentage > 85,
+        isCritical: soldPercentage > 95,
+        lastUpdate: new Date()
+      };
+    }
+  }, [soldTickets.length, reservedTickets.length, realTicketsCount, isConnected]);
 
   useEffect(() => {
     const newStats = calculateStats();

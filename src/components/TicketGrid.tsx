@@ -349,8 +349,14 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
     deselectTicket
   } = useRaffleStore();
   
-  // Hook de sincronización con Supabase
-  const { isConnected, fomoPercentage } = useSupabaseSync();
+  // Hook de sincronización con Supabase - VERSIÓN COMPLETA
+  const { 
+    isConnected, 
+    fomoPercentage, 
+    realTicketsCount,
+    lastSyncTime,
+    refreshData 
+  } = useSupabaseSync();
   
   // Refs y estado local
   const containerRef = useRef<HTMLDivElement>(null);
@@ -599,19 +605,31 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
               </button>
             </div>
 
-            {/* Indicador del estado de conexión */}
-            <div className="mt-3 text-center">
+            {/* Indicador del estado de conexión - VERSIÓN MEJORADA */}
+            <div className="mt-3 text-center space-y-2">
               <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
                 isConnected 
                   ? 'bg-green-100 text-green-800 border border-green-200' 
                   : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
               }`}>
-                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></div>
                 {isConnected 
-                  ? `✅ Conectado a BD • ${fomoPercentage}% vendido` 
+                  ? `✅ Conectado a BD • ${realTicketsCount} reales + FOMO = ${fomoPercentage}% mostrado` 
                   : '⚠️ Modo offline • Usando datos locales'
                 }
               </div>
+              
+              {isConnected && lastSyncTime && (
+                <div className="text-xs text-gray-500">
+                  🕐 Última sincronización: {lastSyncTime.toLocaleTimeString('es-MX')}
+                  <button 
+                    onClick={refreshData}
+                    className="ml-2 text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Actualizar
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

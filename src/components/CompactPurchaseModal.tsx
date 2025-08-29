@@ -4,8 +4,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { X, Upload, Check, Loader2, AlertCircle, Shield, Users, Clock, Star, Zap, Award, Lock } from 'lucide-react';
 import { useTickets, useTicketActions, useCheckout } from '../stores/raffle-store';
-import { formatPrice, validateEmail, validateWhatsApp } from '../lib/utils';
+import { formatPrice, validateEmail, validateWhatsApp, generateId } from '../lib/utils';
 import { useOCRProcessor, type ReceiptData } from '../lib/ocr-processor';
+import { useSupabaseSync } from '../hooks/useSupabaseSync';
+import { guardarCompra, obtenerMetadata, type CompraCompleta } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 interface CompactPurchaseModalProps {
@@ -68,6 +70,10 @@ const PAYMENT_METHODS = [
 const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onClose }) => {
   const { quickSelect } = useTicketActions();
   const { setCustomerData, setCurrentStep } = useCheckout();
+  
+  // Hook de Supabase para funciones reales
+  const { isConnected, getRealAvailableTickets } = useSupabaseSync();
+  
   const [step, setStep] = useState<'select' | 'details' | 'payment' | 'upload'>('select');
   const [selectedOption, setSelectedOption] = useState(QUICK_OPTIONS[2]); // Default: 10 tickets
   const [selectedPayment, setSelectedPayment] = useState(PAYMENT_METHODS[0]);
@@ -78,6 +84,7 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
   });
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSavingPurchase, setIsSavingPurchase] = useState(false);
   const [ocrData, setOcrData] = useState<ReceiptData | null>(null);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [timeLeft, setTimeLeft] = useState(900); // 15 minutes urgency timer
@@ -203,19 +210,24 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
         
         // Auto-confirmar si alta confianza y monto correcto
         if (ocrResult.amount && Math.abs(ocrResult.amount - selectedOption.price) <= 5) {
-          setTimeout(() => {
+          setTimeout(async () => {
             toast.success('¡Compra confirmada automáticamente!');
-            handlePurchaseSuccess();
+            await handlePurchaseSuccess();
           }, 2000);
+        } else {
+          setTimeout(async () => {
+            toast.success('¡Compra registrada! Te confirmaremos en breve');
+            await handlePurchaseSuccess();
+          }, 3000);
         }
       } else {
         toast('Comprobante subido - Requiere verificación manual', {
           icon: '⚠️',
           style: { background: '#fef3c7', color: '#92400e' }
         });
-        setTimeout(() => {
+        setTimeout(async () => {
           toast.success('¡Compra registrada! Te confirmaremos en breve');
-          handlePurchaseSuccess();
+          await handlePurchaseSuccess();
         }, 3000);
       }
     } catch (error) {
@@ -224,22 +236,117 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
         icon: '⚠️',
         style: { background: '#fef3c7', color: '#92400e' }
       });
-      setTimeout(() => {
+      setTimeout(async () => {
         toast.success('¡Compra registrada! Te confirmaremos pronto');
-        handlePurchaseSuccess();
+        await handlePurchaseSuccess();
       }, 2000);
     } finally {
       setIsProcessing(false);
     }
   };
   
-  const handlePurchaseSuccess = () => {
+  const handlePurchaseSuccess = async () => {
+    if (isSavingPurchase) return; // Prevenir doble procesamiento
+    
+    try {
+      setIsSavingPurchase(true);
+      
+      if (isConnected) {
+        // Verificar que tenemos tickets disponibles reales
+        const availableTickets = await getRealAvailableTickets();
+        
+        if (availableTickets.length < selectedOption.tickets) {
+          toast.error(`Solo hay ${availableTickets.length} tickets disponibles reales. Selecciona menos tickets.`);
+          return;
+        }
+        
+        // Preparar datos de la compra completa
+        const metadata = obtenerMetadata();
+        const [nombre, ...apellidos] = customerInfo.name.trim().split(' ');
+        
+        const datosCompra: CompraCompleta = {
+          nombre: nombre,
+          apellidos: apellidos.join(' ') || '',
+          telefono: customerInfo.whatsapp,
+          email: customerInfo.email,
+          estado: 'México', // Por defecto
+          ciudad: 'Ciudad de México', // Por defecto
+          info_adicional: `Compra desde modal compacto - ${selectedOption.tickets} tickets`,
+          cantidad_boletos: selectedOption.tickets,
+          numeros_boletos: [], // Se asignarán automáticamente por el admin
+          precio_unitario: selectedOption.price / selectedOption.tickets,
+          precio_total: selectedOption.price,
+          descuento_aplicado: selectedOption.discount,
+          metodo_pago: selectedPayment.name,
+          referencia_pago: selectedPayment.account,
+          captura_comprobante_url: uploadedFile ? uploadedFile.name : undefined,
+          ...metadata
+        };
+        
+        console.log('💾 Guardando compra en Supabase:', datosCompra);
+        
+        // Guardar la compra en Supabase
+        const result = await guardarCompra(datosCompra);
+        
+        console.log('✅ Compra guardada exitosamente:', result);
+        toast.success('¡Compra registrada en la base de datos!');
+        
+        // Actualizar store local también
+        setCustomerData({
+          id: result.customer.id,
+          name: result.customer.name,
+          email: result.customer.email,
+          whatsapp: result.customer.phone,
+          selectedTickets: [], // Se asignarán cuando el admin confirme
+          totalAmount: result.purchase.total_amount,
+          paymentMethod: result.purchase.payment_method as any,
+          status: 'pending',
+          createdAt: new Date(result.purchase.created_at || Date.now())
+        });
+        
+      } else {
+        // Fallback para modo offline (localStorage)
+        console.log('⚠️ Modo offline - Guardando en localStorage');
+        
+        const compraLocal = {
+          id: generateId(),
+          nombre: customerInfo.name.split(' ')[0],
+          apellidos: customerInfo.name.split(' ').slice(1).join(' '),
+          telefono: customerInfo.whatsapp,
+          email: customerInfo.email,
+          cantidad_boletos: selectedOption.tickets,
+          precio_total: selectedOption.price,
+          metodo_pago: selectedPayment.name,
+          archivo_subido: !!uploadedFile,
+          nombre_archivo: uploadedFile?.name || '',
+          fecha_compra: new Date().toISOString(),
+          estado_compra: 'pendiente',
+          timestamp: Date.now()
+        };
+        
+        const comprasExistentes = JSON.parse(localStorage.getItem('compras-registradas') || '[]');
+        comprasExistentes.push(compraLocal);
+        localStorage.setItem('compras-registradas', JSON.stringify(comprasExistentes));
+        
+        toast.success('¡Compra registrada localmente!');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error al guardar compra:', error);
+      toast.error('Error al registrar la compra. Intenta de nuevo.');
+      return; // No cerrar el modal si hay error
+    } finally {
+      setIsSavingPurchase(false);
+    }
+    
+    // Cerrar modal y resetear estado
     onClose();
     setTimeout(() => {
       setStep('select');
       setUploadedFile(null);
       setOcrData(null);
       setIsProcessing(false);
+      setIsSavingPurchase(false);
       setCustomerInfo({ name: '', whatsapp: '', email: '' });
       setErrors({});
     }, 500);
@@ -798,9 +905,9 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
 
               {/* Upload Area */}
               <div
-                onClick={() => !isProcessing && fileInputRef.current?.click()}
+                onClick={() => !isProcessing && !isSavingPurchase && fileInputRef.current?.click()}
                 className={`border-3 border-dashed rounded-2xl p-8 text-center transition-all duration-300 transform hover:scale-102 ${
-                  isProcessing ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-indigo-50 cursor-not-allowed' :
+                  isProcessing || isSavingPurchase ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-indigo-50 cursor-not-allowed' :
                   uploadedFile ? 'border-green-400 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' :
                   'border-gray-300 hover:border-blue-400 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 cursor-pointer shadow-md hover:shadow-lg'
                 }`}
@@ -862,6 +969,27 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                       </div>
                     )}
                   </div>
+                ) : isSavingPurchase ? (
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <Loader2 className="w-16 h-16 text-green-500 mx-auto animate-spin" />
+                      <div className="absolute inset-0 bg-green-200 rounded-full animate-ping opacity-25"></div>
+                    </div>
+                    <h4 className="text-green-700 font-bold text-xl">
+                      💾 Guardando tu compra...
+                    </h4>
+                    <p className="text-green-600">
+                      {isConnected 
+                        ? '📡 Registrando en la base de datos...' 
+                        : '💾 Guardando localmente...'
+                      }
+                    </p>
+                    <div className="flex justify-center gap-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                    </div>
+                  </div>
                 ) : (
                   <div className="space-y-4">
                     <div className="relative">
@@ -894,7 +1022,7 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                 type="file"
                 accept="image/*"
                 onChange={handleFileUpload}
-                disabled={isProcessing}
+                disabled={isProcessing || isSavingPurchase}
                 className="hidden"
               />
 

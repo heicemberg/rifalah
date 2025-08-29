@@ -283,7 +283,7 @@ export async function obtenerCompras(): Promise<CompraConDetalles[]> {
 }
 
 /**
- * Actualizar estado de una compra
+ * Actualizar estado de una compra - VERSIÓN MEJORADA CON MEJOR MANEJO
  */
 export async function actualizarEstadoCompra(
   purchaseId: string, 
@@ -292,11 +292,14 @@ export async function actualizarEstadoCompra(
   verificadoPor?: string
 ) {
   try {
+    console.log(`🔄 Actualizando compra ${purchaseId} a estado: ${estado}`);
+    
     const { data: purchaseData, error: getError } = await supabase
       .from('purchases')
       .select(`
         *,
-        customer:customers(*)
+        customer:customers(*),
+        tickets(*)
       `)
       .eq('id', purchaseId)
       .single();
@@ -327,39 +330,53 @@ export async function actualizarEstadoCompra(
     if (estado === 'confirmada') {
       const cantidadBoletos = Math.round(updatedPurchase.total_amount / updatedPurchase.unit_price);
       
-      try {
-        tickets = await asignarNumerosDisponibles(
-          purchaseId, 
-          updatedPurchase.customer_id, 
-          cantidadBoletos
-        );
-        console.log(`✅ Compra confirmada y ${tickets.length} tickets asignados`);
-      } catch (ticketError) {
-        console.error('❌ Error al asignar tickets:', ticketError);
-        await supabase
-          .from('purchases')
-          .update({ status: 'pendiente' })
-          .eq('id', purchaseId);
-        
-        throw new Error(`No se pudo confirmar: ${ticketError instanceof Error ? ticketError.message : 'Error al asignar tickets'}`);
+      // Solo asignar si no tiene tickets ya
+      if (!purchaseData.tickets || purchaseData.tickets.length === 0) {
+        try {
+          tickets = await asignarNumerosDisponibles(
+            purchaseId, 
+            updatedPurchase.customer_id, 
+            cantidadBoletos
+          );
+          console.log(`✅ Compra confirmada y ${tickets.length} tickets asignados`);
+        } catch (ticketError) {
+          console.error('❌ Error al asignar tickets:', ticketError);
+          
+          // Revertir estado a pendiente si no se pudieron asignar tickets
+          await supabase
+            .from('purchases')
+            .update({ status: 'pendiente' })
+            .eq('id', purchaseId);
+          
+          throw new Error(`No se pudo confirmar: ${ticketError instanceof Error ? ticketError.message : 'Error al asignar tickets'}`);
+        }
+      } else {
+        console.log(`ℹ️ La compra ya tiene ${purchaseData.tickets.length} tickets asignados`);
+        tickets = purchaseData.tickets;
       }
     }
 
     // Liberar tickets si se cancela
     if (estado === 'cancelada') {
-      await supabase
+      const { error: releaseError } = await supabase
         .from('tickets')
         .update({
           status: 'disponible',
           customer_id: null,
           purchase_id: null,
-          sold_at: null
+          sold_at: null,
+          reserved_at: null
         })
         .eq('purchase_id', purchaseId);
       
-      console.log('🔄 Tickets liberados por cancelación');
+      if (releaseError) {
+        console.error('❌ Error al liberar tickets:', releaseError);
+      } else {
+        console.log('🔄 Tickets liberados por cancelación');
+      }
     }
 
+    // Obtener datos finales actualizados
     const { data: finalData, error: finalError } = await supabase
       .from('purchases')
       .select(`
@@ -372,7 +389,7 @@ export async function actualizarEstadoCompra(
 
     if (finalError) throw finalError;
 
-    console.log('✅ Compra actualizada');
+    console.log('✅ Compra actualizada correctamente');
     return finalData as CompraConDetalles;
   } catch (error) {
     console.error('❌ Error en actualizarEstadoCompra:', error);
@@ -381,7 +398,7 @@ export async function actualizarEstadoCompra(
 }
 
 /**
- * Asignar números de tickets disponibles automáticamente
+ * Asignar números de tickets disponibles automáticamente - VERSIÓN MEJORADA
  */
 export async function asignarNumerosDisponibles(
   purchaseId: string, 
@@ -389,6 +406,8 @@ export async function asignarNumerosDisponibles(
   cantidadBoletos: number
 ): Promise<Ticket[]> {
   try {
+    console.log(`🎫 Intentando asignar ${cantidadBoletos} tickets para compra ${purchaseId}`);
+    
     const { data: ticketsDisponibles, error: selectError } = await supabase
       .from('tickets')
       .select('*')
@@ -399,7 +418,8 @@ export async function asignarNumerosDisponibles(
     if (selectError) throw selectError;
 
     if (!ticketsDisponibles || ticketsDisponibles.length < cantidadBoletos) {
-      throw new Error(`Solo hay ${ticketsDisponibles?.length || 0} tickets disponibles, necesitas ${cantidadBoletos}`);
+      const disponibles = ticketsDisponibles?.length || 0;
+      throw new Error(`Insuficientes tickets disponibles. Solo hay ${disponibles}, necesitas ${cantidadBoletos}`);
     }
 
     const numerosAsignados = ticketsDisponibles.map((t: any) => t.number);
@@ -423,5 +443,93 @@ export async function asignarNumerosDisponibles(
   } catch (error) {
     console.error('❌ Error al asignar números:', error);
     throw error;
+  }
+}
+
+/**
+ * Inicializar la base de datos con todos los tickets disponibles (1-10000)
+ */
+export async function inicializarTickets(): Promise<boolean> {
+  try {
+    console.log('🚀 Inicializando base de datos de tickets...');
+    
+    // Verificar si ya existen tickets
+    const { count, error: countError } = await supabase
+      .from('tickets')
+      .select('*', { count: 'exact', head: true });
+
+    if (countError) throw countError;
+
+    if (count && count > 0) {
+      console.log(`ℹ️ Ya existen ${count} tickets en la base de datos`);
+      return true;
+    }
+
+    // Crear todos los tickets del 1 al 10000
+    const tickets: Omit<Ticket, 'id' | 'created_at'>[] = [];
+    for (let i = 1; i <= 10000; i++) {
+      tickets.push({
+        number: i,
+        status: 'disponible'
+      });
+    }
+
+    console.log('📝 Insertando 10,000 tickets...');
+    
+    // Insertar en lotes de 1000 para evitar límites
+    const batchSize = 1000;
+    for (let i = 0; i < tickets.length; i += batchSize) {
+      const batch = tickets.slice(i, i + batchSize);
+      const { error: insertError } = await supabase
+        .from('tickets')
+        .insert(batch);
+
+      if (insertError) {
+        console.error(`❌ Error insertando lote ${i / batchSize + 1}:`, insertError);
+        throw insertError;
+      }
+      
+      console.log(`✅ Lote ${i / batchSize + 1}/${Math.ceil(tickets.length / batchSize)} insertado`);
+    }
+
+    console.log('✅ Base de datos de tickets inicializada correctamente');
+    return true;
+  } catch (error) {
+    console.error('❌ Error al inicializar tickets:', error);
+    return false;
+  }
+}
+
+/**
+ * Obtener estadísticas de tickets en tiempo real
+ */
+export async function obtenerEstadisticasTickets(): Promise<{
+  total: number;
+  disponibles: number;
+  vendidos: number;
+  reservados: number;
+} | null> {
+  try {
+    const { data: stats, error } = await supabase
+      .from('tickets')
+      .select('status')
+      .then(({ data, error }) => {
+        if (error) return { data: null, error };
+        
+        const counts = {
+          total: data?.length || 0,
+          disponibles: data?.filter(t => t.status === 'disponible').length || 0,
+          vendidos: data?.filter(t => t.status === 'vendido').length || 0,
+          reservados: data?.filter(t => t.status === 'reservado').length || 0
+        };
+        
+        return { data: counts, error: null };
+      });
+
+    if (error) throw error;
+    return stats;
+  } catch (error) {
+    console.error('❌ Error al obtener estadísticas:', error);
+    return null;
   }
 }
