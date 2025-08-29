@@ -11,6 +11,81 @@
 @tailwind utilities;
 
 /* ============================================================================
+   CONVERSION OPTIMIZED ANIMATIONS
+   ============================================================================ */
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.8;
+  }
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+.animate-gradient {
+  animation: gradient-shift 3s ease infinite;
+  background-size: 200% 200%;
+}
+
+/* Custom hover effects for conversion optimization */
+.hover-lift:hover {
+  transform: translateY(-2px) scale(1.02);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  transition: box-shadow 0.3s ease;
+}
+
+/* Progress bar styles */
+.progress-bar {
+  background: linear-gradient(90deg, #3B82F6, #8B5CF6);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: shimmer 2s infinite;
+}
+
+/* ============================================================================
    CSS CUSTOM PROPERTIES (VARIABLES DE TEMA)
    ============================================================================ */
 
