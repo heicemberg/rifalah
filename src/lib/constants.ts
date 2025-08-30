@@ -289,7 +289,7 @@ export const FOMO_CONFIG = {
 export const MAX_TICKETS_PER_PURCHASE = 100;
 
 /** Mínimo de tickets por compra */
-export const MIN_TICKETS_PER_PURCHASE = 1;
+export const MIN_TICKETS_PER_PURCHASE = 2;
 
 /** Máximo de caracteres para nombre */
 export const MAX_NAME_LENGTH = 100;
@@ -310,30 +310,30 @@ export const MEXICAN_WHATSAPP_REGEX = /^\+52\d{10}$/;
 export const MESSAGES = {
   // Mensajes de éxito
   SUCCESS: {
-    TICKETS_RESERVED: '¡Tickets reservados exitosamente!',
-    PAYMENT_VERIFIED: '¡Pago verificado! Tus tickets han sido confirmados.',
-    PROFILE_UPDATED: 'Perfil actualizado correctamente.'
+    TICKETS_RESERVED: '¡Números apartados con éxito!',
+    PAYMENT_VERIFIED: '¡Pago confirmado! Tus números ya están asegurados.',
+    PROFILE_UPDATED: 'Tus datos se actualizaron correctamente.'
   },
   
   // Mensajes de error
   ERROR: {
-    TICKETS_NOT_AVAILABLE: 'Algunos tickets ya no están disponibles.',
-    INVALID_EMAIL: 'Por favor ingresa un email válido.',
-    INVALID_WHATSAPP: 'Por favor ingresa un número de WhatsApp válido (+52XXXXXXXXXX).',
-    RESERVATION_EXPIRED: 'Tu reserva ha expirado. Por favor selecciona nuevos tickets.',
-    PAYMENT_FAILED: 'No se pudo procesar el pago. Intenta nuevamente.',
+    TICKETS_NOT_AVAILABLE: 'Algunos números ya los tomaron otros jugadores.',
+    INVALID_EMAIL: 'Por favor escribe un correo electrónico válido.',
+    INVALID_WHATSAPP: 'Por favor escribe tu WhatsApp completo (+52 y 10 dígitos).',
+    RESERVATION_EXPIRED: 'Se venció tu apartado. Escoge otros números por favor.',
+    PAYMENT_FAILED: 'No se pudo procesar tu pago. Inténtalo de nuevo.',
     MAX_TICKETS_EXCEEDED: `No puedes comprar más de ${MAX_TICKETS_PER_PURCHASE} tickets.`
   },
   
   // Mensajes de advertencia
   WARNING: {
-    RESERVATION_EXPIRING: 'Tu reserva expirará pronto. Completa tu compra.',
-    FEW_TICKETS_LEFT: 'Quedan pocos tickets disponibles.'
+    RESERVATION_EXPIRING: 'Tu apartado se vence pronto. Termina tu compra.',
+    FEW_TICKETS_LEFT: 'Quedan poquitos números disponibles.'
   },
   
   // Mensajes informativos
   INFO: {
-    TICKETS_SELECTED: 'tickets seleccionados',
+    TICKETS_SELECTED: 'números escogidos',
     TOTAL_TO_PAY: 'Total a pagar',
     DISCOUNT_APPLIED: 'Descuento aplicado',
     SORTEO_DATE: 'Fecha del sorteo'

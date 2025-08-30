@@ -26,10 +26,10 @@ interface QuickOption {
 }
 
 const QUICK_OPTIONS: QuickOption[] = [
-  { tickets: 1, price: 50, discount: 0, popular: false, desc: '¡Empieza ahora!', badge: '🎯 FÁCIL', conversion: 'Solo $50 pesos' },
-  { tickets: 5, price: 225, discount: 10, popular: false, desc: '¡5x más chances!', badge: '💪 INTELIGENTE', conversion: 'Ahorras $25' },
-  { tickets: 10, price: 400, discount: 20, popular: true, desc: '¡10x oportunidad!', badge: '🔥 MÁS ELEGIDO', conversion: 'Ahorras $100' },
-  { tickets: 25, price: 750, discount: 40, popular: false, desc: '¡Máxima ventaja!', badge: '👑 PRO', conversion: 'Ahorras $500' }
+  { tickets: 2, price: 100, discount: 0, popular: false, desc: '¡Échate la suerte!', badge: '🎯 FACILITÓ', conversion: 'Solo $100 pesitos' },
+  { tickets: 5, price: 225, discount: 10, popular: false, desc: '¡Más oportunidad de ganar!', badge: '💪 INTELIGENTE', conversion: 'Te ahorras $25 pesos' },
+  { tickets: 10, price: 400, discount: 20, popular: true, desc: '¡El más comprado!', badge: '🔥 MÁS ELEGIDO', conversion: 'Te ahorras $100 pesos' },
+  { tickets: 25, price: 750, discount: 40, popular: false, desc: '¡Para quien va en serio!', badge: '👑 PRO', conversion: 'Te ahorras $500 pesos' }
 ];
 
 const PAYMENT_METHODS = [
@@ -75,7 +75,7 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
   const { isConnected, getRealAvailableTickets } = useSupabaseSync();
   
   const [step, setStep] = useState<'select' | 'details' | 'payment' | 'upload'>('select');
-  const [selectedOption, setSelectedOption] = useState(QUICK_OPTIONS[2]); // Default: 10 tickets
+  const [selectedOption, setSelectedOption] = useState(QUICK_OPTIONS[2]); // Default: 10 tickets (más popular)
   const [selectedPayment, setSelectedPayment] = useState(PAYMENT_METHODS[0]);
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
@@ -365,16 +365,16 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
           {/* Urgency Banner */}
           {step === 'select' && (
             <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-center py-2 px-4 font-bold text-sm animate-pulse">
-              ⏰ OFERTA ESPECIAL TERMINA EN: {formatTime(timeLeft)} • Solo quedan {Math.floor(Math.random() * 150) + 50} boletos en descuento
+              ⏰ PROMOCIÓN SE ACABA EN: {formatTime(timeLeft)} • Solo quedan {Math.floor(Math.random() * 150) + 50} boletos con descuento
             </div>
           )}
           
           <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-blue-50">
             <div className="flex-1">
               <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                {step === 'select' && '🎫 ¡Asegura tu Boleto Ganador!'}
-                {step === 'details' && '📝 Últimos Datos (Paso 2/4)'}
-                {step === 'payment' && '💳 Pago Seguro (Paso 3/4)'}
+                {step === 'select' && '🎫 ¡Elige Tus Números de la Suerte!'}
+                {step === 'details' && '📝 Tus Datos (Paso 2/4)'}
+                {step === 'payment' && '💳 ¿Cómo Quieres Pagar? (Paso 3/4)'}
                 {step === 'upload' && '📸 Confirmación (Paso 4/4)'}
               </h2>
               
@@ -383,18 +383,18 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                 <div className="flex items-center gap-1 text-green-600">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   <Users className="w-4 h-4" />
-                  <span className="font-medium">{showingOthers} personas viendo</span>
+                  <span className="font-medium">{showingOthers} personas viendo ahora</span>
                 </div>
                 
                 <div className="flex items-center gap-1 text-blue-600">
                   <Shield className="w-4 h-4" />
-                  <span className="font-medium">100% Seguro</span>
+                  <span className="font-medium">100% Confiable</span>
                 </div>
                 
                 {step !== 'select' && (
                   <div className="flex items-center gap-1 text-purple-600">
                     <Clock className="w-4 h-4" />
-                    <span className="font-medium">Boletos reservados por 30min</span>
+                    <span className="font-medium">Números apartados por 30 min</span>
                   </div>
                 )}
               </div>

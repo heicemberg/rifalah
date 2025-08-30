@@ -6,13 +6,16 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase, verificarConexion } from '../lib/supabase';
 import { useRaffleStore } from '../stores/raffle-store';
 import { adminToast, publicToast, isCurrentUserAdmin } from '../lib/toast-utils';
+import { useVisualFomo } from './useVisualFomo';
 
 export function useSupabaseSync() {
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [fomoPercentage, setFomoPercentage] = useState(8);
   const [realTicketsCount, setRealTicketsCount] = useState(0);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  
+  // Hook para FOMO visual
+  const { visualPercentage, generateVisualTickets } = useVisualFomo();
   
   // Store actions
   const { 
@@ -25,44 +28,6 @@ export function useSupabaseSync() {
     setReservedTicketsFromDB: state.setReservedTicketsFromDB
   }));
 
-  // ============================================================================
-  // SISTEMA FOMO: GENERAR TICKETS VENDIDOS VISUALMENTE (8%-18%)
-  // ============================================================================
-  const generateFomoTickets = (realSoldTickets: number[]): number[] => {
-    const totalTickets = 10000;
-    const currentPercentage = (realSoldTickets.length / totalTickets) * 100;
-    
-    // Si ya tenemos más del 18% vendido realmente, no agregar FOMO
-    if (currentPercentage >= 18) {
-      return realSoldTickets;
-    }
-    
-    // Calcular cuántos tickets FOMO necesitamos para llegar al porcentaje objetivo
-    const targetCount = Math.floor((fomoPercentage / 100) * totalTickets);
-    const fomoNeeded = Math.max(0, targetCount - realSoldTickets.length);
-    
-    if (fomoNeeded === 0) {
-      return realSoldTickets;
-    }
-    
-    // Generar tickets FOMO aleatorios que no estén en los reales
-    const realTicketsSet = new Set(realSoldTickets);
-    const fomoTickets: number[] = [];
-    
-    while (fomoTickets.length < fomoNeeded) {
-      const randomTicket = Math.floor(Math.random() * totalTickets) + 1;
-      if (!realTicketsSet.has(randomTicket) && !fomoTickets.includes(randomTicket)) {
-        fomoTickets.push(randomTicket);
-      }
-    }
-    
-    // Combinar tickets reales + FOMO
-    const allTickets = [...realSoldTickets, ...fomoTickets].sort((a, b) => a - b);
-    
-    console.log(`FOMO System: ${realSoldTickets.length} real + ${fomoTickets.length} FOMO = ${allTickets.length} total (${fomoPercentage}%)`);
-    
-    return allTickets;
-  };
 
   // ============================================================================
   // CARGAR DATOS INICIALES DESDE SUPABASE - VERSIÓN MEJORADA
@@ -101,17 +66,15 @@ export function useSupabaseSync() {
       // Actualizar contador de tickets reales
       setRealTicketsCount(realSoldTickets.length);
       
-      // Aplicar sistema FOMO solo si tenemos pocos tickets vendidos realmente
-      const visualSoldTickets = generateFomoTickets(realSoldTickets);
-      
-      // Actualizar store con tickets visuales (incluye FOMO)
+      // Aplicar FOMO visual gradual para UI
+      const visualSoldTickets = generateVisualTickets(realSoldTickets);
       setSoldTicketsFromDB(visualSoldTickets);
       setReservedTicketsFromDB(reservedTickets);
       
       // Actualizar tiempo de sincronización
       setLastSyncTime(new Date());
         
-      console.log(`✅ Sincronización completa: ${realSoldTickets.length} reales + ${visualSoldTickets.length - realSoldTickets.length} FOMO = ${visualSoldTickets.length} total`);
+      console.log(`✅ Sincronización completa: ${realSoldTickets.length} reales + ${visualSoldTickets.length - realSoldTickets.length} visuales = ${visualSoldTickets.length} mostrados (${visualPercentage}%)`);
       adminToast.success(`Sincronización completa: ${realSoldTickets.length} tickets reales vendidos`);
       
       // Actualizar tickets disponibles
@@ -126,34 +89,8 @@ export function useSupabaseSync() {
     } finally {
       setLoading(false);
     }
-  }, [fomoPercentage, setSoldTicketsFromDB, setReservedTicketsFromDB, _updateAvailableTickets]);
+  }, [setSoldTicketsFromDB, setReservedTicketsFromDB, _updateAvailableTickets]);
 
-  // ============================================================================
-  // ACTUALIZAR PORCENTAJE FOMO AUTOMÁTICAMENTE
-  // ============================================================================
-  useEffect(() => {
-    const updateFomoPercentage = () => {
-      // Incrementar gradualmente de 8% a 18% basado en compras y tiempo
-      const basePercentage = 8;
-      const maxPercentage = 18;
-      const timeBoost = Math.min(2, Math.floor(Date.now() / (1000 * 60 * 30))); // +2% cada 30 min
-      const randomBoost = Math.random() * 3; // +0-3% aleatorio
-      
-      const newPercentage = Math.min(
-        maxPercentage, 
-        basePercentage + timeBoost + randomBoost
-      );
-      
-      if (Math.abs(newPercentage - fomoPercentage) > 0.5) {
-        setFomoPercentage(Math.floor(newPercentage));
-      }
-    };
-
-    // Actualizar cada 2 minutos
-    const interval = setInterval(updateFomoPercentage, 2 * 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, [fomoPercentage]);
 
   // ============================================================================
   // SUSCRIPCIÓN A CAMBIOS EN TIEMPO REAL - VERSIÓN MEJORADA
@@ -387,8 +324,8 @@ export function useSupabaseSync() {
   return {
     isConnected,
     loading,
-    fomoPercentage,
     realTicketsCount,
+    visualPercentage,
     lastSyncTime,
     refreshData: loadInitialData,
     getRealAvailableTickets,

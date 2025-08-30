@@ -352,7 +352,7 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
   // Hook de sincronización con Supabase - VERSIÓN COMPLETA
   const { 
     isConnected, 
-    fomoPercentage, 
+    visualPercentage, 
     realTicketsCount,
     lastSyncTime,
     refreshData 
@@ -469,10 +469,10 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
       {/* Título del Grid de Tickets */}
       <div className="text-center mb-8">
         <h2 className="text-4xl lg:text-5xl font-black text-white mb-4">
-          MAPA DE <span className="text-yellow-400">BOLETOS</span>
+          MAPA DE <span className="text-yellow-400">NÚMEROS DE LA SUERTE</span>
         </h2>
         <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-6">
-          Selecciona directamente los números que te traerán suerte. Cada boleto tiene el mismo chance de ganar.
+          Dale clic a los números que se te antojen para la rifa. Todos tienen la misma oportunidad de ganar.
         </p>
         
         {/* Indicadores rápidos */}
@@ -499,7 +499,7 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
           </div>
           <div className="flex items-center gap-3 bg-emerald-500/10 px-4 py-2 rounded-2xl border border-emerald-300 shadow-md">
             <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-green-600 border-2 border-emerald-700 rounded-xl shadow-lg"></div>
-            <span className="text-sm font-bold text-emerald-800">Seleccionado</span>
+            <span className="text-sm font-bold text-emerald-800">Escogido</span>
           </div>
           <div className="flex items-center gap-3 bg-amber-500/10 px-4 py-2 rounded-2xl border border-amber-300 shadow-md">
             <div className="w-6 h-6 bg-gradient-to-br from-amber-400 to-yellow-500 border-2 border-amber-600 rounded-xl shadow-lg"></div>
@@ -564,7 +564,7 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
                   />
                   <div>
                     <span className="text-sm font-bold text-emerald-800">Solo Disponibles</span>
-                    <p className="text-xs text-emerald-600">Ver únicamente números libres</p>
+                    <p className="text-xs text-emerald-600">Ver solo números disponibles</p>
                   </div>
                 </label>
               </div>
@@ -585,7 +585,7 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
                   />
                   <div>
                     <span className={`text-sm font-bold ${selectedTickets.length === 0 ? 'text-gray-400' : 'text-blue-800'}`}>
-                      Solo Seleccionados
+                      Solo los que Escogí
                     </span>
                     <p className={`text-xs ${selectedTickets.length === 0 ? 'text-gray-400' : 'text-blue-600'}`}>
                       Ver solo tus {selectedTickets.length} tickets
@@ -614,7 +614,7 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
               }`}>
                 <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></div>
                 {isConnected 
-                  ? `✅ Conectado a BD • ${realTicketsCount} reales + FOMO = ${fomoPercentage}% mostrado` 
+                  ? `✅ Conectado a BD • ${realTicketsCount} reales + visual = ${visualPercentage}% mostrado` 
                   : '⚠️ Modo offline • Usando datos locales'
                 }
               </div>
@@ -640,11 +640,11 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
       <div className="flex flex-wrap justify-center gap-6 mb-6 text-sm bg-gradient-to-r from-emerald-50/80 to-slate-50/80 backdrop-blur-sm p-4 rounded-2xl border border-gray-200 shadow-sm">
         <div className="text-center">
           <div className="text-lg font-black text-gray-900">{formatMexicanNumber(stats.totalTickets)}</div>
-          <div className="text-xs font-medium text-gray-600">Total Boletos</div>
+          <div className="text-xs font-medium text-gray-600">Total Números</div>
         </div>
         <div className="text-center">
           <div className="text-lg font-black text-green-600">{selectedTickets.length}</div>
-          <div className="text-xs font-medium text-gray-600">Seleccionados</div>
+          <div className="text-xs font-medium text-gray-600">Escogidos</div>
         </div>
         <div className="text-center">
           <div className="text-lg font-black text-red-600">{formatMexicanNumber(stats.soldTickets)}</div>
@@ -695,10 +695,10 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
       {/* Controles móviles mejorados */}
       <div className="mt-6 text-center">
         <div className="text-sm text-gray-600 font-medium mb-2">
-          💡 Toca los números para seleccionar tus boletos
+          💡 Dale clic a los números para escoger tus boletos
         </div>
         <div className="text-xs text-gray-500">
-          Deslízate para explorar todos los números disponibles
+          Mueve la pantalla para ver todos los números disponibles
         </div>
       </div>
       
@@ -721,7 +721,7 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
             <Trophy className="w-8 h-8 text-yellow-400" />
           </div>
           <div className="text-red-200 text-lg mb-2">
-            Todos los {formatMexicanNumber(stats.totalTickets)} boletos están vendidos
+            Todos los {formatMexicanNumber(stats.totalTickets)} números ya están ocupados
           </div>
           <div className="text-red-300 text-sm">
             Gracias por tu interés. El sorteo se realizará pronto.
@@ -744,7 +744,7 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
                     <span className="text-xl font-black text-white">{selectedTickets.length}</span>
                   </div>
                   <div className="text-left">
-                    <div className="text-sm font-bold text-emerald-300">Boletos Seleccionados</div>
+                    <div className="text-sm font-bold text-emerald-300">Números Escogidos</div>
                     <div className="text-xl font-black text-white">
                       {formatPriceMXN(calculatePrice(selectedTickets.length))}
                     </div>

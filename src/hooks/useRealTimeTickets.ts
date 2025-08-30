@@ -22,7 +22,7 @@ export interface TicketStats {
 
 export const useRealTimeTickets = () => {
   const { soldTickets, reservedTickets } = useRaffleStore();
-  const { realTicketsCount, isConnected, fomoPercentage } = useSupabaseSync();
+  const { realTicketsCount, isConnected, visualPercentage } = useSupabaseSync();
   const [stats, setStats] = useState<TicketStats>({
     totalTickets: 10000,
     soldTickets: 0,

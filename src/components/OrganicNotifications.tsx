@@ -80,36 +80,20 @@ const OrganicNotifications: React.FC = () => {
     }, hideDelay);
   }, []);
 
-  // Función para simular ventas reales
-  const simulateSale = useCallback((ticketCount: number) => {
-    const MAX_FAKE_PERCENTAGE = 75; // Máximo 75% de boletos simulados
-    
-    if (soldPercentage < MAX_FAKE_PERCENTAGE && availableTickets.length >= ticketCount) {
-      // Seleccionar tickets aleatorios disponibles
-      const randomTickets = availableTickets
-        .sort(() => Math.random() - 0.5)
-        .slice(0, ticketCount);
-      
-      // Marcar como vendidos
-      markTicketsAsSold(randomTickets, `fake-customer-${Date.now()}`);
-    }
-  }, [soldPercentage, availableTickets, markTicketsAsSold]);
 
   // Sistema principal de notificaciones
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
 
     const scheduleNextNotification = () => {
-      const MAX_FAKE_PERCENTAGE = 75; // Máximo 75% de boletos simulados
-      
-      // Solo mostrar notificaciones si no hemos alcanzado el límite
-      if (soldPercentage >= MAX_FAKE_PERCENTAGE) {
+      // Solo mostrar notificaciones si hay actividad real
+      if (soldPercentage >= 30) {
         return;
       }
 
-      // Intervalo aleatorio entre 30 y 60 segundos (más razonable)
-      const MIN_INTERVAL = 30000; // 30 segundos
-      const MAX_INTERVAL = 60000; // 60 segundos
+      // Intervalo aleatorio entre 2 y 5 minutos (más realista)
+      const MIN_INTERVAL = 120000; // 2 minutos
+      const MAX_INTERVAL = 300000; // 5 minutos
       const interval = MIN_INTERVAL + Math.random() * (MAX_INTERVAL - MIN_INTERVAL);
 
       timeoutId = setTimeout(() => {
@@ -121,10 +105,6 @@ const OrganicNotifications: React.FC = () => {
         // Mostrar notificación
         showNotification(notification);
         
-        // Simular venta real (60% de probabilidad)
-        if (Math.random() < 0.6) {
-          simulateSale(notification.ticketCount);
-        }
         
         // Programar siguiente notificación
         scheduleNextNotification();
@@ -138,7 +118,7 @@ const OrganicNotifications: React.FC = () => {
       clearTimeout(timeoutId);
       clearTimeout(initialTimeout);
     };
-  }, [createNotification, showNotification, simulateSale, soldPercentage]);
+  }, [createNotification, showNotification, soldPercentage]);
 
   // Renderizar notificación actual
   if (!currentNotification) {

@@ -22,7 +22,7 @@ export default function AdminPanel() {
   const [busqueda, setBusqueda] = useState('');
   
   // Hook de sincronización con Supabase
-  const { isConnected, fomoPercentage, refreshData } = useSupabaseSync();
+  const { isConnected, visualPercentage, refreshData } = useSupabaseSync();
 
   // Cargar compras al montar el componente
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function AdminPanel() {
         // Cargar desde Supabase
         const comprasSupabase = await obtenerCompras();
         setCompras(comprasSupabase || []);
-        toast.success(`${comprasSupabase?.length || 0} compras cargadas desde Supabase • ${fomoPercentage}% vendido`);
+        toast.success(`${comprasSupabase?.length || 0} compras cargadas desde Supabase • ${visualPercentage}% mostrado`);
         
         // Sincronizar datos de tickets también
         await refreshData();
@@ -266,7 +266,7 @@ export default function AdminPanel() {
               }`}>
                 <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
                 {isConnected 
-                  ? `✅ Conectado a Supabase • ${fomoPercentage}% vendido (FOMO activo)` 
+                  ? `✅ Conectado a Supabase • ${visualPercentage}% mostrado` 
                   : '⚠️ Modo offline • Usando localStorage'
                 }
               </div>

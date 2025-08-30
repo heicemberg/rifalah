@@ -39,6 +39,14 @@ const config: Config = {
         'sunset-orange': '#FF6B35',
         'desert-sand': '#F4E4BC',
         'cactus-green': '#2E8B57',
+        // Additional Mexican colors for better coherence
+        'terracota': '#E2725B',
+        'papel-picado': '#FF69B4',
+        'tequila-amber': '#DAA520',
+        'agave-green': '#228B22',
+        'mexican-pink': '#FF1493',
+        'colonial-brown': '#8B4513',
+        'talavera-blue': '#4682B4',
       },
       borderRadius: {
         lg: 'var(--radius)',

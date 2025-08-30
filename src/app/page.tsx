@@ -104,13 +104,13 @@ export default function NewRaffePage() {
             {/* Badge de Verificación */}
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 text-yellow-400 px-6 py-3 rounded-full border border-yellow-500/30 font-bold text-sm mb-8 backdrop-blur-sm">
               <Shield className="w-5 h-5" />
-              <span>RIFA VERIFICADA • 100% LEGAL</span>
+              <span>RIFA VERIFICADA • 100% LEGAL Y CONFIABLE</span>
               <Shield className="w-5 h-5" />
             </div>
 
             {/* Título Principal Impactante */}
             <h1 className="text-5xl lg:text-7xl font-black leading-tight mb-6">
-              <span className="block text-white mb-2">GANA TU</span>
+              <span className="block text-white mb-2">¡ECHA LE SUERTE!</span>
               <span className="block bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 bg-clip-text text-transparent">
                 SILVERADO Z71 2024
               </span>
@@ -118,14 +118,14 @@ export default function NewRaffePage() {
 
             {/* Subtítulo Profesional */}
             <p className="text-xl lg:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
-              Camioneta Nueva + PlayStation 5 + $54,000 MXN en efectivo
+              Camioneta Nueva + PlayStation 5 + $54,000 pesos mexicanos en efectivo
             </p>
 
             {/* Precio Destacado */}
             <div className="bg-gradient-to-r from-red-600/20 to-red-500/20 backdrop-blur-sm rounded-2xl p-6 border border-red-500/30 mb-8 max-w-md mx-auto">
               <div className="text-sm text-gray-300 mb-2">PRECIO POR BOLETO</div>
               <div className="text-4xl font-black text-yellow-400">{formatPriceMXN(PRECIO_POR_BOLETO_MXN)}</div>
-              <div className="text-sm text-gray-400">Valor total del premio: $876,000 MXN</div>
+              <div className="text-sm text-gray-400">Valor total del premio: $876,000 pesos mexicanos</div>
             </div>
 
             {/* Contador de Boletos Elegante */}
@@ -147,7 +147,7 @@ export default function NewRaffePage() {
             >
               <Gift className="w-8 h-8" />
               <div>
-                <div>COMPRAR BOLETOS</div>
+                <div>¡COMPÁ TUS NÚMEROS DE LA SUERTE!</div>
                 <div className="text-sm opacity-90 font-normal">Desde {formatPriceMXN(PRECIO_POR_BOLETO_MXN)}</div>
               </div>
               <ArrowRight className="w-6 h-6" />
@@ -157,15 +157,15 @@ export default function NewRaffePage() {
             <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-400">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-green-400" />
-                <span>Sorteo ante Notario Público</span>
+                <span>Sorteo ante Notario Público México</span>
               </div>
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-blue-400" />
-                <span>Transmisión en vivo</span>
+                <span>Transmisión en vivo Facebook</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-yellow-400" />
-                <span>Proceso transparente</span>
+                <span>Proceso limpio y transparente</span>
               </div>
             </div>
           </div>
@@ -191,7 +191,7 @@ export default function NewRaffePage() {
                 <span className="text-sm text-gray-400 uppercase font-semibold">Participantes</span>
               </div>
               <div className="text-2xl lg:text-3xl font-black text-blue-400">{formatMexicanNumber(Math.floor(soldCount * 0.8))}</div>
-              <div className="text-xs text-gray-500">personas</div>
+              <div className="text-xs text-gray-500">personas jugando</div>
             </div>
 
             <div className="text-center">
@@ -200,7 +200,7 @@ export default function NewRaffePage() {
                 <span className="text-sm text-gray-400 uppercase font-semibold">Ciudades</span>
               </div>
               <div className="text-2xl lg:text-3xl font-black text-yellow-400">32</div>
-              <div className="text-xs text-gray-500">estados MX</div>
+              <div className="text-xs text-gray-500">estados de México</div>
             </div>
 
             <div className="text-center">
@@ -235,10 +235,10 @@ export default function NewRaffePage() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-black text-white mb-4">
-              ELIGE TUS <span className="text-yellow-400">NÚMEROS</span>
+              ESCOGE TUS <span className="text-yellow-400">NÚMEROS DE LA SUERTE</span>
             </h2>
             <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-8">
-              Selecciona los números que más te gusten del grid superior. Puedes elegir desde 1 hasta 100 boletos en una sola compra.
+              Escoge los números que se te antojen del mapa superior. Puedes comprar desde 1 hasta 100 boletos de una vez.
             </p>
             
             {/* Instrucciones de uso */}
@@ -247,9 +247,9 @@ export default function NewRaffePage() {
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Target className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-black text-white mb-3">1. Selecciona</h3>
+                <h3 className="text-xl font-black text-white mb-3">1. Escoge</h3>
                 <p className="text-gray-300 text-sm">
-                  Haz clic en los números que quieras del grid superior. Los números seleccionados se marcan en verde.
+                  Dale clic a los números que te latan del mapa de arriba. Los números que escojas se ponen en verde.
                 </p>
               </div>
 
@@ -257,9 +257,9 @@ export default function NewRaffePage() {
                 <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Gift className="w-8 h-8 text-black" />
                 </div>
-                <h3 className="text-xl font-black text-white mb-3">2. Usa Filtros</h3>
+                <h3 className="text-xl font-black text-white mb-3">2. Usa los Filtros</h3>
                 <p className="text-gray-300 text-sm">
-                  Utiliza los filtros para ver solo números disponibles, ocultar ocupados o revisar tus selecciones.
+                  Usa los filtros para ver solo números libres, ocultar los ocupados o revisar cuáles escogiste.
                 </p>
               </div>
 
@@ -267,9 +267,9 @@ export default function NewRaffePage() {
                 <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Zap className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-black text-white mb-3">3. Compra Fácil</h3>
+                <h3 className="text-xl font-black text-white mb-3">3. Compra Facilitó</h3>
                 <p className="text-gray-300 text-sm">
-                  Cuando tengas tus números, haz clic en &quot;Comprar Ahora&quot; que aparece en la parte inferior derecha.
+                  Ya que tengas tus números, dale clic a &quot;Comprar Ahora&quot; que sale abajo a la derecha.
                 </p>
               </div>
             </div>
@@ -289,7 +289,7 @@ export default function NewRaffePage() {
                   className="relative inline-flex items-center gap-3 bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 text-black px-8 py-4 rounded-2xl font-black text-lg shadow-2xl shadow-yellow-500/30 transition-all duration-300 hover:scale-105 hover:shadow-yellow-500/50 border-2 border-yellow-400/50"
                 >
                   <Star className="w-6 h-6 animate-spin-slow" />
-                  <span>Volver al Grid de Números</span>
+                  <span>Volver al Mapa de Números</span>
                   <ArrowRight className="w-5 h-5 animate-bounce-gentle" />
                 </button>
               </div>
@@ -306,8 +306,8 @@ export default function NewRaffePage() {
               <span className="text-yellow-400">UN SOLO GANADOR</span> • <span className="text-red-400">TRES PREMIOS</span>
             </h2>
             <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-              El afortunado ganador se llevará absolutamente todo. No dividimos premios, no hay segundo lugar. 
-              <span className="text-yellow-400 font-bold"> ¡Todo es para una sola persona!</span>
+              El afortunado que se saque el premio se lleva todito. No repartimos premios, no hay segundo lugar. 
+              <span className="text-yellow-400 font-bold"> ¡Todo para una sola personita!</span>
             </p>
           </div>
 
