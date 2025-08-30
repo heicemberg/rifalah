@@ -2,12 +2,22 @@
 
 import { useState, useEffect } from 'react';
 
-export function useVisualFomo() {
+export function useVisualFomo(realSoldCount: number = 0) {
   const [visualPercentage, setVisualPercentage] = useState(8);
   const [visualTicketsCount, setVisualTicketsCount] = useState(800);
   
   useEffect(() => {
     const updateVisualPercentage = () => {
+      // Calcular el porcentaje real de ventas
+      const realPercentage = (realSoldCount / 10000) * 100;
+      
+      // Si las ventas reales han alcanzado 18% (1800 tickets), desactivar FOMO visual
+      if (realPercentage >= 18) {
+        setVisualPercentage(parseFloat(realPercentage.toFixed(1)));
+        setVisualTicketsCount(realSoldCount);
+        return;
+      }
+      
       const now = Date.now();
       const sessionStart = parseInt(localStorage.getItem('rifa_session_start') || now.toString());
       
@@ -43,10 +53,16 @@ export function useVisualFomo() {
     const interval = setInterval(updateVisualPercentage, 30 * 1000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [realSoldCount]);
   
   // Generar tickets visuales (para mostrar, no para vender)
   const generateVisualTickets = (realSoldTickets: number[]): number[] => {
+    // Si las ventas reales han alcanzado 18%, solo mostrar tickets reales
+    const realPercentage = (realSoldCount / 10000) * 100;
+    if (realPercentage >= 18) {
+      return realSoldTickets;
+    }
+    
     if (realSoldTickets.length >= visualTicketsCount) {
       return realSoldTickets;
     }
@@ -77,9 +93,16 @@ export function useVisualFomo() {
     return visualTickets.sort((a, b) => a - b);
   };
   
+  // Verificar si el FOMO visual está activo
+  const isFomoActive = () => {
+    const realPercentage = (realSoldCount / 10000) * 100;
+    return realPercentage < 18;
+  };
+
   return {
     visualPercentage,
     visualTicketsCount,
-    generateVisualTickets
+    generateVisualTickets,
+    isFomoActive
   };
 }

@@ -15,7 +15,7 @@ export function useSupabaseSync() {
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   
   // Hook para FOMO visual
-  const { visualPercentage, generateVisualTickets } = useVisualFomo();
+  const { visualPercentage, generateVisualTickets, isFomoActive } = useVisualFomo(realTicketsCount);
   
   // Store actions
   const { 
@@ -66,16 +66,13 @@ export function useSupabaseSync() {
       // Actualizar contador de tickets reales
       setRealTicketsCount(realSoldTickets.length);
       
-      // Aplicar FOMO visual gradual para UI
-      const visualSoldTickets = generateVisualTickets(realSoldTickets);
+      // Solo mostrar tickets reales después del 18% de ventas
+      const visualSoldTickets = isFomoActive() ? generateVisualTickets(realSoldTickets) : realSoldTickets;
       setSoldTicketsFromDB(visualSoldTickets);
       setReservedTicketsFromDB(reservedTickets);
       
       // Actualizar tiempo de sincronización
       setLastSyncTime(new Date());
-        
-      console.log(`✅ Sincronización completa: ${realSoldTickets.length} reales + ${visualSoldTickets.length - realSoldTickets.length} visuales = ${visualSoldTickets.length} mostrados (${visualPercentage}%)`);
-      adminToast.success(`Sincronización completa: ${realSoldTickets.length} tickets reales vendidos`);
       
       // Actualizar tickets disponibles
       setTimeout(() => {
@@ -327,6 +324,7 @@ export function useSupabaseSync() {
     realTicketsCount,
     visualPercentage,
     lastSyncTime,
+    isFomoActive,
     refreshData: loadInitialData,
     getRealAvailableTickets,
     reserveTicketsInDB,

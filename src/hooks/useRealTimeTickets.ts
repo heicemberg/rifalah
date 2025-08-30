@@ -22,7 +22,7 @@ export interface TicketStats {
 
 export const useRealTimeTickets = () => {
   const { soldTickets, reservedTickets } = useRaffleStore();
-  const { realTicketsCount, isConnected, visualPercentage } = useSupabaseSync();
+  const { realTicketsCount, isConnected, visualPercentage, isFomoActive } = useSupabaseSync();
   const [stats, setStats] = useState<TicketStats>({
     totalTickets: 10000,
     soldTickets: 0,
@@ -38,26 +38,33 @@ export const useRealTimeTickets = () => {
   const calculateStats = useCallback((): TicketStats => {
     const totalTickets = 10000;
     
-    // Si estamos conectados a Supabase, usar datos reales + mostrados
+    // Si estamos conectados a Supabase
     if (isConnected) {
-      const soldCount = soldTickets.length; // Incluye FOMO
-      const realSoldCount = realTicketsCount; // Solo tickets realmente vendidos
+      const realSoldCount = realTicketsCount;
       const reservedCount = reservedTickets.length;
-      const availableCount = totalTickets - realSoldCount - reservedCount;
       
-      // Para el porcentaje, usar los tickets mostrados (con FOMO)
-      const soldPercentage = (soldCount / totalTickets) * 100;
+      // Mostrar números unificados hasta el 18%, después solo reales
+      const displaySoldCount = isFomoActive() ? soldTickets.length : realSoldCount;
+      const displaySoldPercentage = isFomoActive() 
+        ? (soldTickets.length / totalTickets) * 100
+        : (realSoldCount / totalTickets) * 100;
+      
+      // Los disponibles se calculan coherentemente con lo mostrado
+      const availableCount = isFomoActive() 
+        ? totalTickets - soldTickets.length - reservedCount
+        : totalTickets - realSoldCount - reservedCount;
+      
       const availablePercentage = (availableCount / totalTickets) * 100;
 
       return {
         totalTickets,
-        soldTickets: soldCount, // Mostrados (con FOMO)
-        availableTickets: availableCount, // Reales disponibles
+        soldTickets: displaySoldCount,
+        availableTickets: availableCount, // Siempre reales disponibles
         reservedTickets: reservedCount,
-        soldPercentage: Math.round(soldPercentage * 100) / 100,
+        soldPercentage: Math.round(displaySoldPercentage * 100) / 100,
         availablePercentage: Math.round(availablePercentage * 100) / 100,
-        isNearlyFull: soldPercentage > 85,
-        isCritical: soldPercentage > 95,
+        isNearlyFull: displaySoldPercentage > 85,
+        isCritical: displaySoldPercentage > 95,
         lastUpdate: new Date()
       };
     } else {
@@ -80,7 +87,7 @@ export const useRealTimeTickets = () => {
         lastUpdate: new Date()
       };
     }
-  }, [soldTickets.length, reservedTickets.length, realTicketsCount, isConnected]);
+  }, [soldTickets.length, reservedTickets.length, realTicketsCount, isConnected, isFomoActive]);
 
   useEffect(() => {
     const newStats = calculateStats();

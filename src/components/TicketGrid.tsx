@@ -355,6 +355,7 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
     visualPercentage, 
     realTicketsCount,
     lastSyncTime,
+    isFomoActive,
     refreshData 
   } = useSupabaseSync();
   
@@ -605,7 +606,7 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
               </button>
             </div>
 
-            {/* Indicador del estado de conexión - VERSIÓN MEJORADA */}
+            {/* Indicador del estado de conexión - SIN MENSAJE FOMO */}
             <div className="mt-3 text-center space-y-2">
               <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
                 isConnected 
@@ -614,7 +615,7 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
               }`}>
                 <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></div>
                 {isConnected 
-                  ? `✅ Conectado a BD • ${realTicketsCount} reales + visual = ${visualPercentage}% mostrado` 
+                  ? `✅ Conectado • ${soldTickets.length} tickets vendidos`
                   : '⚠️ Modo offline • Usando datos locales'
                 }
               </div>
