@@ -19,11 +19,16 @@ export function useVisualFomo(realSoldCount: number = 0) {
       }
       
       const now = Date.now();
-      const sessionStart = parseInt(localStorage.getItem('rifa_session_start') || now.toString());
+      let sessionStart = now;
       
-      // Si es la primera vez, guardar hora de inicio
-      if (!localStorage.getItem('rifa_session_start')) {
-        localStorage.setItem('rifa_session_start', now.toString());
+      // Solo usar localStorage en el cliente
+      if (typeof window !== 'undefined') {
+        sessionStart = parseInt(localStorage.getItem('rifa_session_start') || now.toString());
+        
+        // Si es la primera vez, guardar hora de inicio
+        if (!localStorage.getItem('rifa_session_start')) {
+          localStorage.setItem('rifa_session_start', now.toString());
+        }
       }
       
       // Tiempo transcurrido en minutos

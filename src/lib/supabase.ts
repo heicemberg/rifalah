@@ -36,6 +36,10 @@ export const resetSupabaseConnection = resetNetlifyClient;
 // TIPOS DE DATOS PARA LA BASE DE DATOS
 // ============================================================================
 
+// Tipos de estado centralizados para consistencia
+export type PurchaseStatus = 'pending' | 'completed' | 'cancelled';
+export type TicketStatus = 'available' | 'reserved' | 'sold';
+
 export interface Customer {
   id?: string;
   name: string;
@@ -55,7 +59,7 @@ export interface Purchase {
   payment_method: string;
   payment_reference?: string;
   payment_proof_url?: string;
-  status: 'pendiente' | 'confirmada' | 'cancelada';
+  status: PurchaseStatus;
   verified_at?: string;
   verified_by?: string;
   notes?: string;
@@ -69,7 +73,7 @@ export interface Purchase {
 export interface Ticket {
   id?: string;
   number: number;
-  status: 'disponible' | 'reservado' | 'vendido';
+  status: TicketStatus;
   customer_id?: string;
   purchase_id?: string;
   reserved_at?: string;
@@ -185,7 +189,7 @@ export async function guardarCompra(datosCompra: CompraCompleta): Promise<{ cust
         device_info: datosCompra.dispositivo,
         ip_address: datosCompra.ip_address,
         user_agent: datosCompra.user_agent,
-        status: 'pendiente'
+        status: 'pending'
       }])
       .select()
       .single();
@@ -287,7 +291,7 @@ export async function obtenerCompras(): Promise<CompraConDetalles[]> {
  */
 export async function actualizarEstadoCompra(
   purchaseId: string, 
-  estado: 'pendiente' | 'confirmada' | 'cancelada',
+  estado: PurchaseStatus,
   notas?: string,
   verificadoPor?: string
 ) {
@@ -312,7 +316,7 @@ export async function actualizarEstadoCompra(
       verified_by: verificadoPor
     };
 
-    if (estado === 'confirmada') {
+    if (estado === 'completed') {
       updates.verified_at = new Date().toISOString();
     }
 
@@ -325,9 +329,9 @@ export async function actualizarEstadoCompra(
 
     if (updateError) throw updateError;
 
-    // Asignar tickets si se confirma
+    // Asignar y marcar tickets como VENDIDOS si se confirma
     let tickets: Ticket[] = [];
-    if (estado === 'confirmada') {
+    if (estado === 'completed') {
       const cantidadBoletos = Math.round(updatedPurchase.total_amount / updatedPurchase.unit_price);
       
       // Solo asignar si no tiene tickets ya
@@ -345,7 +349,7 @@ export async function actualizarEstadoCompra(
           // Revertir estado a pendiente si no se pudieron asignar tickets
           await supabase
             .from('purchases')
-            .update({ status: 'pendiente' })
+            .update({ status: 'pending' })
             .eq('id', purchaseId);
           
           throw new Error(`No se pudo confirmar: ${ticketError instanceof Error ? ticketError.message : 'Error al asignar tickets'}`);
@@ -357,11 +361,11 @@ export async function actualizarEstadoCompra(
     }
 
     // Liberar tickets si se cancela
-    if (estado === 'cancelada') {
+    if (estado === 'cancelled') {
       const { error: releaseError } = await supabase
         .from('tickets')
         .update({
-          status: 'disponible',
+          status: 'available',
           customer_id: null,
           purchase_id: null,
           sold_at: null,
@@ -411,7 +415,7 @@ export async function asignarNumerosDisponibles(
     const { data: ticketsDisponibles, error: selectError } = await supabase
       .from('tickets')
       .select('*')
-      .eq('status', 'disponible')
+      .eq('status', 'available')
       .order('number')
       .limit(cantidadBoletos);
 
@@ -428,7 +432,7 @@ export async function asignarNumerosDisponibles(
     const { data: ticketsActualizados, error: updateError } = await supabase
       .from('tickets')
       .update({
-        status: 'vendido',
+        status: 'sold',
         customer_id: customerId,
         purchase_id: purchaseId,
         sold_at: ahora
@@ -470,7 +474,7 @@ export async function inicializarTickets(): Promise<boolean> {
     for (let i = 1; i <= 10000; i++) {
       tickets.push({
         number: i,
-        status: 'disponible'
+        status: 'available'
       });
     }
 
@@ -518,9 +522,9 @@ export async function obtenerEstadisticasTickets(): Promise<{
         
         const counts = {
           total: data?.length || 0,
-          disponibles: data?.filter(t => t.status === 'disponible').length || 0,
-          vendidos: data?.filter(t => t.status === 'vendido').length || 0,
-          reservados: data?.filter(t => t.status === 'reservado').length || 0
+          disponibles: data?.filter(t => t.status === 'available').length || 0,
+          vendidos: data?.filter(t => t.status === 'sold').length || 0,
+          reservados: data?.filter(t => t.status === 'reserved').length || 0
         };
         
         return { data: counts, error: null };

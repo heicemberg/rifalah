@@ -8,6 +8,7 @@ import React, { useEffect, useState, useRef } from 'react';
 
 // Importar desde archivos anteriores
 import { useRaffleStore } from '../stores/raffle-store';
+import { useDisplayStats } from '../hooks/useSmartCounters';
 import { randomBetween, cn } from '../lib/utils';
 import { TOTAL_TICKETS } from '../lib/constants';
 
@@ -378,10 +379,11 @@ LiveViewers.displayName = 'LiveViewers';
 
 export const UrgencyCounters: React.FC = () => {
   // Estado del store
-  const { adminConfig, soldTickets } = useRaffleStore();
+  const { adminConfig } = useRaffleStore();
+  const smartStats = useDisplayStats();
   
-  // Calcular boletos restantes
-  const remainingTickets = TOTAL_TICKETS - soldTickets.length;
+  // Calcular boletos restantes usando estadísticas inteligentes
+  const remainingTickets = smartStats.availableCount;
   
   // Hooks personalizados
   const timeRemaining = useCountdown(adminConfig.sorteoDate);
@@ -428,7 +430,7 @@ export const UrgencyCounters: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
           <div className="text-lg font-bold text-blue-800">
-            {soldTickets.length.toLocaleString()}
+            {smartStats.soldCount.toLocaleString()}
           </div>
           <div className="text-xs text-blue-600">Boletos vendidos</div>
         </div>

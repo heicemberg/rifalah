@@ -22,7 +22,7 @@ export interface TicketStats {
 
 export const useRealTimeTickets = () => {
   const { soldTickets, reservedTickets } = useRaffleStore();
-  const { realTicketsCount, isConnected, visualPercentage, isFomoActive } = useSupabaseSync();
+  const { realTicketsCount, isConnected } = useSupabaseSync();
   const [stats, setStats] = useState<TicketStats>({
     totalTickets: 10000,
     soldTickets: 0,
@@ -43,17 +43,10 @@ export const useRealTimeTickets = () => {
       const realSoldCount = realTicketsCount;
       const reservedCount = reservedTickets.length;
       
-      // Mostrar números unificados hasta el 18%, después solo reales
-      const displaySoldCount = isFomoActive() ? soldTickets.length : realSoldCount;
-      const displaySoldPercentage = isFomoActive() 
-        ? (soldTickets.length / totalTickets) * 100
-        : (realSoldCount / totalTickets) * 100;
-      
-      // Los disponibles se calculan coherentemente con lo mostrado
-      const availableCount = isFomoActive() 
-        ? totalTickets - soldTickets.length - reservedCount
-        : totalTickets - realSoldCount - reservedCount;
-      
+      // Usar datos reales para este hook
+      const displaySoldCount = realSoldCount;
+      const displaySoldPercentage = (realSoldCount / totalTickets) * 100;
+      const availableCount = totalTickets - realSoldCount - reservedCount;
       const availablePercentage = (availableCount / totalTickets) * 100;
 
       return {
@@ -87,7 +80,7 @@ export const useRealTimeTickets = () => {
         lastUpdate: new Date()
       };
     }
-  }, [soldTickets.length, reservedTickets.length, realTicketsCount, isConnected, isFomoActive]);
+  }, [soldTickets.length, reservedTickets.length, realTicketsCount, isConnected]);
 
   useEffect(() => {
     const newStats = calculateStats();

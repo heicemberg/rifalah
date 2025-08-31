@@ -41,7 +41,7 @@ export type Database = {
           payment_method: string;
           payment_reference?: string;
           payment_proof_url?: string;
-          status: 'pendiente' | 'confirmada' | 'cancelada';
+          status: 'pending' | 'completed' | 'cancelled';
           verified_at?: string;
           verified_by?: string;
           notes?: string;
@@ -60,7 +60,7 @@ export type Database = {
           payment_method: string;
           payment_reference?: string;
           payment_proof_url?: string;
-          status?: 'pendiente' | 'confirmada' | 'cancelada';
+          status?: 'pending' | 'completed' | 'cancelled';
           verified_at?: string;
           verified_by?: string;
           notes?: string;
@@ -79,7 +79,7 @@ export type Database = {
           payment_method?: string;
           payment_reference?: string;
           payment_proof_url?: string;
-          status?: 'pendiente' | 'confirmada' | 'cancelada';
+          status?: 'pending' | 'completed' | 'cancelled';
           verified_at?: string;
           verified_by?: string;
           notes?: string;
@@ -94,7 +94,7 @@ export type Database = {
         Row: {
           id: string;
           number: number;
-          status: 'disponible' | 'reservado' | 'vendido';
+          status: 'available' | 'reserved' | 'sold';
           customer_id?: string;
           purchase_id?: string;
           reserved_at?: string;
@@ -104,7 +104,7 @@ export type Database = {
         Insert: {
           id?: string;
           number: number;
-          status?: 'disponible' | 'reservado' | 'vendido';
+          status?: 'available' | 'reserved' | 'sold';
           customer_id?: string;
           purchase_id?: string;
           reserved_at?: string;
@@ -114,7 +114,7 @@ export type Database = {
         Update: {
           id?: string;
           number?: number;
-          status?: 'disponible' | 'reservado' | 'vendido';
+          status?: 'available' | 'reserved' | 'sold';
           customer_id?: string;
           purchase_id?: string;
           reserved_at?: string;

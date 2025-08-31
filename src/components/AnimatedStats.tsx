@@ -8,6 +8,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 
 // Importar desde archivos anteriores
 import { useRaffleStore } from '../stores/raffle-store';
+import { useDisplayStats } from '../hooks/useSmartCounters';
 import { TOTAL_TICKETS } from '../lib/constants';
 import { formatPrice, cn } from '../lib/utils';
 
@@ -275,20 +276,16 @@ const StatCard: React.FC<{
 // ============================================================================
 
 const useDefaultStats = (): StatItem[] => {
-  const { 
-    soldTickets, 
-    availableTickets, 
-    viewingCount, 
-    soldPercentage 
-  } = useRaffleStore();
+  const { viewingCount } = useRaffleStore();
+  const smartStats = useDisplayStats();
 
-  const totalRevenue = soldTickets.length * 50;
+  const totalRevenue = smartStats.soldCount * 50;
 
   return [
     {
       id: 'sold-tickets',
       label: 'Boletos Vendidos',
-      value: soldTickets.length,
+      value: smartStats.soldCount,
       icon: '🎯',
       color: '#10b981',
       format: 'number'
@@ -304,7 +301,7 @@ const useDefaultStats = (): StatItem[] => {
     {
       id: 'available-tickets',
       label: 'Boletos Disponibles',
-      value: availableTickets.length,
+      value: smartStats.availableCount,
       icon: '📅',
       color: '#f59e0b',
       format: 'number'
@@ -320,7 +317,7 @@ const useDefaultStats = (): StatItem[] => {
     {
       id: 'sold-percentage',
       label: 'Progreso de Ventas',
-      value: soldPercentage,
+      value: smartStats.soldPercentage,
       icon: '📈',
       color: '#ef4444',
       format: 'percentage'
@@ -328,7 +325,7 @@ const useDefaultStats = (): StatItem[] => {
     {
       id: 'conversion-rate',
       label: 'Tasa de Conversión',
-      value: (soldTickets.length / TOTAL_TICKETS) * 100,
+      value: smartStats.soldPercentage,
       icon: '🏆',
       color: '#06b6d4',
       format: 'percentage'
@@ -407,7 +404,8 @@ export const AnimatedStats: React.FC<AnimatedStatsProps> = ({
 export const CompactAnimatedStats: React.FC<{
   className?: string;
 }> = ({ className = '' }) => {
-  const { soldTickets, availableTickets, viewingCount } = useRaffleStore();
+  const { viewingCount } = useRaffleStore();
+  const smartStats = useDisplayStats();
   const containerRef = useRef<HTMLDivElement>(null);
   const isVisible = useIntersectionObserver(containerRef as React.RefObject<Element>);
 
@@ -415,14 +413,14 @@ export const CompactAnimatedStats: React.FC<{
     {
       id: 'sold',
       label: 'Vendidos',
-      value: soldTickets.length,
+      value: smartStats.soldCount,
       icon: '🎯',
       color: '#10b981'
     },
     {
       id: 'available',
       label: 'Disponibles', 
-      value: availableTickets.length,
+      value: smartStats.availableCount,
       icon: '📅',
       color: '#3b82f6'
     },

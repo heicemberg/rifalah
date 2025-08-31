@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRaffleStore } from '@/stores/raffle-store'
 import { useRealTimeTickets } from '@/hooks/useRealTimeTickets'
 import { useSupabaseSync } from '@/hooks/useSupabaseSync'
+import { useDisplayStats } from '@/hooks/useSmartCounters'
 import SupabaseInitializer from '@/components/SupabaseInitializer'
 import { 
   ArrowRight, 
@@ -29,7 +30,6 @@ export default function NewRaffePage() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   
   const { 
-    stats, 
     formatMexicanNumber, 
     formatPriceMXN,
     PRECIO_POR_BOLETO_MXN
@@ -38,12 +38,15 @@ export default function NewRaffePage() {
   // Hook de sincronización con Supabase
   useSupabaseSync()
   
+  // Hook para estadísticas inteligentes (con FOMO)
+  const smartStats = useDisplayStats()
+  
   // Acceder al store para obtener los tickets seleccionados
   const { selectedTickets } = useRaffleStore()
 
-  const soldCount = stats.soldTickets
-  const availableCount = stats.availableTickets
-  const soldPercentage = Math.round((soldCount / stats.totalTickets) * 100)
+  const soldCount = smartStats.soldCount
+  const availableCount = smartStats.availableCount
+  const soldPercentage = Math.round(smartStats.soldPercentage)
 
   return (
     <main className="bg-black text-white font-sans">
@@ -182,7 +185,7 @@ export default function NewRaffePage() {
                 <span className="text-sm text-gray-400 uppercase font-semibold">Vendidos</span>
               </div>
               <div className="text-2xl lg:text-3xl font-black text-green-400">{formatMexicanNumber(soldCount)}</div>
-              <div className="text-xs text-gray-500">de {formatMexicanNumber(stats.totalTickets)}</div>
+              <div className="text-xs text-gray-500">de {formatMexicanNumber(smartStats.totalCount)}</div>
             </div>
             
             <div className="text-center">

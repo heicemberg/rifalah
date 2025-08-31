@@ -7,6 +7,7 @@ import { supabase, verificarConexion } from '../lib/supabase';
 import { useRaffleStore } from '../stores/raffle-store';
 import { adminToast, publicToast, isCurrentUserAdmin } from '../lib/toast-utils';
 import { useVisualFomo } from './useVisualFomo';
+import { useSmartCounters } from './useSmartCounters';
 
 export function useSupabaseSync() {
   const [isConnected, setIsConnected] = useState(false);
@@ -15,7 +16,10 @@ export function useSupabaseSync() {
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   
   // Hook para FOMO visual
-  const { visualPercentage, generateVisualTickets, isFomoActive } = useVisualFomo(realTicketsCount);
+  const { visualPercentage, generateVisualTickets, isFomoActive: fomoActive } = useVisualFomo(realTicketsCount);
+  
+  // Remover esta dependencia para evitar loop circular
+  // Los contadores inteligentes se manejan por separado
   
   // Store actions
   const { 
@@ -59,15 +63,15 @@ export function useSupabaseSync() {
         return;
       }
 
-      // Separar tickets por estado
-      const realSoldTickets = ticketsData?.filter((t: any) => t.status === 'vendido').map((t: any) => t.number) || [];
-      const reservedTickets = ticketsData?.filter((t: any) => t.status === 'reservado').map((t: any) => t.number) || [];
+      // Separar tickets por estado (corregir nombres de estados según enum SQL)
+      const realSoldTickets = ticketsData?.filter((t: any) => t.status === 'sold').map((t: any) => t.number) || [];
+      const reservedTickets = ticketsData?.filter((t: any) => t.status === 'reserved').map((t: any) => t.number) || [];
       
       // Actualizar contador de tickets reales
       setRealTicketsCount(realSoldTickets.length);
       
       // Solo mostrar tickets reales después del 18% de ventas
-      const visualSoldTickets = isFomoActive() ? generateVisualTickets(realSoldTickets) : realSoldTickets;
+      const visualSoldTickets = fomoActive() ? generateVisualTickets(realSoldTickets) : realSoldTickets;
       setSoldTicketsFromDB(visualSoldTickets);
       setReservedTicketsFromDB(reservedTickets);
       
@@ -122,12 +126,12 @@ export function useSupabaseSync() {
             const newStatus = payload.new?.status;
             const ticketNumber = payload.new?.number;
             
-            if (newStatus === 'vendido') {
+            if (newStatus === 'sold') {
               publicToast.success(`¡Ticket ${String(ticketNumber).padStart(4, '0')} vendido!`, {
                 duration: 2000,
                 icon: '🎯'
               });
-            } else if (newStatus === 'reservado') {
+            } else if (newStatus === 'reserved') {
               adminToast.info(`Ticket ${String(ticketNumber).padStart(4, '0')} reservado`);
             }
           }
@@ -158,11 +162,13 @@ export function useSupabaseSync() {
             adminToast.info(`Nueva compra: ${compra?.payment_method || 'N/A'} - $${compra?.total_amount || 0}`);
           } else if (payload.eventType === 'UPDATE') {
             const compra = payload.new;
-            if (compra?.status === 'confirmada') {
-              publicToast.success('¡Compra confirmada!', {
+            if (compra?.status === 'completed') {
+              publicToast.success('¡Compra completada!', {
                 duration: 2000,
                 icon: '✅'
               });
+              // Actualizar contadores inmediatamente cuando una compra se completa
+              setTimeout(() => loadInitialData(), 1000);
             }
           }
         }
@@ -219,7 +225,7 @@ export function useSupabaseSync() {
       const { data: unavailableTickets, error } = await supabase
         .from('tickets')
         .select('number')
-        .in('status', ['vendido', 'reservado']);
+        .in('status', ['sold', 'reserved']);
 
       if (error) {
         console.error('Error al obtener tickets no disponibles:', error);
@@ -256,12 +262,12 @@ export function useSupabaseSync() {
       const { error } = await supabase
         .from('tickets')
         .update({
-          status: 'reservado',
+          status: 'reserved',
           customer_id: customerId,
           reserved_at: new Date().toISOString()
         })
         .in('number', ticketNumbers)
-        .eq('status', 'disponible');
+        .eq('status', 'available');
 
       if (error) {
         console.error('Error al reservar tickets:', error);
@@ -294,7 +300,7 @@ export function useSupabaseSync() {
       const { error } = await supabase
         .from('tickets')
         .update({
-          status: 'vendido',
+          status: 'sold',
           customer_id: customerId,
           sold_at: new Date().toISOString()
         })
@@ -324,7 +330,7 @@ export function useSupabaseSync() {
     realTicketsCount,
     visualPercentage,
     lastSyncTime,
-    isFomoActive,
+    isFomoActive: fomoActive,
     refreshData: loadInitialData,
     getRealAvailableTickets,
     reserveTicketsInDB,

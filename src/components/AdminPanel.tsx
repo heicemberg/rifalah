@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { obtenerCompras, actualizarEstadoCompra, type CompraConDetalles } from '../lib/supabase';
+import { obtenerCompras, actualizarEstadoCompra, type CompraConDetalles, type PurchaseStatus } from '../lib/supabase';
 import { useSupabaseSync } from '../hooks/useSupabaseSync';
+import { useAdminCounters } from '../hooks/useSmartCounters';
 import toast from 'react-hot-toast';
 
 // ============================================================================
@@ -18,11 +19,14 @@ import toast from 'react-hot-toast';
 export default function AdminPanel() {
   const [compras, setCompras] = useState<CompraConDetalles[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filtro, setFiltro] = useState<'todas' | 'pendiente' | 'confirmada' | 'cancelada'>('todas');
+  const [filtro, setFiltro] = useState<'todas' | PurchaseStatus>('todas');
   const [busqueda, setBusqueda] = useState('');
   
   // Hook de sincronización con Supabase
   const { isConnected, visualPercentage, refreshData } = useSupabaseSync();
+  
+  // Hook para contadores inteligentes (administrador)
+  const adminCounters = useAdminCounters();
 
   // Cargar compras al montar el componente
   useEffect(() => {
@@ -56,7 +60,7 @@ export default function AdminPanel() {
           payment_method: compra.metodo_pago || '',
           payment_reference: compra.referencia_pago || '',
           payment_proof_url: compra.captura_comprobante_url || '',
-          status: compra.estado_compra || 'pendiente',
+          status: compra.estado_compra || 'pending',
           created_at: compra.fecha_compra || new Date().toISOString(),
           customer: {
             id: 'local',
@@ -89,12 +93,18 @@ export default function AdminPanel() {
     }
   };
 
-  const cambiarEstado = async (id: string, nuevoEstado: 'pendiente' | 'confirmada' | 'cancelada') => {
+  const cambiarEstado = async (id: string, nuevoEstado: PurchaseStatus) => {
     try {
       if (isConnected) {
         // Actualizar en Supabase
         await actualizarEstadoCompra(id, nuevoEstado);
         toast.success(`Estado actualizado a: ${nuevoEstado}`);
+        
+        // Si se confirma una compra, actualizar contadores inteligentes
+        if (nuevoEstado === 'completed') {
+          // Los contadores se actualizarán automáticamente via WebSocket
+          toast.success(`🎯 Compra confirmada - Real: ${adminCounters.real.soldCount}, Mostrado: ${adminCounters.display.soldPercentage.toFixed(1)}%`);
+        }
         
         // Refrescar datos de tickets para mantener sincronización
         await refreshData();
@@ -140,7 +150,7 @@ export default function AdminPanel() {
         archivo_subido: true,
         nombre_archivo: 'comprobante_juan.jpg',
         fecha_compra: new Date(Date.now() - 86400000).toISOString(), // Ayer
-        estado_compra: 'confirmada' as const,
+        estado_compra: 'completed' as const,
         timestamp: Date.now() - 86400000
       },
       {
@@ -162,7 +172,7 @@ export default function AdminPanel() {
         archivo_subido: false,
         nombre_archivo: '',
         fecha_compra: new Date(Date.now() - 43200000).toISOString(), // Hace 12 horas
-        estado_compra: 'pendiente' as const,
+        estado_compra: 'pending' as const,
         timestamp: Date.now() - 43200000
       },
       {
@@ -184,7 +194,7 @@ export default function AdminPanel() {
         archivo_subido: true,
         nombre_archivo: 'transferencia_carlos.png',
         fecha_compra: new Date().toISOString(),
-        estado_compra: 'pendiente' as const,
+        estado_compra: 'pending' as const,
         timestamp: Date.now()
       }
     ];
@@ -227,9 +237,9 @@ export default function AdminPanel() {
   // Calcular estadísticas
   const stats = {
     total: compras.length,
-    pendientes: compras.filter(c => c.status === 'pendiente').length,
-    confirmadas: compras.filter(c => c.status === 'confirmada').length,
-    canceladas: compras.filter(c => c.status === 'cancelada').length,
+    pendientes: compras.filter(c => c.status === 'pending').length,
+    confirmadas: compras.filter(c => c.status === 'completed').length,
+    canceladas: compras.filter(c => c.status === 'cancelled').length,
     ingresosTotales: compras.reduce((sum, c) => sum + c.total_amount, 0),
     boletosVendidos: compras.reduce((sum, c) => sum + c.tickets.length, 0)
   };
@@ -315,7 +325,7 @@ export default function AdminPanel() {
           <div className="flex flex-col md:flex-row gap-4">
             {/* Filtros */}
             <div className="flex gap-2">
-              {(['todas', 'pendiente', 'confirmada', 'cancelada'] as const).map((estado) => (
+              {(['todas', 'pending', 'completed', 'cancelled'] as const).map((estado) => (
                 <button
                   key={estado}
                   onClick={() => setFiltro(estado)}
@@ -429,7 +439,7 @@ export default function AdminPanel() {
                             ✅ {compra.tickets.length} números asignados
                           </div>
                         </div>
-                      ) : compra.status === 'confirmada' ? (
+                      ) : compra.status === 'completed' ? (
                         <div className="text-sm text-red-600">
                           ❌ Error: Confirmada sin números
                         </div>
@@ -447,9 +457,9 @@ export default function AdminPanel() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        compra.status === 'confirmada'
+                        compra.status === 'completed'
                           ? 'bg-green-100 text-green-800'
-                          : compra.status === 'pendiente'
+                          : compra.status === 'pending'
                           ? 'bg-yellow-100 text-yellow-800'
                           : 'bg-red-100 text-red-800'
                       }`}>
@@ -460,27 +470,27 @@ export default function AdminPanel() {
                       {formatearFecha(compra.created_at || '')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      {compra.status === 'pendiente' && (
+                      {compra.status === 'pending' && (
                         <button
-                          onClick={() => cambiarEstado(compra.id!, 'confirmada')}
+                          onClick={() => cambiarEstado(compra.id!, 'completed')}
                           className="text-green-600 hover:text-green-900 font-medium"
                           title={`Confirmar compra y asignar ${compra.tickets.length === 0 ? Math.round(compra.total_amount / 200) : compra.tickets.length} números disponibles`}
                         >
                           ✅ Confirmar & Asignar
                         </button>
                       )}
-                      {compra.status === 'confirmada' && compra.tickets.length === 0 && (
+                      {compra.status === 'completed' && compra.tickets.length === 0 && (
                         <button
-                          onClick={() => cambiarEstado(compra.id!, 'confirmada')}
+                          onClick={() => cambiarEstado(compra.id!, 'completed')}
                           className="text-orange-600 hover:text-orange-900 font-medium"
                           title="Reintentar asignación de números"
                         >
                           🔄 Reasignar Números
                         </button>
                       )}
-                      {compra.status !== 'cancelada' && (
+                      {compra.status !== 'cancelled' && (
                         <button
-                          onClick={() => cambiarEstado(compra.id!, 'cancelada')}
+                          onClick={() => cambiarEstado(compra.id!, 'cancelled')}
                           className="text-red-600 hover:text-red-900"
                           title={compra.tickets.length > 0 ? `Cancelar y liberar ${compra.tickets.length} números` : 'Cancelar compra'}
                         >
