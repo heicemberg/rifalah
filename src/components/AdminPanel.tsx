@@ -60,7 +60,7 @@ export default function AdminPanel() {
           payment_method: compra.metodo_pago || '',
           payment_reference: compra.referencia_pago || '',
           payment_proof_url: compra.captura_comprobante_url || '',
-          status: compra.estado_compra || 'pending',
+          status: compra.estado_compra || 'pendiente',
           created_at: compra.fecha_compra || new Date().toISOString(),
           customer: {
             id: 'local',
@@ -101,7 +101,7 @@ export default function AdminPanel() {
         toast.success(`Estado actualizado a: ${nuevoEstado}`);
         
         // Si se confirma una compra, actualizar contadores inteligentes
-        if (nuevoEstado === 'completed') {
+        if (nuevoEstado === 'confirmada') {
           // Los contadores se actualizarán automáticamente via WebSocket
           toast.success(`🎯 Compra confirmada - Real: ${adminCounters.real.soldCount}, Mostrado: ${adminCounters.display.soldPercentage.toFixed(1)}%`);
         }
@@ -150,7 +150,7 @@ export default function AdminPanel() {
         archivo_subido: true,
         nombre_archivo: 'comprobante_juan.jpg',
         fecha_compra: new Date(Date.now() - 86400000).toISOString(), // Ayer
-        estado_compra: 'completed' as const,
+        estado_compra: 'confirmada' as const,
         timestamp: Date.now() - 86400000
       },
       {
@@ -172,7 +172,7 @@ export default function AdminPanel() {
         archivo_subido: false,
         nombre_archivo: '',
         fecha_compra: new Date(Date.now() - 43200000).toISOString(), // Hace 12 horas
-        estado_compra: 'pending' as const,
+        estado_compra: 'pendiente' as const,
         timestamp: Date.now() - 43200000
       },
       {
@@ -194,7 +194,7 @@ export default function AdminPanel() {
         archivo_subido: true,
         nombre_archivo: 'transferencia_carlos.png',
         fecha_compra: new Date().toISOString(),
-        estado_compra: 'pending' as const,
+        estado_compra: 'pendiente' as const,
         timestamp: Date.now()
       }
     ];
@@ -237,9 +237,9 @@ export default function AdminPanel() {
   // Calcular estadísticas
   const stats = {
     total: compras.length,
-    pendientes: compras.filter(c => c.status === 'pending').length,
-    confirmadas: compras.filter(c => c.status === 'completed').length,
-    canceladas: compras.filter(c => c.status === 'cancelled').length,
+    pendientes: compras.filter(c => c.status === 'pendiente').length,
+    confirmadas: compras.filter(c => c.status === 'confirmada').length,
+    canceladas: compras.filter(c => c.status === 'cancelada').length,
     ingresosTotales: compras.reduce((sum, c) => sum + c.total_amount, 0),
     boletosVendidos: compras.reduce((sum, c) => sum + c.tickets.length, 0)
   };
@@ -325,7 +325,7 @@ export default function AdminPanel() {
           <div className="flex flex-col md:flex-row gap-4">
             {/* Filtros */}
             <div className="flex gap-2">
-              {(['todas', 'pending', 'completed', 'cancelled'] as const).map((estado) => (
+              {(['todas', 'pendiente', 'confirmada', 'cancelada'] as const).map((estado) => (
                 <button
                   key={estado}
                   onClick={() => setFiltro(estado)}
@@ -439,7 +439,7 @@ export default function AdminPanel() {
                             ✅ {compra.tickets.length} números asignados
                           </div>
                         </div>
-                      ) : compra.status === 'completed' ? (
+                      ) : compra.status === 'confirmada' ? (
                         <div className="text-sm text-red-600">
                           ❌ Error: Confirmada sin números
                         </div>
@@ -457,9 +457,9 @@ export default function AdminPanel() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        compra.status === 'completed'
+                        compra.status === 'confirmada'
                           ? 'bg-green-100 text-green-800'
-                          : compra.status === 'pending'
+                          : compra.status === 'pendiente'
                           ? 'bg-yellow-100 text-yellow-800'
                           : 'bg-red-100 text-red-800'
                       }`}>
@@ -470,27 +470,27 @@ export default function AdminPanel() {
                       {formatearFecha(compra.created_at || '')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      {compra.status === 'pending' && (
+                      {compra.status === 'pendiente' && (
                         <button
-                          onClick={() => cambiarEstado(compra.id!, 'completed')}
+                          onClick={() => cambiarEstado(compra.id!, 'confirmada')}
                           className="text-green-600 hover:text-green-900 font-medium"
                           title={`Confirmar compra y asignar ${compra.tickets.length === 0 ? Math.round(compra.total_amount / 200) : compra.tickets.length} números disponibles`}
                         >
                           ✅ Confirmar & Asignar
                         </button>
                       )}
-                      {compra.status === 'completed' && compra.tickets.length === 0 && (
+                      {compra.status === 'confirmada' && compra.tickets.length === 0 && (
                         <button
-                          onClick={() => cambiarEstado(compra.id!, 'completed')}
+                          onClick={() => cambiarEstado(compra.id!, 'confirmada')}
                           className="text-orange-600 hover:text-orange-900 font-medium"
                           title="Reintentar asignación de números"
                         >
                           🔄 Reasignar Números
                         </button>
                       )}
-                      {compra.status !== 'cancelled' && (
+                      {compra.status !== 'cancelada' && (
                         <button
-                          onClick={() => cambiarEstado(compra.id!, 'cancelled')}
+                          onClick={() => cambiarEstado(compra.id!, 'cancelada')}
                           className="text-red-600 hover:text-red-900"
                           title={compra.tickets.length > 0 ? `Cancelar y liberar ${compra.tickets.length} números` : 'Cancelar compra'}
                         >

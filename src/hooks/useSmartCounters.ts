@@ -63,23 +63,31 @@ export const useSmartCounters = (): SmartCounters => {
   // CÁLCULO DEL FOMO BASE (8% inicial, sube gradualmente a 18%)
   // ============================================================================
   const calculateFomoBase = useCallback((): number => {
+    // Solo proceder si sessionStart está inicializado
+    if (!sessionStart) return Math.floor((8 / 100) * TOTAL_TICKETS);
+    
     const now = Date.now();
     const minutesElapsed = (now - sessionStart) / (1000 * 60);
     
     // Base: 8% inicial
     const basePercentage = 8;
-    const maxPercentage = 16; // Máximo FOMO ficticio
+    const maxPercentage = 12; // Máximo FOMO ficticio reducido para crecimiento más orgánico
     
-    // Incremento gradual: 0.5% cada 10 minutos
-    const timeIncrement = Math.floor(minutesElapsed / 10) * 0.5;
+    // Incremento MUCHO más gradual: 0.1% cada 5 minutos
+    const timeIncrement = Math.floor(minutesElapsed / 5) * 0.1;
     
-    // Variación aleatoria pequeña ±0.3%
-    const randomVariation = (Math.random() - 0.5) * 0.6;
+    // Variación aleatoria muy pequeña ±0.1%
+    const randomVariation = (Math.random() - 0.5) * 0.2;
     
     const fomoPercentage = Math.min(
       maxPercentage,
       Math.max(basePercentage, basePercentage + timeIncrement + randomVariation)
     );
+    
+    // DEBUG: Log para verificar el cálculo
+    if (typeof window !== 'undefined' && Math.random() < 0.1) {
+      console.log(`🎯 FOMO Debug: ${minutesElapsed.toFixed(1)}min elapsed, ${fomoPercentage.toFixed(1)}% FOMO`);
+    }
     
     return Math.floor((fomoPercentage / 100) * TOTAL_TICKETS);
   }, [sessionStart]);
@@ -100,8 +108,8 @@ export const useSmartCounters = (): SmartCounters => {
     // Actualizar inmediatamente
     updateFomoIncrement();
 
-    // Actualizar cada 30 segundos para crecimiento orgánico
-    const interval = setInterval(updateFomoIncrement, 30 * 1000);
+    // Actualizar cada 15 segundos para ver el crecimiento gradual más rápido (testing)
+    const interval = setInterval(updateFomoIncrement, 15 * 1000);
 
     return () => clearInterval(interval);
   }, [calculateFomoBase, sessionStart]);

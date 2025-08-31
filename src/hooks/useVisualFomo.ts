@@ -34,11 +34,11 @@ export function useVisualFomo(realSoldCount: number = 0) {
       // Tiempo transcurrido en minutos
       const minutesElapsed = (now - sessionStart) / (1000 * 60);
       
-      // Incremento gradual: empezar en 8%, subir 0.5% cada 10 minutos hasta 16%
+      // Incremento MUY gradual: empezar en 8%, subir 0.1% cada 5 minutos hasta 12%
       const basePercentage = 8;
-      const maxPercentage = 16;
-      const increment = Math.floor(minutesElapsed / 10) * 0.5;
-      const randomFactor = (Math.random() - 0.5) * 0.3; // +/- 0.15% de variación
+      const maxPercentage = 12; // Reducido para más realismo
+      const increment = Math.floor(minutesElapsed / 5) * 0.1; // Más gradual
+      const randomFactor = (Math.random() - 0.5) * 0.1; // +/- 0.05% de variación muy sutil
       
       const newPercentage = Math.min(
         maxPercentage, 
@@ -46,6 +46,11 @@ export function useVisualFomo(realSoldCount: number = 0) {
       );
       
       const newTicketsCount = Math.floor((newPercentage / 100) * 10000);
+      
+      // DEBUG: Log ocasional para verificar progresión
+      if (typeof window !== 'undefined' && Math.random() < 0.05) {
+        console.log(`📊 VisualFomo: ${minutesElapsed.toFixed(1)}min → ${newPercentage.toFixed(1)}% (${newTicketsCount} tickets)`);
+      }
       
       setVisualPercentage(parseFloat(newPercentage.toFixed(1)));
       setVisualTicketsCount(newTicketsCount);

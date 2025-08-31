@@ -36,9 +36,9 @@ export const resetSupabaseConnection = resetNetlifyClient;
 // TIPOS DE DATOS PARA LA BASE DE DATOS
 // ============================================================================
 
-// Tipos de estado centralizados para consistencia
-export type PurchaseStatus = 'pending' | 'completed' | 'cancelled';
-export type TicketStatus = 'available' | 'reserved' | 'sold';
+// Tipos de estado centralizados para consistencia - ESTADOS EN ESPAÑOL
+export type PurchaseStatus = 'pendiente' | 'confirmada' | 'cancelada';
+export type TicketStatus = 'disponible' | 'reservado' | 'vendido';
 
 export interface Customer {
   id?: string;
@@ -189,7 +189,7 @@ export async function guardarCompra(datosCompra: CompraCompleta): Promise<{ cust
         device_info: datosCompra.dispositivo,
         ip_address: datosCompra.ip_address,
         user_agent: datosCompra.user_agent,
-        status: 'pending'
+        status: 'pendiente'
       }])
       .select()
       .single();
@@ -316,7 +316,7 @@ export async function actualizarEstadoCompra(
       verified_by: verificadoPor
     };
 
-    if (estado === 'completed') {
+    if (estado === 'confirmada') {
       updates.verified_at = new Date().toISOString();
     }
 
@@ -331,7 +331,7 @@ export async function actualizarEstadoCompra(
 
     // Asignar y marcar tickets como VENDIDOS si se confirma
     let tickets: Ticket[] = [];
-    if (estado === 'completed') {
+    if (estado === 'confirmada') {
       const cantidadBoletos = Math.round(updatedPurchase.total_amount / updatedPurchase.unit_price);
       
       // Solo asignar si no tiene tickets ya
@@ -349,7 +349,7 @@ export async function actualizarEstadoCompra(
           // Revertir estado a pendiente si no se pudieron asignar tickets
           await supabase
             .from('purchases')
-            .update({ status: 'pending' })
+            .update({ status: 'pendiente' })
             .eq('id', purchaseId);
           
           throw new Error(`No se pudo confirmar: ${ticketError instanceof Error ? ticketError.message : 'Error al asignar tickets'}`);
@@ -361,11 +361,11 @@ export async function actualizarEstadoCompra(
     }
 
     // Liberar tickets si se cancela
-    if (estado === 'cancelled') {
+    if (estado === 'cancelada') {
       const { error: releaseError } = await supabase
         .from('tickets')
         .update({
-          status: 'available',
+          status: 'disponible',
           customer_id: null,
           purchase_id: null,
           sold_at: null,
@@ -415,7 +415,7 @@ export async function asignarNumerosDisponibles(
     const { data: ticketsDisponibles, error: selectError } = await supabase
       .from('tickets')
       .select('*')
-      .eq('status', 'available')
+      .eq('status', 'disponible')
       .order('number')
       .limit(cantidadBoletos);
 
@@ -432,7 +432,7 @@ export async function asignarNumerosDisponibles(
     const { data: ticketsActualizados, error: updateError } = await supabase
       .from('tickets')
       .update({
-        status: 'sold',
+        status: 'vendido',
         customer_id: customerId,
         purchase_id: purchaseId,
         sold_at: ahora
@@ -474,7 +474,7 @@ export async function inicializarTickets(): Promise<boolean> {
     for (let i = 1; i <= 10000; i++) {
       tickets.push({
         number: i,
-        status: 'available'
+        status: 'disponible'
       });
     }
 
@@ -522,9 +522,9 @@ export async function obtenerEstadisticasTickets(): Promise<{
         
         const counts = {
           total: data?.length || 0,
-          disponibles: data?.filter(t => t.status === 'available').length || 0,
-          vendidos: data?.filter(t => t.status === 'sold').length || 0,
-          reservados: data?.filter(t => t.status === 'reserved').length || 0
+          disponibles: data?.filter(t => t.status === 'disponible').length || 0,
+          vendidos: data?.filter(t => t.status === 'vendido').length || 0,
+          reservados: data?.filter(t => t.status === 'reservado').length || 0
         };
         
         return { data: counts, error: null };

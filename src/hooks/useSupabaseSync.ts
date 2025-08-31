@@ -63,9 +63,9 @@ export function useSupabaseSync() {
         return;
       }
 
-      // Separar tickets por estado (corregir nombres de estados según enum SQL)
-      const realSoldTickets = ticketsData?.filter((t: any) => t.status === 'sold').map((t: any) => t.number) || [];
-      const reservedTickets = ticketsData?.filter((t: any) => t.status === 'reserved').map((t: any) => t.number) || [];
+      // Separar tickets por estado (usando estados reales de BD en español)
+      const realSoldTickets = ticketsData?.filter((t: any) => t.status === 'vendido').map((t: any) => t.number) || [];
+      const reservedTickets = ticketsData?.filter((t: any) => t.status === 'reservado').map((t: any) => t.number) || [];
       
       // Actualizar contador de tickets reales
       setRealTicketsCount(realSoldTickets.length);
@@ -126,12 +126,12 @@ export function useSupabaseSync() {
             const newStatus = payload.new?.status;
             const ticketNumber = payload.new?.number;
             
-            if (newStatus === 'sold') {
+            if (newStatus === 'vendido') {
               publicToast.success(`¡Ticket ${String(ticketNumber).padStart(4, '0')} vendido!`, {
                 duration: 2000,
                 icon: '🎯'
               });
-            } else if (newStatus === 'reserved') {
+            } else if (newStatus === 'reservado') {
               adminToast.info(`Ticket ${String(ticketNumber).padStart(4, '0')} reservado`);
             }
           }
@@ -162,8 +162,8 @@ export function useSupabaseSync() {
             adminToast.info(`Nueva compra: ${compra?.payment_method || 'N/A'} - $${compra?.total_amount || 0}`);
           } else if (payload.eventType === 'UPDATE') {
             const compra = payload.new;
-            if (compra?.status === 'completed') {
-              publicToast.success('¡Compra completada!', {
+            if (compra?.status === 'confirmada') {
+              publicToast.success('¡Compra confirmada!', {
                 duration: 2000,
                 icon: '✅'
               });
@@ -225,7 +225,7 @@ export function useSupabaseSync() {
       const { data: unavailableTickets, error } = await supabase
         .from('tickets')
         .select('number')
-        .in('status', ['sold', 'reserved']);
+        .in('status', ['vendido', 'reservado']);
 
       if (error) {
         console.error('Error al obtener tickets no disponibles:', error);
@@ -262,12 +262,12 @@ export function useSupabaseSync() {
       const { error } = await supabase
         .from('tickets')
         .update({
-          status: 'reserved',
+          status: 'reservado',
           customer_id: customerId,
           reserved_at: new Date().toISOString()
         })
         .in('number', ticketNumbers)
-        .eq('status', 'available');
+        .eq('status', 'disponible');
 
       if (error) {
         console.error('Error al reservar tickets:', error);
@@ -300,7 +300,7 @@ export function useSupabaseSync() {
       const { error } = await supabase
         .from('tickets')
         .update({
-          status: 'sold',
+          status: 'vendido',
           customer_id: customerId,
           sold_at: new Date().toISOString()
         })
