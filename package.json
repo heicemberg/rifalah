@@ -16,6 +16,9 @@
     "clean": "rmdir /s /q .next 2>nul || rmdir /s /q out 2>nul || rmdir /s /q dist 2>nul || echo cleaned",
     "prebuild": "npm run clean",
     "validate-env": "node scripts/validate-env.js",
+    "typescript-check": "node scripts/typescript-safety-check.js",
+    "prebuild-safe": "npm run clean && npm run typescript-check",
+    "build-safe": "npm run prebuild-safe && next build",
     "debug-env": "node -e \"console.log('SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0,30) + '...'); console.log('ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0,20) + '...');\"",
     "diagnose-netlify": "node scripts/diagnose-netlify.js",
     "debug-build": "npm run build && npm run diagnose-netlify"
