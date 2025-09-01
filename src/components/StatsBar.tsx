@@ -169,6 +169,10 @@ export const StatsBar: React.FC = () => {
   const soldCount = masterCounters.soldTickets;
   const availableCount = masterCounters.availableTickets;
   const soldPercentage = masterCounters.soldPercentage;
+  
+  // ✅ OBTENER RESERVADOS DE MASTER COUNTER
+  const { reservedTickets } = useRaffleStore();
+  const reservedCount = reservedTickets?.length || 0;
 
   return (
     <div className="w-full space-y-4">

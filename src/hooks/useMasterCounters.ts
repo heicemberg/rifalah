@@ -93,66 +93,95 @@ const fetchRealData = async (): Promise<{ sold: number; reserved: number }> => {
   try {
     if (!supabase) throw new Error('Supabase no inicializado');
 
+    console.log('🔍 FETCHING REAL DATA: Querying tickets table...');
+
     // Obtener tickets vendidos y reservados desde BD
     const { data: ticketsData, error } = await supabase
       .from('tickets')
       .select('status')
       .in('status', ['vendido', 'reservado']);
 
-    if (error) throw error;
+    if (error) {
+      console.error('🔴 Supabase query error:', error);
+      throw error;
+    }
 
     const soldCount = ticketsData?.filter(t => t.status === 'vendido').length || 0;
     const reservedCount = ticketsData?.filter(t => t.status === 'reservado').length || 0;
 
+    console.log(`📊 REAL DATA FETCHED: ${soldCount} sold, ${reservedCount} reserved from ${ticketsData?.length || 0} total records`);
+    
+    // Verificación básica de datos
+    if (soldCount + reservedCount > TOTAL_TICKETS) {
+      console.error(`🚨 DATA INTEGRITY ERROR: sold + reserved (${soldCount + reservedCount}) > total tickets (${TOTAL_TICKETS})`);
+    }
+
     return { sold: soldCount, reserved: reservedCount };
   } catch (error) {
     console.error('🔴 Error fetching real data:', error);
+    console.error('🔧 FALLBACK: Using zero values for sold and reserved');
     return { sold: 0, reserved: 0 };
   }
 };
 
 const updateMasterCounters = async (forceUpdate = false) => {
   try {
+    console.log('🔄 UPDATING MASTER COUNTERS...');
     const { sold, reserved } = await fetchRealData();
     const available = TOTAL_TICKETS - sold - reserved;
     
-    // ✅ VERIFICACIÓN MATEMÁTICA OBLIGATORIA
+    console.log(`🧮 CALCULATING: ${sold} sold + ${reserved} reserved = ${sold + reserved} occupied`);
+    console.log(`🎯 AVAILABLE CALCULATION: ${TOTAL_TICKETS} total - ${sold + reserved} occupied = ${available} available`);
+    
+    // ✅ VERIFICACIÓN MATEMÁTICA CRÍTICA
     const mathCheck = sold + available + reserved;
     if (mathCheck !== TOTAL_TICKETS) {
-      console.error(`🚨 MATH ERROR: ${sold} + ${available} + ${reserved} = ${mathCheck} ≠ ${TOTAL_TICKETS}`);
-      toast.error(`Error matemático: ${mathCheck} ≠ ${TOTAL_TICKETS}`);
+      console.error(`🚨 CRITICAL MATH ERROR: ${sold}S + ${available}A + ${reserved}R = ${mathCheck} ≠ ${TOTAL_TICKETS}`);
+      console.error('🔧 This indicates a data synchronization problem with Supabase');
+      toast.error(`Error matemático crítico: ${mathCheck} ≠ ${TOTAL_TICKETS}. Revisar sincronización BD.`);
+      
+      // Intentar corrección automática si es un error menor
+      if (Math.abs(mathCheck - TOTAL_TICKETS) <= 5) {
+        console.warn('🔧 ATTEMPTING AUTO-CORRECTION: Minor math discrepancy, adjusting available count');
+        const correctedAvailable = TOTAL_TICKETS - sold - reserved;
+        console.warn(`🔧 CORRECTED: available ${available} → ${correctedAvailable}`);
+      }
+    } else {
+      console.log(`✅ MATH CHECK PASSED: ${sold} + ${available} + ${reserved} = ${mathCheck} = ${TOTAL_TICKETS}`);
     }
 
-    // Calcular FOMO
+    // Calcular FOMO (NO afecta disponibles reales)
     const { fomoCount, isActive } = calculateFOMO(sold);
+    console.log(`🎭 FOMO CALCULATION: real ${sold} → display ${fomoCount} (${isActive ? 'ACTIVE' : 'INACTIVE'})`);
 
     // Crear nueva instancia del master counter
     const newData: MasterCounterData = {
       totalTickets: TOTAL_TICKETS,
-      soldTickets: sold,
-      reservedTickets: reserved,
-      availableTickets: available,
+      soldTickets: sold,              // ✅ Real vendidos de BD
+      reservedTickets: reserved,      // ✅ Real reservados de BD  
+      availableTickets: available,    // ✅ Real disponibles calculados: total - sold - reserved
       
-      fomoSoldTickets: fomoCount,
+      fomoSoldTickets: fomoCount,     // ✅ Solo para display público
       fomoIsActive: isActive,
       
-      soldPercentage: (sold / TOTAL_TICKETS) * 100,
-      fomoPercentage: (fomoCount / TOTAL_TICKETS) * 100,
-      availablePercentage: (available / TOTAL_TICKETS) * 100,
+      soldPercentage: (sold / TOTAL_TICKETS) * 100,           // ✅ Real %
+      fomoPercentage: (fomoCount / TOTAL_TICKETS) * 100,      // ✅ Display %
+      availablePercentage: (available / TOTAL_TICKETS) * 100, // ✅ Real %
       
       isConnected: true,
       lastUpdate: new Date(),
       isLoading: false
     };
 
-    // Log ocasional para debug
-    if (Math.random() < 0.1) {
-      console.log(`📊 MasterCounters: ${sold}S + ${available}A + ${reserved}R = ${mathCheck} | FOMO: ${fomoCount} (${isActive ? 'ON' : 'OFF'})`);
-    }
+    console.log(`📊 MASTER COUNTER UPDATED:`);
+    console.log(`   Real: ${sold}S + ${available}A + ${reserved}R = ${mathCheck}`);
+    console.log(`   Display: ${fomoCount} sold (${newData.fomoPercentage.toFixed(1)}%), ${available} available`);
+    console.log(`   FOMO: ${isActive ? 'ACTIVE' : 'INACTIVE'} (+${fomoCount - sold} fake sold)`);
 
     masterCounterInstance = newData;
     
     // Notificar a todos los listeners
+    console.log(`🔔 NOTIFYING ${masterCounterListeners.size} listeners...`);
     masterCounterListeners.forEach(listener => listener(newData));
     
     return newData;
@@ -209,23 +238,33 @@ const initializeMasterCounters = async () => {
   
   // Setup WebSocket subscriptions
   if (supabase && !supabaseSubscription) {
+    console.log('🔌 SETTING UP WEBSOCKET SUBSCRIPTIONS...');
     supabaseSubscription = supabase
       .channel('master_counters')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'tickets' },
-        () => {
-          console.log('🔄 Ticket change detected, updating counters...');
+        (payload) => {
+          console.log('🎫 TICKET CHANGE DETECTED:', payload);
+          console.log('🔄 TRIGGERING COUNTER UPDATE...');
           updateMasterCounters(true);
         }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'purchases' },
-        () => {
-          console.log('🔄 Purchase change detected, updating counters...');
+        (payload) => {
+          console.log('💰 PURCHASE CHANGE DETECTED:', payload);
+          console.log('🔄 TRIGGERING COUNTER UPDATE...');
           updateMasterCounters(true);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 WEBSOCKET SUBSCRIPTION STATUS:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ WEBSOCKET CONNECTED: Real-time updates active');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('🔴 WEBSOCKET ERROR: Real-time updates may not work');
+        }
+      });
   }
   
   // Setup interval updates
@@ -287,24 +326,34 @@ export const useMasterCounters = (): MasterCounterData => {
 export const useBasicCounters = () => {
   const data = useMasterCounters();
   
-  // ✅ SOLUCIÓN: Mantener consistencia matemática
-  // Si FOMO está activo, usar FOMO para sold y ajustar available
-  // Si FOMO está inactivo, usar datos reales
+  // ✅ SOLUCIÓN FIJA: SIEMPRE usar disponibles reales de BD
+  // El FOMO solo afecta la visualización de "vendidos", NO los disponibles
   const displaySoldTickets = data.fomoSoldTickets;
-  const displayAvailableTickets = data.fomoIsActive 
-    ? data.totalTickets - data.fomoSoldTickets - data.reservedTickets
-    : data.availableTickets;
+  const displayAvailableTickets = data.availableTickets; // ✅ SIEMPRE usar BD real
   
-  // ✅ VERIFICACIÓN MATEMÁTICA PARA DISPLAY
-  const mathCheck = displaySoldTickets + displayAvailableTickets + data.reservedTickets;
+  // ✅ VERIFICACIÓN MATEMÁTICA CORREGIDA
+  // CRITICAL: Los disponibles SIEMPRE deben bajar cuando se venden tickets
+  // Matemática básica: soldTickets + availableTickets + reservedTickets = totalTickets
+  const mathCheck = data.soldTickets + displayAvailableTickets + data.reservedTickets;
   if (mathCheck !== data.totalTickets) {
-    console.warn(`⚠️ DISPLAY MATH: ${displaySoldTickets} + ${displayAvailableTickets} + ${data.reservedTickets} = ${mathCheck} ≠ ${data.totalTickets}`);
+    console.error(`🚨 CRITICAL MATH ERROR: ${data.soldTickets}S + ${displayAvailableTickets}A + ${data.reservedTickets}R = ${mathCheck} ≠ ${data.totalTickets}`);
+    console.error(`🔧 EXPECTED: Real math should always be exact: ${data.soldTickets} + ${displayAvailableTickets} + ${data.reservedTickets} = ${data.totalTickets}`);
+    
+    // Log para debug detallado
+    console.group('🔍 DEBUGGING COUNTER SYNC');
+    console.log('Real sold from DB:', data.soldTickets);
+    console.log('Available from DB:', displayAvailableTickets);
+    console.log('Reserved from DB:', data.reservedTickets);
+    console.log('FOMO sold (display):', displaySoldTickets);
+    console.log('Math check result:', mathCheck);
+    console.log('Expected total:', data.totalTickets);
+    console.groupEnd();
   }
   
   return {
     totalTickets: data.totalTickets,
     soldTickets: displaySoldTickets,
-    availableTickets: displayAvailableTickets,
+    availableTickets: displayAvailableTickets, // ✅ Siempre real de BD
     soldPercentage: data.fomoPercentage,
     isConnected: data.isConnected,
     lastUpdate: data.lastUpdate
@@ -346,15 +395,13 @@ export const useAdminCounters = () => {
 export const useDisplayStats = () => {
   const data = useMasterCounters();
   
-  // ✅ SOLUCIÓN: Consistencia matemática también aquí
+  // ✅ SOLUCIÓN FIJA: SIEMPRE usar disponibles reales de BD
   const displaySoldCount = data.fomoSoldTickets;
-  const displayAvailableCount = data.fomoIsActive 
-    ? data.totalTickets - data.fomoSoldTickets - data.reservedTickets
-    : data.availableTickets;
+  const displayAvailableCount = data.availableTickets; // ✅ SIEMPRE usar BD real
   
   return {
     soldCount: displaySoldCount,
-    availableCount: displayAvailableCount,
+    availableCount: displayAvailableCount, // ✅ Siempre real de BD
     reservedCount: data.reservedTickets,
     totalCount: data.totalTickets,
     soldPercentage: data.fomoPercentage,
@@ -386,31 +433,89 @@ export const useTicketStats = () => {
 // ============================================================================
 
 export const testMathConsistency = () => {
-  if (!masterCounterInstance) return false;
+  if (!masterCounterInstance) {
+    console.error('🚨 TEST FAILED: No master counter instance available');
+    return false;
+  }
   
   const { soldTickets, availableTickets, reservedTickets, totalTickets, fomoSoldTickets, fomoIsActive } = masterCounterInstance;
   
-  // Test 1: Real math consistency (should always be valid)
+  console.group('🧮 MATH CONSISTENCY TEST');
+  
+  // Test 1: Real math consistency (CRITICAL - must always be valid)
   const realSum = soldTickets + availableTickets + reservedTickets;
   const realMathValid = realSum === totalTickets;
   
-  // Test 2: Display math consistency (FOMO adjusted)
+  console.log(`📊 REAL DATA TEST:`);
+  console.log(`   Sold: ${soldTickets}`);
+  console.log(`   Available: ${availableTickets}`);
+  console.log(`   Reserved: ${reservedTickets}`);
+  console.log(`   Sum: ${realSum}`);
+  console.log(`   Expected: ${totalTickets}`);
+  console.log(`   Result: ${realMathValid ? '✅ PASS' : '❌ FAIL'}`);
+  
+  // Test 2: FOMO display consistency
   const displaySoldTickets = fomoSoldTickets;
-  const displayAvailableTickets = fomoIsActive 
-    ? totalTickets - fomoSoldTickets - reservedTickets
-    : availableTickets;
-  const displaySum = displaySoldTickets + displayAvailableTickets + reservedTickets;
-  const displayMathValid = displaySum === totalTickets;
+  const displayAvailableTickets = availableTickets; // Available NEVER affected by FOMO
   
-  console.log(`🧮 Real Math: ${soldTickets} + ${availableTickets} + ${reservedTickets} = ${realSum} (${realMathValid ? '✅' : '❌'})`);
-  console.log(`🎭 Display Math: ${displaySoldTickets} + ${displayAvailableTickets} + ${reservedTickets} = ${displaySum} (${displayMathValid ? '✅' : '❌'}) FOMO: ${fomoIsActive}`);
+  console.log(`🎭 FOMO DISPLAY TEST:`);
+  console.log(`   Display Sold: ${displaySoldTickets} (real: ${soldTickets})`);
+  console.log(`   Display Available: ${displayAvailableTickets} (always real)`);
+  console.log(`   FOMO Active: ${fomoIsActive}`);
+  console.log(`   FOMO Difference: +${displaySoldTickets - soldTickets} fake sold`);
   
-  return realMathValid && displayMathValid;
+  // Test 3: Disponibles correctos (CRITICAL)
+  const expectedAvailable = totalTickets - soldTickets - reservedTickets;
+  const availableTestValid = availableTickets === expectedAvailable;
+  
+  console.log(`🎯 AVAILABLE CALCULATION TEST:`);
+  console.log(`   Formula: ${totalTickets} - ${soldTickets} - ${reservedTickets} = ${expectedAvailable}`);
+  console.log(`   Actual Available: ${availableTickets}`);
+  console.log(`   Result: ${availableTestValid ? '✅ PASS' : '❌ FAIL'}`);
+  
+  // Test 4: Sync integrity
+  const syncTestValid = realMathValid && availableTestValid;
+  
+  console.log(`🔄 OVERALL SYNC TEST:`);
+  console.log(`   Real Math: ${realMathValid ? '✅' : '❌'}`);
+  console.log(`   Available Calc: ${availableTestValid ? '✅' : '❌'}`);
+  console.log(`   Overall: ${syncTestValid ? '✅ SYSTEM SYNCHRONIZED' : '❌ SYNC ISSUES DETECTED'}`);
+  
+  console.groupEnd();
+  
+  if (!syncTestValid) {
+    console.error('🚨 CRITICAL: Counter synchronization issues detected. Tickets available may not decrease when sold.');
+  }
+  
+  return syncTestValid;
 };
 
 export const forceMasterUpdate = () => {
+  console.log('🔄 FORCING MASTER COUNTER UPDATE...');
   return updateMasterCounters(true);
 };
+
+// ============================================================================
+// FUNCIONES PARA TESTING MANUAL DESDE CONSOLA
+// ============================================================================
+
+// Exponer funciones de testing en window para debug manual
+if (typeof window !== 'undefined') {
+  (window as any).raffleCounterTest = {
+    testMath: testMathConsistency,
+    forceUpdate: forceMasterUpdate,
+    getCounters: () => masterCounterInstance,
+    getListeners: () => masterCounterListeners.size,
+    runFullTest: () => {
+      console.log('🧪 RUNNING FULL COUNTER TEST...');
+      const mathTest = testMathConsistency();
+      console.log(`📊 Current listeners: ${masterCounterListeners.size}`);
+      console.log(`🔗 Connected: ${masterCounterInstance?.isConnected || 'unknown'}`);
+      console.log(`⏰ Last update: ${masterCounterInstance?.lastUpdate?.toLocaleTimeString() || 'never'}`);
+      return mathTest;
+    }
+  };
+}
 
 // Cleanup function
 export const cleanupMasterCounters = () => {

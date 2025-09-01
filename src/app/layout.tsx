@@ -12,6 +12,12 @@ import './globals.css';
 // Importar providers optimizados
 import { AppProviders } from '../providers/AppProviders';
 import ClientScripts from '../components/ClientScripts';
+import CounterDebugger from '../components/CounterDebugger';
+
+// Importar test suite en desarrollo
+if (process.env.NODE_ENV === 'development') {
+  import('../lib/counter-test');
+}
 
 // ============================================================================
 // CONFIGURACIÓN DE FUENTE
@@ -486,6 +492,11 @@ export default function RootLayout({
 
         {/* Client-side Analytics */}
         <ClientScripts />
+
+        {/* Counter Debugger - Only in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <CounterDebugger show={true} />
+        )}
 
         {/* Preload de recursos críticos */}
         <link rel="preload" href="/premios/premio-rifa.png" as="image" />
