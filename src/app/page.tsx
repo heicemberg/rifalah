@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { useRaffleStore } from '@/stores/raffle-store'
 import { useBasicCounters } from '@/hooks/useMasterCounters'
+import { useMathValidator } from '@/hooks/useMathValidator'
 import SupabaseInitializer from '@/components/SupabaseInitializer'
 import { 
   ArrowRight, 
@@ -23,12 +24,16 @@ import {
 import ComprehensivePurchaseModal from '@/components/ComprehensivePurchaseModal'
 import TicketGrid from '@/components/TicketGrid'
 import OrganicNotifications from '@/components/OrganicNotifications'
+import MathDebugger from '@/components/MathDebugger'
 
 export default function NewRaffePage() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   
-  // Hook maestro - fuente única de verdad matemáticamente garantizada
-  const counters = useBasicCounters()
+  // ✅ MASTER COUNTER - FUENTE ÚNICA DE VERDAD MATEMÁTICAMENTE GARANTIZADA
+  const masterCounters = useBasicCounters()
+  
+  // 🧮 VALIDADOR MATEMÁTICO CONTINUO
+  const { validateNow } = useMathValidator(process.env.NODE_ENV === 'development')
   
   // Formateo mexicano
   const formatMexicanNumber = (num: number): string => num.toLocaleString('es-MX')
@@ -45,11 +50,11 @@ export default function NewRaffePage() {
   // Acceder al store para obtener los tickets seleccionados
   const { selectedTickets } = useRaffleStore()
 
-  // Usar datos del hook maestro (matemáticamente garantizados)
-  const soldCount = counters.soldTickets
-  const availableCount = counters.availableTickets
-  const totalCount = counters.totalTickets
-  const soldPercentage = Math.round(counters.soldPercentage)
+  // ✅ USAR DATOS DEL MASTER COUNTER - MATEMÁTICAMENTE GARANTIZADOS
+  const soldCount = masterCounters.soldTickets
+  const availableCount = masterCounters.availableTickets
+  const totalCount = masterCounters.totalTickets
+  const soldPercentage = Math.round(masterCounters.soldPercentage)
 
   return (
     <main className="bg-black text-white font-sans">
@@ -716,6 +721,9 @@ export default function NewRaffePage() {
       
       {/* Live Activities */}
       <OrganicNotifications />
+      
+      {/* Math Debugger - Solo en desarrollo */}
+      <MathDebugger show={process.env.NODE_ENV === 'development'} />
     </main>
   )
 }

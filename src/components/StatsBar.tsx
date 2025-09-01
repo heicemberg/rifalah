@@ -155,23 +155,24 @@ AnimatedProgressBar.displayName = 'AnimatedProgressBar';
 // ============================================================================
 
 export const StatsBar: React.FC = () => {
-  // ✅ USAR MASTER COUNTER PARA CONSISTENCIA MATEMÁTICA
+  // ✅ USAR SOLO MASTER COUNTER PARA CONSISTENCIA MATEMÁTICA
   const masterCounters = useBasicCounters();
   
   // Estado del store para datos locales (selección del usuario)
   const {
     totalSelected,
     totalPrice,
-    viewingCount
+    viewingCount,
+    reservedTickets
   } = useRaffleStore();
 
-  // ✅ DATOS SINCRONIZADOS DEL MASTER COUNTER
+  // ✅ TODOS LOS DATOS DESDE MASTER COUNTER
   const soldCount = masterCounters.soldTickets;
   const availableCount = masterCounters.availableTickets;
   const soldPercentage = masterCounters.soldPercentage;
+  const totalTickets = masterCounters.totalTickets;
   
-  // ✅ OBTENER RESERVADOS DE MASTER COUNTER
-  const { reservedTickets } = useRaffleStore();
+  // ✅ CALCULAR RESERVADOS DESDE STORE
   const reservedCount = reservedTickets?.length || 0;
 
   return (
@@ -291,7 +292,7 @@ export const StatsBar: React.FC = () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-center">
           <div className="p-3 bg-gray-50 rounded-lg">
             <div className="text-2xl font-bold text-gray-800">
-              {TOTAL_TICKETS.toLocaleString()}
+              {totalTickets.toLocaleString()}
             </div>
             <div className="text-xs text-gray-600 font-medium">
               Total de boletos
@@ -309,7 +310,7 @@ export const StatsBar: React.FC = () => {
           
           <div className="p-3 bg-gray-50 rounded-lg">
             <div className="text-2xl font-bold text-blue-600">
-              {((availableCount / TOTAL_TICKETS) * 100).toFixed(1)}%
+              {((availableCount / totalTickets) * 100).toFixed(1)}%
             </div>
             <div className="text-xs text-gray-600 font-medium">
               Disponible

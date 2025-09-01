@@ -349,16 +349,15 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
     deselectTicket
   } = useRaffleStore();
   
-  // Hook de estadísticas de display
-  const displayStats = useDisplayStats();
+  // ✅ USAR SOLO MASTER COUNTER PARA CONSISTENCIA MATEMÁTICA
+  const masterStats = useBasicCounters();
   const { 
-    soldCount: visualSoldCount,
-    availableCount: realAvailableCount,
+    soldTickets: visualSoldCount,
+    availableTickets: realAvailableCount,
     soldPercentage: visualPercentage,
-    realSoldCount,
     isConnected,
     lastUpdate: lastSyncTime
-  } = displayStats;
+  } = masterStats;
   
   // Refs y estado local
   const containerRef = useRef<HTMLDivElement>(null);
@@ -421,10 +420,8 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
     PRECIO_POR_BOLETO_MXN
   } = useRealTimeTickets();
   
-  // Hook maestro para estadísticas matemáticamente garantizadas
-  const masterCounters = useBasicCounters();
-  
-  // Usar datos reales del hook (sin números aleatorios)
+  // ✅ ELIMINAR REDUNDANCIA - YA TENEMOS masterStats
+  // Usar datos del store para tickets vendidos reales
   const allSoldTickets = soldTickets;
   
   // Generar filas visibles
@@ -479,13 +476,13 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
           Dale clic a los números que se te antojen para la rifa. Todos tienen la misma oportunidad de ganar.
         </p>
         
-        {/* Indicadores rápidos */}
+        {/* Indicadores rápidos - USAR DATOS UNIFICADOS */}
         <div className="flex flex-wrap justify-center gap-4 text-sm">
           <div className="bg-green-500/20 text-green-300 px-4 py-2 rounded-full border border-green-500/30">
-            <span className="font-bold">{formatMexicanNumber(masterCounters.availableTickets)}</span> disponibles
+            <span className="font-bold">{formatMexicanNumber(masterStats.availableTickets)}</span> disponibles
           </div>
           <div className="bg-red-500/20 text-red-300 px-4 py-2 rounded-full border border-red-500/30">
-            <span className="font-bold">{formatMexicanNumber(masterCounters.soldTickets)}</span> vendidos
+            <span className="font-bold">{formatMexicanNumber(masterStats.soldTickets)}</span> vendidos
           </div>
           <div className="bg-yellow-500/20 text-yellow-300 px-4 py-2 rounded-full border border-yellow-500/30">
             <span className="font-bold">{formatPriceMXN(PRECIO_POR_BOLETO_MXN)}</span> por boleto
@@ -618,7 +615,7 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
               }`}>
                 <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></div>
                 {isConnected 
-                  ? `✅ Conectado • ${realSoldCount} tickets vendidos`
+                  ? `✅ Conectado • Datos sincronizados`
                   : '⚠️ Modo offline • Usando datos locales'
                 }
               </div>
@@ -640,10 +637,10 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
       </div>
       
 
-      {/* Información del grid con datos reales */}
+      {/* Información del grid - DATOS UNIFICADOS DEL MASTER COUNTER */}
       <div className="flex flex-wrap justify-center gap-6 mb-6 text-sm bg-gradient-to-r from-emerald-50/80 to-slate-50/80 backdrop-blur-sm p-4 rounded-2xl border border-gray-200 shadow-sm">
         <div className="text-center">
-          <div className="text-lg font-black text-gray-900">{formatMexicanNumber(masterCounters.totalTickets)}</div>
+          <div className="text-lg font-black text-gray-900">{formatMexicanNumber(masterStats.totalTickets)}</div>
           <div className="text-xs font-medium text-gray-600">Total Números</div>
         </div>
         <div className="text-center">
@@ -651,15 +648,15 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
           <div className="text-xs font-medium text-gray-600">Escogidos</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-black text-red-600">{formatMexicanNumber(masterCounters.soldTickets)}</div>
+          <div className="text-lg font-black text-red-600">{formatMexicanNumber(masterStats.soldTickets)}</div>
           <div className="text-xs font-medium text-gray-600">Vendidos</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-black text-blue-600">{formatMexicanNumber(masterCounters.availableTickets)}</div>
+          <div className="text-lg font-black text-blue-600">{formatMexicanNumber(masterStats.availableTickets)}</div>
           <div className="text-xs font-medium text-gray-600">Disponibles</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-black text-purple-600">{masterCounters.soldPercentage.toFixed(1)}%</div>
+          <div className="text-lg font-black text-purple-600">{masterStats.soldPercentage.toFixed(1)}%</div>
           <div className="text-xs font-medium text-gray-600">Progreso</div>
         </div>
       </div>
@@ -716,8 +713,8 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
         </div>
       )}
       
-      {/* Estado cuando no hay tickets disponibles */}
-      {masterCounters.availableTickets === 0 && (
+      {/* Estado cuando no hay tickets disponibles - DATOS UNIFICADOS */}
+      {masterStats.availableTickets === 0 && (
         <div className="mt-6 p-8 bg-gradient-to-r from-red-600/20 to-red-700/30 rounded-3xl border-2 border-red-500/50 text-center backdrop-blur-sm">
           <div className="text-red-300 text-2xl font-black mb-4 flex items-center justify-center gap-3">
             <Trophy className="w-8 h-8 text-yellow-400" />
@@ -725,7 +722,7 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
             <Trophy className="w-8 h-8 text-yellow-400" />
           </div>
           <div className="text-red-200 text-lg mb-2">
-            Todos los {formatMexicanNumber(masterCounters.totalTickets)} números ya están ocupados
+            Todos los {formatMexicanNumber(masterStats.totalTickets)} números ya están ocupados
           </div>
           <div className="text-red-300 text-sm">
             Gracias por tu interés. El sorteo se realizará pronto.
