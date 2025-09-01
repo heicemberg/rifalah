@@ -117,7 +117,8 @@ export default function SyncTester() {
       results.push({
         test: 'Test execution',
         success: false,
-        details: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        details: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date()
       });
       setTestResults(results);
     }
