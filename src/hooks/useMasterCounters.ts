@@ -32,7 +32,7 @@ export interface MasterCounterData {
 
 // Singleton instance
 let masterCounterInstance: MasterCounterData | null = null;
-let masterCounterListeners: Set<(data: MasterCounterData) => void> = new Set();
+const masterCounterListeners: Set<(data: MasterCounterData) => void> = new Set();
 let updateInterval: NodeJS.Timeout | null = null;
 let supabaseSubscription: any = null;
 
