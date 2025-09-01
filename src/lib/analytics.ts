@@ -9,7 +9,7 @@ export const GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-XXXXXXXXXX';
 
 // Inicializar Google Analytics
 export const initGA = () => {
-  if (typeof window !== 'undefined' && window.gtag && GA_TRACKING_ID && GA_TRACKING_ID !== 'G-XXXXXXXXXX') {
+  if (typeof window !== 'undefined' && GA_TRACKING_ID && GA_TRACKING_ID !== 'G-XXXXXXXXXX' && window.gtag) {
     window.gtag('config', GA_TRACKING_ID, {
       page_title: document.title,
       page_location: window.location.href,
