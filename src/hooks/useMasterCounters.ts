@@ -281,8 +281,9 @@ const initializeMasterCounters = async () => {
   // Setup global event listener for forced synchronization
   if (typeof window !== 'undefined' && !window.__raffleSyncListenerSetup) {
     console.log('🔔 SETTING UP GLOBAL SYNC EVENT LISTENER...');
-    const handleGlobalSync = (event: CustomEvent) => {
-      console.log('🔔 GLOBAL SYNC EVENT RECEIVED:', event.detail);
+    const handleGlobalSync = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('🔔 GLOBAL SYNC EVENT RECEIVED:', customEvent.detail);
       console.log('🔄 FORCING MASTER COUNTER UPDATE...');
       updateMasterCounters(true);
     };
