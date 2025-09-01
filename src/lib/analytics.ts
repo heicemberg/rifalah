@@ -2,12 +2,7 @@
 // GOOGLE ANALYTICS 4 CONFIGURACIÓN
 // ============================================================================
 
-declare global {
-  interface Window {
-    gtag: (command: string, targetId: string, config?: any) => void;
-    dataLayer: any[];
-  }
-}
+// Global types are now declared in src/types/global.d.ts
 
 // Configuración de Google Analytics 4
 export const GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-XXXXXXXXXX';
