@@ -57,14 +57,15 @@ export default function SyncMonitor() {
 
   // Monitor global sync events
   useEffect(() => {
-    const handleGlobalSync = (event: CustomEvent) => {
+    const handleGlobalSync = (event: Event) => {
+      const customEvent = event as CustomEvent;
       const addEvent = (type: SyncEvent['type'], source: string) => {
         setEvents(prev => [{
           timestamp: new Date(),
           type,
           source: `global-${source}`,
           data: {
-            soldCount: event.detail.soldCount,
+            soldCount: customEvent.detail?.soldCount,
             availableCount: undefined,
             reservedCount: undefined,
             fomoCount: undefined
@@ -73,7 +74,7 @@ export default function SyncMonitor() {
         }, ...prev.slice(0, 19)]);
       };
       
-      addEvent('admin', event.detail.source || 'unknown');
+      addEvent('admin', customEvent.detail?.source || 'unknown');
     };
 
     if (typeof window !== 'undefined') {

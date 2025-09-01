@@ -5,19 +5,30 @@ import { useMasterCounters, forceMasterUpdate, testMathConsistency } from '../..
 import toast from 'react-hot-toast';
 
 // ============================================================================
+// TIPOS
+// ============================================================================
+
+interface TestResult {
+  test: string;
+  details: string;
+  success: boolean;
+  timestamp: Date;
+}
+
+// ============================================================================
 // COMPONENTE DE TESTING DE SINCRONIZACIÓN
 // ============================================================================
 
 export default function SyncTester() {
   const [isVisible, setIsVisible] = useState(false);
-  const [testResults, setTestResults] = useState<any[]>([]);
+  const [testResults, setTestResults] = useState<TestResult[]>([]);
   const masterCounters = useMasterCounters();
 
   const runSyncTest = async () => {
     console.log('🧪 INICIANDO SYNC TEST COMPLETO...');
     toast.loading('Ejecutando test de sincronización...');
 
-    const results = [];
+    const results: TestResult[] = [];
 
     try {
       // Test 1: Verificar matemática básica
@@ -26,7 +37,8 @@ export default function SyncTester() {
       results.push({
         test: 'Matemática básica',
         success: mathTest,
-        details: `${masterCounters.soldTickets} + ${masterCounters.availableTickets} + ${masterCounters.reservedTickets} = ${masterCounters.soldTickets + masterCounters.availableTickets + masterCounters.reservedTickets}`
+        details: `${masterCounters.soldTickets} + ${masterCounters.availableTickets} + ${masterCounters.reservedTickets} = ${masterCounters.soldTickets + masterCounters.availableTickets + masterCounters.reservedTickets}`,
+        timestamp: new Date()
       });
 
       // Test 2: Force update manual
@@ -35,7 +47,8 @@ export default function SyncTester() {
       results.push({
         test: 'Force update manual',
         success: true,
-        details: `Última actualización: ${new Date().toLocaleTimeString()}`
+        details: `Última actualización: ${new Date().toLocaleTimeString()}`,
+        timestamp: new Date()
       });
 
       // Test 3: Global event dispatch
@@ -49,7 +62,8 @@ export default function SyncTester() {
       results.push({
         test: 'Event dispatch global',
         success: true,
-        details: 'Evento disparado correctamente'
+        details: 'Evento disparado correctamente',
+        timestamp: new Date()
       });
 
       // Test 4: Verificar FOMO consistency
@@ -58,7 +72,8 @@ export default function SyncTester() {
       results.push({
         test: 'FOMO consistency',
         success: fomoTest,
-        details: `FOMO: ${masterCounters.fomoSoldTickets} >= Real: ${masterCounters.soldTickets}`
+        details: `FOMO: ${masterCounters.fomoSoldTickets} >= Real: ${masterCounters.soldTickets}`,
+        timestamp: new Date()
       });
 
       // Test 5: WebSocket connection
@@ -66,7 +81,8 @@ export default function SyncTester() {
       results.push({
         test: 'WebSocket connection',
         success: masterCounters.isConnected,
-        details: masterCounters.isConnected ? 'Conectado' : 'Desconectado'
+        details: masterCounters.isConnected ? 'Conectado' : 'Desconectado',
+        timestamp: new Date()
       });
 
       // Test 6: Data freshness
@@ -78,7 +94,8 @@ export default function SyncTester() {
       results.push({
         test: 'Data freshness',
         success: isFresh,
-        details: `Última actualización hace ${Math.floor(timeDiff / 1000)} segundos`
+        details: `Última actualización hace ${Math.floor(timeDiff / 1000)} segundos`,
+        timestamp: new Date()
       });
 
       setTestResults(results);
