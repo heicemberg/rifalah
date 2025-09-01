@@ -73,6 +73,11 @@ const calculateFOMO = (realSoldCount: number): { fomoCount: number; isActive: bo
   const fomoPercentage = Math.min(maxPercentage, basePercentage + increment);
   const fomoCount = Math.floor((fomoPercentage / 100) * TOTAL_TICKETS);
   
+  // ✅ LOG para debug: verificar crecimiento dinámico
+  if (Math.random() < 0.05) { // 5% chance to log
+    console.log(`🎭 FOMO Dynamic: ${minutesElapsed.toFixed(1)} min → ${fomoPercentage.toFixed(2)}% → ${fomoCount} tickets`);
+  }
+  
   // Retornar el mayor entre real y FOMO
   return { 
     fomoCount: Math.max(realSoldCount, fomoCount), 
@@ -281,10 +286,25 @@ export const useMasterCounters = (): MasterCounterData => {
 // Para componentes que solo necesitan datos básicos
 export const useBasicCounters = () => {
   const data = useMasterCounters();
+  
+  // ✅ SOLUCIÓN: Mantener consistencia matemática
+  // Si FOMO está activo, usar FOMO para sold y ajustar available
+  // Si FOMO está inactivo, usar datos reales
+  const displaySoldTickets = data.fomoSoldTickets;
+  const displayAvailableTickets = data.fomoIsActive 
+    ? data.totalTickets - data.fomoSoldTickets - data.reservedTickets
+    : data.availableTickets;
+  
+  // ✅ VERIFICACIÓN MATEMÁTICA PARA DISPLAY
+  const mathCheck = displaySoldTickets + displayAvailableTickets + data.reservedTickets;
+  if (mathCheck !== data.totalTickets) {
+    console.warn(`⚠️ DISPLAY MATH: ${displaySoldTickets} + ${displayAvailableTickets} + ${data.reservedTickets} = ${mathCheck} ≠ ${data.totalTickets}`);
+  }
+  
   return {
     totalTickets: data.totalTickets,
-    soldTickets: data.fomoSoldTickets, // Mostrar con FOMO
-    availableTickets: data.availableTickets,
+    soldTickets: displaySoldTickets,
+    availableTickets: displayAvailableTickets,
     soldPercentage: data.fomoPercentage,
     isConnected: data.isConnected,
     lastUpdate: data.lastUpdate
@@ -325,11 +345,18 @@ export const useAdminCounters = () => {
 // Hook para estadísticas de display unificadas
 export const useDisplayStats = () => {
   const data = useMasterCounters();
+  
+  // ✅ SOLUCIÓN: Consistencia matemática también aquí
+  const displaySoldCount = data.fomoSoldTickets;
+  const displayAvailableCount = data.fomoIsActive 
+    ? data.totalTickets - data.fomoSoldTickets - data.reservedTickets
+    : data.availableTickets;
+  
   return {
-    soldCount: data.fomoSoldTickets, // Mostrar con FOMO
-    availableCount: data.availableTickets,
+    soldCount: displaySoldCount,
+    availableCount: displayAvailableCount,
     reservedCount: data.reservedTickets,
-    totalCount: data.totalTickets, // Agregado
+    totalCount: data.totalTickets,
     soldPercentage: data.fomoPercentage,
     realSoldCount: data.soldTickets, // Datos reales para admin
     isConnected: data.isConnected,
@@ -361,13 +388,24 @@ export const useTicketStats = () => {
 export const testMathConsistency = () => {
   if (!masterCounterInstance) return false;
   
-  const { soldTickets, availableTickets, reservedTickets, totalTickets } = masterCounterInstance;
-  const sum = soldTickets + availableTickets + reservedTickets;
-  const isValid = sum === totalTickets;
+  const { soldTickets, availableTickets, reservedTickets, totalTickets, fomoSoldTickets, fomoIsActive } = masterCounterInstance;
   
-  console.log(`🧮 Math Test: ${soldTickets} + ${availableTickets} + ${reservedTickets} = ${sum} (${isValid ? '✅' : '❌'})`);
+  // Test 1: Real math consistency (should always be valid)
+  const realSum = soldTickets + availableTickets + reservedTickets;
+  const realMathValid = realSum === totalTickets;
   
-  return isValid;
+  // Test 2: Display math consistency (FOMO adjusted)
+  const displaySoldTickets = fomoSoldTickets;
+  const displayAvailableTickets = fomoIsActive 
+    ? totalTickets - fomoSoldTickets - reservedTickets
+    : availableTickets;
+  const displaySum = displaySoldTickets + displayAvailableTickets + reservedTickets;
+  const displayMathValid = displaySum === totalTickets;
+  
+  console.log(`🧮 Real Math: ${soldTickets} + ${availableTickets} + ${reservedTickets} = ${realSum} (${realMathValid ? '✅' : '❌'})`);
+  console.log(`🎭 Display Math: ${displaySoldTickets} + ${displayAvailableTickets} + ${reservedTickets} = ${displaySum} (${displayMathValid ? '✅' : '❌'}) FOMO: ${fomoIsActive}`);
+  
+  return realMathValid && displayMathValid;
 };
 
 export const forceMasterUpdate = () => {

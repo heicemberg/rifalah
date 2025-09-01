@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 
 // Importar desde archivos anteriores
 import { useRaffleStore } from '../stores/raffle-store';
+import { useBasicCounters } from '../hooks/useMasterCounters';
 import { TOTAL_TICKETS } from '../lib/constants';
 import { formatPrice, cn } from '../lib/utils';
 
@@ -154,21 +155,20 @@ AnimatedProgressBar.displayName = 'AnimatedProgressBar';
 // ============================================================================
 
 export const StatsBar: React.FC = () => {
-  // Estado del store - se actualiza automáticamente
+  // ✅ USAR MASTER COUNTER PARA CONSISTENCIA MATEMÁTICA
+  const masterCounters = useBasicCounters();
+  
+  // Estado del store para datos locales (selección del usuario)
   const {
-    soldTickets,
-    reservedTickets,
-    availableTickets,
-    soldPercentage,
     totalSelected,
     totalPrice,
     viewingCount
   } = useRaffleStore();
 
-  // Calcular estadísticas derivadas
-  const soldCount = soldTickets.length;
-  const reservedCount = reservedTickets.length;
-  const availableCount = availableTickets.length;
+  // ✅ DATOS SINCRONIZADOS DEL MASTER COUNTER
+  const soldCount = masterCounters.soldTickets;
+  const availableCount = masterCounters.availableTickets;
+  const soldPercentage = masterCounters.soldPercentage;
 
   return (
     <div className="w-full space-y-4">
