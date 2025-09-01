@@ -236,7 +236,7 @@ const initializeMasterCounters = async () => {
     isLoading: true
   };
   
-  // Setup WebSocket subscriptions
+  // Setup WebSocket subscriptions with enhanced error handling
   if (supabase && !supabaseSubscription) {
     console.log('🔌 SETTING UP WEBSOCKET SUBSCRIPTIONS...');
     supabaseSubscription = supabase
@@ -244,16 +244,16 @@ const initializeMasterCounters = async () => {
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'tickets' },
         (payload) => {
-          console.log('🎫 TICKET CHANGE DETECTED:', payload);
-          console.log('🔄 TRIGGERING COUNTER UPDATE...');
+          console.log('🎫 TICKET CHANGE DETECTED:', payload.eventType, payload.new || payload.old);
+          console.log('🔄 TRIGGERING IMMEDIATE COUNTER UPDATE...');
           updateMasterCounters(true);
         }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'purchases' },
         (payload) => {
-          console.log('💰 PURCHASE CHANGE DETECTED:', payload);
-          console.log('🔄 TRIGGERING COUNTER UPDATE...');
+          console.log('💰 PURCHASE CHANGE DETECTED:', payload.eventType, payload.new || payload.old);
+          console.log('🔄 TRIGGERING IMMEDIATE COUNTER UPDATE...');
           updateMasterCounters(true);
         }
       )
@@ -261,17 +261,50 @@ const initializeMasterCounters = async () => {
         console.log('📡 WEBSOCKET SUBSCRIPTION STATUS:', status);
         if (status === 'SUBSCRIBED') {
           console.log('✅ WEBSOCKET CONNECTED: Real-time updates active');
+          // Test WebSocket connectivity
+          console.log('🔍 WEBSOCKET: Testing connectivity...');
         } else if (status === 'CHANNEL_ERROR') {
           console.error('🔴 WEBSOCKET ERROR: Real-time updates may not work');
+          console.error('🔧 FALLBACK: Will rely on interval updates');
+        } else if (status === 'CLOSED') {
+          console.warn('⚠️ WEBSOCKET CLOSED: Attempting to reconnect...');
+          // Force reconnection after delay
+          setTimeout(() => {
+            console.log('🔄 RECONNECTING WEBSOCKET...');
+            supabaseSubscription = null;
+            initializeMasterCounters();
+          }, 3000);
         }
       });
   }
   
-  // Setup interval updates
+  // Setup global event listener for forced synchronization
+  if (typeof window !== 'undefined' && !window.__raffleSyncListenerSetup) {
+    console.log('🔔 SETTING UP GLOBAL SYNC EVENT LISTENER...');
+    const handleGlobalSync = (event: CustomEvent) => {
+      console.log('🔔 GLOBAL SYNC EVENT RECEIVED:', event.detail);
+      console.log('🔄 FORCING MASTER COUNTER UPDATE...');
+      updateMasterCounters(true);
+    };
+    
+    window.addEventListener('raffle-counters-updated', handleGlobalSync);
+    window.__raffleSyncListenerSetup = true;
+    
+    // Also listen for focus events to refresh data when user returns
+    const handleWindowFocus = () => {
+      console.log('🔍 WINDOW FOCUS: Refreshing counters...');
+      updateMasterCounters(true);
+    };
+    
+    window.addEventListener('focus', handleWindowFocus);
+  }
+  
+  // Setup interval updates with higher frequency for better responsiveness
   if (!updateInterval) {
     updateInterval = setInterval(() => {
+      console.log('⏱️ INTERVAL: Triggering periodic counter update...');
       updateMasterCounters();
-    }, 30000); // Cada 30 segundos
+    }, 15000); // Cada 15 segundos (más responsive)
   }
   
   // Inicial load

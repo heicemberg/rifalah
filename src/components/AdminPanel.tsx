@@ -93,17 +93,51 @@ export default function AdminPanel() {
   const cambiarEstado = async (id: string, nuevoEstado: PurchaseStatus) => {
     try {
       if (isConnected) {
+        console.log(`🔄 ADMIN: Actualizando compra ${id} a estado ${nuevoEstado}...`);
+        
         // Actualizar en Supabase
         await actualizarEstadoCompra(id, nuevoEstado);
         toast.success(`Estado actualizado a: ${nuevoEstado}`);
         
-        // Si se confirma una compra, actualizar contadores inteligentes
+        // Si se confirma una compra, implementar sincronización ROBUSTA
         if (nuevoEstado === 'confirmada') {
-          // Los contadores se actualizarán automáticamente via WebSocket
-          toast.success(`🎯 Compra confirmada - Real: ${adminCounters.real.soldCount}, Mostrado: ${adminCounters.display.soldPercentage.toFixed(1)}%`);
+          console.log(`🎯 ADMIN: Compra confirmada - iniciando sincronización global...`);
+          
+          // PASO 1: Forzar actualización inmediata del master counter
+          await refreshData();
+          
+          // PASO 2: Dar tiempo para que WebSocket propague (crítico para sync)
+          console.log(`⏱️ ADMIN: Esperando propagación WebSocket...`);
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
+          // PASO 3: Forzar segunda actualización para garantizar sincronización
+          await refreshData();
+          
+          // PASO 4: Verificar que la sincronización fue exitosa
+          const currentCounters = adminCounters;
+          console.log(`📊 ADMIN: Verificación post-confirmación:`);
+          console.log(`   Real vendidos: ${currentCounters.real.soldCount}`);
+          console.log(`   Mostrado: ${currentCounters.display.soldPercentage.toFixed(1)}%`);
+          
+          toast.success(`🎯 Sincronización completada - Real: ${currentCounters.real.soldCount}, Mostrado: ${currentCounters.display.soldPercentage.toFixed(1)}%`, {
+            duration: 4000
+          });
+          
+          // PASO 5: Trigger manual para componentes que podrían no haber actualizado
+          if (typeof window !== 'undefined') {
+            console.log(`🔔 ADMIN: Disparando evento global de sincronización...`);
+            window.dispatchEvent(new CustomEvent('raffle-counters-updated', {
+              detail: { 
+                source: 'admin-confirmation',
+                soldCount: currentCounters.real.soldCount,
+                timestamp: new Date().toISOString()
+              }
+            }));
+          }
         }
         
-        // Refrescar datos de tickets para mantener sincronización
+        // Refrescar datos de tickets para mantener sincronización  
+        console.log(`🔄 ADMIN: Refrescando datos locales...`);
         await refreshData();
       } else {
         // Fallback a localStorage

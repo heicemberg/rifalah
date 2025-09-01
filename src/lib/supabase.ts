@@ -443,6 +443,21 @@ export async function asignarNumerosDisponibles(
     if (updateError) throw updateError;
 
     console.log(`✅ Asignados ${ticketsActualizados?.length} tickets:`, numerosAsignados);
+    
+    // CRÍTICO: Trigger inmediato para forzar sincronización global
+    if (typeof window !== 'undefined') {
+      console.log(`🔔 SUPABASE: Disparando evento de sincronización post-asignación...`);
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('raffle-counters-updated', {
+          detail: { 
+            source: 'ticket-assignment',
+            assignedTickets: ticketsActualizados?.length || 0,
+            timestamp: new Date().toISOString()
+          }
+        }));
+      }, 100); // Pequeño delay para asegurar que BD commits
+    }
+    
     return ticketsActualizados || [];
   } catch (error) {
     console.error('❌ Error al asignar números:', error);

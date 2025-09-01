@@ -13,6 +13,8 @@ import './globals.css';
 import { AppProviders } from '../providers/AppProviders';
 import ClientScripts from '../components/ClientScripts';
 import CounterDebugger from '../components/CounterDebugger';
+import SyncMonitor from '../components/debug/SyncMonitor';
+import SyncTester from '../components/debug/SyncTester';
 
 // Importar test suite en desarrollo
 if (process.env.NODE_ENV === 'development') {
@@ -411,6 +413,14 @@ export default function RootLayout({
           <div id="app-root">
             {children}
           </div>
+          
+          {/* Debug Monitor - Solo en desarrollo */}
+          {process.env.NODE_ENV === 'development' && (
+            <>
+              <SyncMonitor />
+              <SyncTester />
+            </>
+          )}
         </AppProviders>
         
         {/* React Hot Toast - Ultra discreto y sutil */}
