@@ -170,24 +170,21 @@ export const useRaffleStore = create<RaffleStore>()(
         
         availableTickets: [],
         
-        // Acciones para sincronización con Supabase
+        // Acciones para sincronización con Supabase (SIMPLIFICADAS)
         setSoldTicketsFromDB: (tickets: number[]) => {
           set({ soldTickets: tickets });
-          get()._updateAvailableTickets();
+          // NOTA: Master Counter maneja la lógica de disponibles
         },
         
         setReservedTicketsFromDB: (tickets: number[]) => {
           set({ reservedTickets: tickets });
-          get()._updateAvailableTickets();
+          // NOTA: Master Counter maneja la lógica de disponibles
         },
         
-        // Helper para actualizar tickets disponibles
+        // Helper DEPRECATED - Master Counter maneja esto ahora
         _updateAvailableTickets: () => {
-          const state = get();
-          const unavailable = new Set([...state.soldTickets, ...state.reservedTickets]);
-          const available = Array.from({ length: TOTAL_TICKETS }, (_, i) => i + 1)
-            .filter(num => !unavailable.has(num));
-          set({ availableTickets: available });
+          console.warn('⚠️ _updateAvailableTickets está DEPRECATED - usar Master Counter');
+          // No hacer nada, el Master Counter maneja los disponibles
         },
         
         get totalSelected() {
@@ -358,8 +355,7 @@ export const useRaffleStore = create<RaffleStore>()(
               selectedTickets: []
             };
             
-            // Actualizar tickets disponibles
-            setTimeout(() => get()._updateAvailableTickets(), 0);
+            // NOTA: Master Counter actualiza disponibles automáticamente
             
             return newState;
           });
@@ -402,8 +398,7 @@ export const useRaffleStore = create<RaffleStore>()(
               tickets: updatedTickets
             };
             
-            // Actualizar tickets disponibles
-            setTimeout(() => get()._updateAvailableTickets(), 0);
+            // NOTA: Master Counter actualiza disponibles automáticamente
             
             return newState;
           });
@@ -435,8 +430,7 @@ export const useRaffleStore = create<RaffleStore>()(
               tickets: updatedTickets
             };
             
-            // Actualizar tickets disponibles
-            setTimeout(() => get()._updateAvailableTickets(), 0);
+            // NOTA: Master Counter actualiza disponibles automáticamente
             
             return newState;
           });
@@ -542,8 +536,7 @@ export const useRaffleStore = create<RaffleStore>()(
               tickets
             };
             
-            // Actualizar tickets disponibles después de inicializar
-            setTimeout(() => get()._updateAvailableTickets(), 0);
+            // NOTA: Master Counter maneja disponibles automáticamente
             
             return newState;
           });
@@ -573,14 +566,8 @@ export const useRaffleStore = create<RaffleStore>()(
         // Usar storage por defecto con manejo de errores mejorado
         onRehydrateStorage: () => (state) => {
           if (state) {
-            // Actualizar tickets disponibles después de la rehidratación
-            setTimeout(() => {
-              try {
-                state._updateAvailableTickets();
-              } catch (error) {
-                console.warn('Error updating available tickets after rehydration:', error);
-              }
-            }, 0);
+            // NOTA: Master Counter maneja la sincronización automáticamente
+            console.log('Store rehidratado - Master Counter manejará los disponibles');
           }
         }
       }

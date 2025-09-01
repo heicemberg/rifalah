@@ -617,7 +617,12 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
 
   // Función para calcular precio con descuentos mexicano
   const calculatePrice = () => {
-    return calculatePriceMXN(tickets, hasDiscount);
+    const basePrice = calculatePriceMXN(tickets);
+    if (hasDiscount && tickets >= 10) {
+      // Descuento del 5% para 10+ boletos
+      return Math.floor(basePrice * 0.95);
+    }
+    return basePrice;
   };
 
   const getDiscount = () => {

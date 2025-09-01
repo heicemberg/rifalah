@@ -3,9 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { useRaffleStore } from '@/stores/raffle-store'
-import { useRealTimeTickets } from '@/hooks/useRealTimeTickets'
-import { useSupabaseSync } from '@/hooks/useSupabaseSync'
-import { useDisplayStats } from '@/hooks/useSmartCounters'
+import { useBasicCounters } from '@/hooks/useMasterCounters'
 import SupabaseInitializer from '@/components/SupabaseInitializer'
 import { 
   ArrowRight, 
@@ -29,24 +27,29 @@ import OrganicNotifications from '@/components/OrganicNotifications'
 export default function NewRaffePage() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   
-  const { 
-    formatMexicanNumber, 
-    formatPriceMXN,
-    PRECIO_POR_BOLETO_MXN
-  } = useRealTimeTickets()
-
-  // Hook de sincronización con Supabase
-  useSupabaseSync()
+  // Hook maestro - fuente única de verdad matemáticamente garantizada
+  const counters = useBasicCounters()
   
-  // Hook para estadísticas inteligentes (con FOMO)
-  const smartStats = useDisplayStats()
+  // Formateo mexicano
+  const formatMexicanNumber = (num: number): string => num.toLocaleString('es-MX')
+  const formatPriceMXN = (price: number): string => {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(price)
+  }
+  const PRECIO_POR_BOLETO_MXN = 200
   
   // Acceder al store para obtener los tickets seleccionados
   const { selectedTickets } = useRaffleStore()
 
-  const soldCount = smartStats.soldCount
-  const availableCount = smartStats.availableCount
-  const soldPercentage = Math.round(smartStats.soldPercentage)
+  // Usar datos del hook maestro (matemáticamente garantizados)
+  const soldCount = counters.soldTickets
+  const availableCount = counters.availableTickets
+  const totalCount = counters.totalTickets
+  const soldPercentage = Math.round(counters.soldPercentage)
 
   return (
     <main className="bg-black text-white font-sans">
@@ -185,7 +188,7 @@ export default function NewRaffePage() {
                 <span className="text-sm text-gray-400 uppercase font-semibold">Vendidos</span>
               </div>
               <div className="text-2xl lg:text-3xl font-black text-green-400">{formatMexicanNumber(soldCount)}</div>
-              <div className="text-xs text-gray-500">de {formatMexicanNumber(smartStats.totalCount)}</div>
+              <div className="text-xs text-gray-500">de {formatMexicanNumber(totalCount)}</div>
             </div>
             
             <div className="text-center">

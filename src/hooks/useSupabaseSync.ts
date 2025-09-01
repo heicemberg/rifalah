@@ -1,13 +1,17 @@
 // ============================================================================
-// HOOK PARA SINCRONIZAR DATOS CON SUPABASE - VERSIÓN COMPLETA
+// HOOK DEPRECATED - USAR MASTER COUNTER INSTEAD
+// ============================================================================
+// 
+// ⚠️ IMPORTANTE: Este hook está DEPRECATED
+// Usar useMasterCounters() o useDisplayStats() en su lugar
+// Se mantiene solo para compatibilidad temporal
+//
 // ============================================================================
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, verificarConexion } from '../lib/supabase';
 import { useRaffleStore } from '../stores/raffle-store';
 import { adminToast, publicToast, isCurrentUserAdmin } from '../lib/toast-utils';
-import { useVisualFomo } from './useVisualFomo';
-import { useSmartCounters } from './useSmartCounters';
 
 export function useSupabaseSync() {
   const [isConnected, setIsConnected] = useState(false);
@@ -15,11 +19,8 @@ export function useSupabaseSync() {
   const [realTicketsCount, setRealTicketsCount] = useState(0);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   
-  // Hook para FOMO visual
-  const { visualPercentage, generateVisualTickets, isFomoActive: fomoActive } = useVisualFomo(realTicketsCount);
-  
-  // Remover esta dependencia para evitar loop circular
-  // Los contadores inteligentes se manejan por separado
+  // NOTA: Este hook ahora es DEPRECATED - el Master Counter maneja todo
+  // Se mantiene solo para compatibilidad temporal
   
   // Store actions
   const { 
@@ -70,9 +71,8 @@ export function useSupabaseSync() {
       // Actualizar contador de tickets reales
       setRealTicketsCount(realSoldTickets.length);
       
-      // Solo mostrar tickets reales después del 18% de ventas
-      const visualSoldTickets = fomoActive() ? generateVisualTickets(realSoldTickets) : realSoldTickets;
-      setSoldTicketsFromDB(visualSoldTickets);
+      // DEPRECATED: El Master Counter maneja FOMO ahora
+      setSoldTicketsFromDB(realSoldTickets);
       setReservedTicketsFromDB(reservedTickets);
       
       // Actualizar tiempo de sincronización
@@ -328,9 +328,7 @@ export function useSupabaseSync() {
     isConnected,
     loading,
     realTicketsCount,
-    visualPercentage,
     lastSyncTime,
-    isFomoActive: fomoActive,
     refreshData: loadInitialData,
     getRealAvailableTickets,
     reserveTicketsInDB,

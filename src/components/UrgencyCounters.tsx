@@ -8,7 +8,7 @@ import React, { useEffect, useState, useRef } from 'react';
 
 // Importar desde archivos anteriores
 import { useRaffleStore } from '../stores/raffle-store';
-import { useDisplayStats } from '../hooks/useSmartCounters';
+import { useDisplayStats } from '../hooks/useMasterCounters';
 import { randomBetween, cn } from '../lib/utils';
 import { TOTAL_TICKETS } from '../lib/constants';
 
@@ -382,7 +382,7 @@ export const UrgencyCounters: React.FC = () => {
   const { adminConfig } = useRaffleStore();
   const smartStats = useDisplayStats();
   
-  // Calcular boletos restantes usando estadísticas inteligentes
+  // Calcular boletos restantes usando estadísticas del master hook
   const remainingTickets = smartStats.availableCount;
   
   // Hooks personalizados

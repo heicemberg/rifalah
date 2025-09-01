@@ -8,7 +8,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 
 // Importar desde archivos anteriores
 import { useRaffleStore } from '../stores/raffle-store';
-import { useDisplayStats } from '../hooks/useSmartCounters';
+import { useDisplayStats } from '../hooks/useMasterCounters';
 import { TOTAL_TICKETS } from '../lib/constants';
 import { formatPrice, cn } from '../lib/utils';
 
@@ -279,7 +279,7 @@ const useDefaultStats = (): StatItem[] => {
   const { viewingCount } = useRaffleStore();
   const smartStats = useDisplayStats();
 
-  const totalRevenue = smartStats.soldCount * 50;
+  const totalRevenue = smartStats.soldCount * 200; // Precio real $200 MXN
 
   return [
     {

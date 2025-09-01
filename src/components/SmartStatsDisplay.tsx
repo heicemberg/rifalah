@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { useSmartCounters, useAdminCounters, useDisplayStats } from '../hooks/useSmartCounters';
+import { useMasterCounters, useAdminCounters, useDisplayStats } from '../hooks/useMasterCounters';
 import { Eye, TrendingUp, Target, Users, Clock, Database } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -22,10 +22,10 @@ export const SmartStatsDisplay: React.FC<SmartStatsDisplayProps> = ({
   compact = false,
   variant = 'full'
 }) => {
-  // Usar hook apropiado según si es admin o no
+  // Usar hooks del master counter
   const adminData = useAdminCounters();
   const displayData = useDisplayStats();
-  const smartCounters = useSmartCounters();
+  const masterCounters = useMasterCounters();
 
   // Formatear números mexicanos
   const formatMexicanNumber = (num: number): string => {
@@ -139,18 +139,18 @@ export const SmartStatsDisplay: React.FC<SmartStatsDisplayProps> = ({
       <div className="flex justify-center">
         <div className={cn(
           'inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium',
-          smartCounters.isConnected
+          masterCounters.isConnected
             ? 'bg-green-100 text-green-800 border border-green-200'
             : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
         )}>
           <div className={cn(
             'w-2 h-2 rounded-full',
-            smartCounters.isConnected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
+            masterCounters.isConnected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
           )} />
-          {smartCounters.isConnected ? 'Conectado en tiempo real' : 'Modo offline'}
-          {smartCounters.lastUpdate && (
+          {masterCounters.isConnected ? 'Conectado en tiempo real' : 'Modo offline'}
+          {masterCounters.lastUpdate && (
             <span className="text-xs opacity-75">
-              • {smartCounters.lastUpdate.toLocaleTimeString('es-MX')}
+              • {masterCounters.lastUpdate.toLocaleTimeString('es-MX')}
             </span>
           )}
         </div>
@@ -174,9 +174,9 @@ export const SmartStatsDisplay: React.FC<SmartStatsDisplayProps> = ({
                 Mostrado al Público
               </h4>
               <div className="space-y-1 text-sm">
-                <div>Vendidos: <span className="font-bold">{formatMexicanNumber(adminData.display.soldCount)}</span></div>
+                <div>Vendidos: <span className="font-bold">{formatMexicanNumber(adminData.display.soldTickets)}</span></div>
                 <div>Porcentaje: <span className="font-bold">{adminData.display.soldPercentage.toFixed(1)}%</span></div>
-                <div>Disponibles: <span className="font-bold">{formatMexicanNumber(adminData.display.availableCount)}</span></div>
+                <div>Disponibles: <span className="font-bold">{formatMexicanNumber(adminData.display.availableTickets)}</span></div>
               </div>
             </div>
 
@@ -187,9 +187,9 @@ export const SmartStatsDisplay: React.FC<SmartStatsDisplayProps> = ({
                 Datos Reales (BD)
               </h4>
               <div className="space-y-1 text-sm">
-                <div>Vendidos: <span className="font-bold">{formatMexicanNumber(adminData.real.soldCount)}</span></div>
+                <div>Vendidos: <span className="font-bold">{formatMexicanNumber(adminData.real.soldTickets)}</span></div>
                 <div>Porcentaje: <span className="font-bold">{adminData.real.soldPercentage.toFixed(1)}%</span></div>
-                <div>Disponibles: <span className="font-bold">{formatMexicanNumber(adminData.real.availableCount)}</span></div>
+                <div>Disponibles: <span className="font-bold">{formatMexicanNumber(adminData.real.availableTickets)}</span></div>
               </div>
             </div>
 
@@ -209,11 +209,11 @@ export const SmartStatsDisplay: React.FC<SmartStatsDisplayProps> = ({
                     {adminData.fomo.isActive ? 'ACTIVO' : 'INACTIVO'}
                   </span>
                 </div>
-                <div>Base FOMO: <span className="font-bold">{formatMexicanNumber(adminData.fomo.baseCount)}</span></div>
+                <div>Diferencia FOMO: <span className="font-bold">{formatMexicanNumber(adminData.fomo.difference)}</span></div>
                 <div>
-                  Diferencia: 
+                  Extra mostrado: 
                   <span className="font-bold text-purple-600">
-                    +{formatMexicanNumber(adminData.display.soldCount - adminData.real.soldCount)}
+                    +{formatMexicanNumber(adminData.display.soldTickets - adminData.real.soldTickets)}
                   </span>
                 </div>
               </div>

@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { obtenerCompras, actualizarEstadoCompra, type CompraConDetalles, type PurchaseStatus } from '../lib/supabase';
-import { useSupabaseSync } from '../hooks/useSupabaseSync';
-import { useAdminCounters } from '../hooks/useSmartCounters';
+import { useAdminDisplayCounters } from '../hooks/useCounters';
 import toast from 'react-hot-toast';
 
 // ============================================================================
@@ -22,11 +21,9 @@ export default function AdminPanel() {
   const [filtro, setFiltro] = useState<'todas' | PurchaseStatus>('todas');
   const [busqueda, setBusqueda] = useState('');
   
-  // Hook de sincronización con Supabase
-  const { isConnected, visualPercentage, refreshData } = useSupabaseSync();
-  
-  // Hook para contadores inteligentes (administrador)
-  const adminCounters = useAdminCounters();
+  // Hook unificado para administración (reemplaza useSupabaseSync + useAdminCounters)
+  const adminCounters = useAdminDisplayCounters();
+  const { isConnected, visualPercentage, refreshData } = adminCounters;
 
   // Cargar compras al montar el componente
   useEffect(() => {

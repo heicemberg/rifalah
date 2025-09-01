@@ -21,8 +21,8 @@ const CountdownTimer: React.FC = () => {
   const [isClient, setIsClient] = useState(false);
   
   // Obtener datos de tickets desde el hook
-  const soldTickets = Array.from({ length: stats.soldTickets }, (_, i) => i + 1);
-  const totalTickets = stats.totalTickets;
+  const soldTickets = Array.from({ length: stats.soldCount }, (_, i) => i + 1);
+  const totalTickets = stats.totalCount;
 
   // Fecha del sorteo: 24 de Noviembre 2025, 8:00 PM México
   const SORTEO_DATE = new Date('2025-11-24T20:00:00-06:00').getTime();
