@@ -69,6 +69,7 @@ const PAYMENT_METHODS = [
 
 const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onClose }) => {
   const { quickSelect } = useTicketActions();
+  const { selectedTickets } = useTickets(); // Obtener tickets seleccionados del store
   const { setCustomerData, setCurrentStep } = useCheckout();
   
   // Hook de Supabase para funciones reales
@@ -133,6 +134,28 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
       cleanup();
     };
   }, [cleanup]);
+
+  // Auto-detectar tickets pre-seleccionados cuando se abre el modal
+  useEffect(() => {
+    if (isOpen && selectedTickets.length > 0) {
+      // Si hay tickets seleccionados, crear una opción personalizada
+      const customOption = {
+        tickets: selectedTickets.length,
+        price: selectedTickets.length * 50, // $50 MXN por ticket
+        discount: 0,
+        popular: true,
+        desc: `Tus ${selectedTickets.length} números elegidos`,
+        badge: '🎯 SELECCIONADOS',
+        conversion: `Números: ${selectedTickets.slice(0, 5).map(n => n.toString().padStart(4, '0')).join(', ')}${selectedTickets.length > 5 ? ` +${selectedTickets.length - 5} más` : ''}`
+      };
+      setSelectedOption(customOption);
+      setStep('details'); // Saltar directamente a detalles
+    } else if (isOpen) {
+      // Reset al abrir sin selección previa
+      setStep('select');
+      setSelectedOption(QUICK_OPTIONS[2]);
+    }
+  }, [isOpen, selectedTickets]);
 
   if (!isOpen) return null;
 
@@ -252,12 +275,22 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
       setIsSavingPurchase(true);
       
       if (isConnected) {
-        // Verificar que tenemos tickets disponibles reales
+        // Verificar disponibilidad de tickets
         const availableTickets = await getRealAvailableTickets();
         
-        if (availableTickets.length < selectedOption.tickets) {
-          toast.error(`Solo hay ${availableTickets.length} tickets disponibles reales. Selecciona menos tickets.`);
-          return;
+        if (selectedTickets.length > 0) {
+          // Usuario seleccionó números específicos - verificar que estén disponibles
+          const unavailableTickets = selectedTickets.filter(ticket => !availableTickets.includes(ticket));
+          if (unavailableTickets.length > 0) {
+            toast.error(`Los números ${unavailableTickets.slice(0, 3).join(', ')} ya no están disponibles. Por favor selecciona otros números.`);
+            return;
+          }
+        } else {
+          // Números automáticos - verificar que hay suficientes disponibles
+          if (availableTickets.length < selectedOption.tickets) {
+            toast.error(`Solo hay ${availableTickets.length} tickets disponibles reales. Selecciona menos tickets.`);
+            return;
+          }
         }
         
         // Preparar datos de la compra completa
@@ -271,9 +304,9 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
           email: customerInfo.email,
           estado: 'México', // Por defecto
           ciudad: 'Ciudad de México', // Por defecto
-          info_adicional: `Compra desde modal compacto - ${selectedOption.tickets} tickets`,
+          info_adicional: `Compra desde modal compacto - ${selectedOption.tickets} tickets${selectedTickets.length > 0 ? ' (números específicos)' : ' (números automáticos)'}`,
           cantidad_boletos: selectedOption.tickets,
-          numeros_boletos: [], // Se asignarán automáticamente por el admin
+          numeros_boletos: selectedTickets.length > 0 ? selectedTickets : [], // Usar números seleccionados o dejar vacío para asignación automática
           precio_unitario: selectedOption.price / selectedOption.tickets,
           precio_total: selectedOption.price,
           descuento_aplicado: selectedOption.discount,
@@ -545,6 +578,16 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                   <p className="text-green-700 font-bold text-lg">
                     {selectedOption.tickets} boletos por {formatPrice(selectedOption.price)}
                   </p>
+                  {/* Mostrar números específicos si fueron preseleccionados */}
+                  {selectedTickets.length > 0 && (
+                    <div className="mt-2 p-2 bg-white rounded-lg border border-green-200">
+                      <p className="text-green-800 text-sm font-bold mb-1">🎯 Tus números elegidos:</p>
+                      <p className="text-green-700 text-sm font-mono">
+                        {selectedTickets.slice(0, 8).map(n => n.toString().padStart(4, '0')).join(' • ')}
+                        {selectedTickets.length > 8 && ` • +${selectedTickets.length - 8} más`}
+                      </p>
+                    </div>
+                  )}
                   <div className="flex items-center justify-center gap-4 mt-2 text-sm">
                     <div className="flex items-center gap-1 text-green-600">
                       <Clock className="w-4 h-4" />
@@ -552,7 +595,7 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                     </div>
                     <div className="flex items-center gap-1 text-blue-600">
                       <Zap className="w-4 h-4" />
-                      <span>Números automáticos</span>
+                      <span>{selectedTickets.length > 0 ? 'Números específicos' : 'Números automáticos'}</span>
                     </div>
                   </div>
                 </div>
@@ -725,8 +768,18 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                     {formatPrice(selectedOption.price)}
                   </div>
                   <p className="text-green-700 font-medium mt-1">
-                    Por {selectedOption.tickets} boletos con números automáticos
+                    Por {selectedOption.tickets} boletos {selectedTickets.length > 0 ? 'con tus números elegidos' : 'con números automáticos'}
                   </p>
+                  {/* Mostrar números específicos en el resumen de pago */}
+                  {selectedTickets.length > 0 && (
+                    <div className="mt-2 p-2 bg-white rounded-lg border border-green-200">
+                      <p className="text-green-800 text-xs font-bold mb-1">Números seleccionados:</p>
+                      <p className="text-green-700 text-xs font-mono">
+                        {selectedTickets.slice(0, 6).map(n => n.toString().padStart(4, '0')).join(' • ')}
+                        {selectedTickets.length > 6 && ` • +${selectedTickets.length - 6} más`}
+                      </p>
+                    </div>
+                  )}
                   <div className="flex items-center justify-center gap-2 mt-2 text-sm text-orange-700">
                     <Clock className="w-4 h-4" />
                     <span className="font-bold">Boletos reservados por {formatTime(timeLeft)}</span>
