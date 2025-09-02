@@ -45,7 +45,7 @@ export default function NewRaffePage() {
       maximumFractionDigits: 0
     }).format(price)
   }
-  const PRECIO_POR_BOLETO_MXN = 200
+  const PRECIO_POR_BOLETO_MXN = 199 // Match useRealTimeTickets pricing
   
   // Acceder al store para obtener los tickets seleccionados
   const { selectedTickets } = useRaffleStore()

@@ -40,7 +40,8 @@
       "Bash(npx serve:*)",
       "Bash(nslookup:*)",
       "Bash(rg:*)",
-      "Bash(npm run test:counters:*)"
+      "Bash(npm run test:counters:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": [],

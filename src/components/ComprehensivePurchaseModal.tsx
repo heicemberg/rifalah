@@ -6,7 +6,7 @@ import { guardarCompra, subirCaptura, obtenerMetadata, type CompraCompleta } fro
 import { useSupabaseConnection } from '../hooks/useSupabaseConnection';
 import toast from 'react-hot-toast';
 import { publicToast } from '../lib/toast-utils';
-import { useRaffleStore } from '../stores/raffle-store';
+import { useRaffleStore, useTickets } from '../stores/raffle-store';
 import { useRealTimeTickets } from '../hooks/useRealTimeTickets';
 import { useSupabaseSync } from '../hooks/useSupabaseSync';
 
@@ -120,6 +120,8 @@ const estados = [
 export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTickets = 25, hasDiscount = false }: Props) {
   // Obtener funciones del store para manejar boletos
   const { availableTickets, markTicketsAsSold } = useRaffleStore();
+  // Obtener tickets seleccionados del grid
+  const { selectedTickets } = useTickets();
   // Hook para precios y formateo mexicano
   const { formatMexicanNumber, formatPriceMXN, calculatePrice: calculatePriceMXN, PRECIO_POR_BOLETO_MXN } = useRealTimeTickets();
   // Hook para sincronización con Supabase y tickets reales
@@ -181,15 +183,22 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
   // Auto-save progress and set initial tickets
   useEffect(() => {
     if (isOpen) {
-      // Set initial tickets amount
-      setTickets(initialTickets);
+      // Si hay tickets seleccionados en el grid, usarlos en lugar de initialTickets
+      if (selectedTickets.length > 0) {
+        console.log('🎯 ComprehensivePurchaseModal: Usando tickets seleccionados:', selectedTickets);
+        setTickets(selectedTickets.length);
+        setBoletosAsignados(selectedTickets);
+      } else {
+        // Set initial tickets amount
+        setTickets(initialTickets);
+      }
       
       const savedData = localStorage.getItem('purchase-progress');
       if (savedData) {
         try {
           const parsed = JSON.parse(savedData);
-          // Only restore saved data if no initial tickets specified
-          if (initialTickets === 25) {
+          // Only restore saved data if no tickets pre-selected
+          if (selectedTickets.length === 0 && initialTickets === 25) {
             setTickets(parsed.tickets || initialTickets);
           }
           setSelectedPayment(parsed.selectedPayment || '');
@@ -202,7 +211,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
         }
       }
     }
-  }, [isOpen, initialTickets]);
+  }, [isOpen, initialTickets, selectedTickets]);
 
   // Save progress
   useEffect(() => {
@@ -335,10 +344,19 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
     }
   };
 
-  // Función para asignar números de boletos aleatorios usando datos reales
+  // Función para asignar números de boletos usando pre-seleccionados o aleatorios
   const asignarBoletos = useCallback(async (cantidad: number): Promise<number[]> => {
     try {
       console.log(`🎫 Intentando asignar ${cantidad} boletos...`);
+      
+      // Si hay tickets pre-seleccionados, usarlos directamente
+      if (selectedTickets.length > 0) {
+        console.log(`🎯 Usando tickets pre-seleccionados: ${selectedTickets}`);
+        if (selectedTickets.length !== cantidad) {
+          console.warn(`⚠️ Cantidad no coincide: ${selectedTickets.length} seleccionados vs ${cantidad} solicitados`);
+        }
+        return selectedTickets.sort((a, b) => a - b);
+      }
       
       // Si está conectado a Supabase, usar tickets realmente disponibles
       if (isConnected) {
@@ -392,7 +410,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
       console.error('❌ Error al asignar boletos:', error);
       throw error;
     }
-  }, [availableTickets, isConnected, getRealAvailableTickets]);
+  }, [availableTickets, isConnected, getRealAvailableTickets, selectedTickets]);
 
   const formatearNumeroBoleto = (numero: number): string => {
     return numero.toString().padStart(4, '0');
@@ -451,7 +469,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
           <div className="text-sm mt-2">{dbError || 'Problema de conexión con el servidor'}</div>
           <button 
             onClick={retryConnection}
-            className="mt-2 px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+            className="mt-2 px-3 py-1 bg-emerald-500 text-white rounded text-xs hover:bg-emerald-600"
           >
             Reintentar conexión
           </button>
@@ -664,10 +682,10 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black bg-opacity-60 backdrop-blur-sm">
       <div className="relative w-full max-w-3xl max-h-[95vh] overflow-hidden bg-white rounded-xl shadow-2xl animate-bounce-in">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-purple-200/30 bg-gradient-to-r from-purple-600/95 via-pink-600/95 to-red-600/95 backdrop-blur-sm">
+        <div className="flex items-center justify-between p-6 border-b border-emerald-200/30 bg-gradient-to-r from-emerald-600/95 via-green-600/95 to-teal-600/95 backdrop-blur-sm">
           <div>
             <h2 className="text-2xl font-bold text-white drop-shadow-sm">🎯 Compra Rápida de Boletos</h2>
-            <div className="flex items-center mt-2 space-x-4 text-purple-100">
+            <div className="flex items-center mt-2 space-x-4 text-emerald-100">
               <div className="text-base flex items-center">
                 ⏰ <span className="font-mono font-bold ml-2 bg-white/20 px-2 py-1 rounded-lg">{formatTime(timeLeft)}</span>
               </div>
@@ -708,7 +726,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
         {/* Progress Bar */}
         <div className="w-full h-4 bg-gradient-to-r from-gray-100 to-gray-200 relative overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 transition-all duration-700 ease-out relative overflow-hidden"
+            className="h-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 transition-all duration-700 ease-out relative overflow-hidden"
             style={{ width: `${progress}%` }}
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
@@ -723,10 +741,21 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
               <span className="mr-3 text-2xl">🎫</span>
               Selecciona tus boletos
             </h3>
-            <div className="p-5 bg-gradient-to-r from-purple-50/80 via-pink-50/80 to-purple-50/80 backdrop-blur-sm rounded-2xl border border-purple-200/50 shadow-sm">
+            <div className="p-5 bg-gradient-to-r from-emerald-50/80 via-green-50/80 to-emerald-50/80 backdrop-blur-sm rounded-2xl border border-emerald-200/50 shadow-sm">
               <p className="text-base text-gray-700 font-medium text-center leading-relaxed">
-                💡 Mínimo 2 boletos • Máximo 10,000 • <span className="font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{formatPriceMXN(PRECIO_POR_BOLETO_MXN)} por boleto</span>
+                💡 Mínimo 2 boletos • Máximo 10,000 • <span className="font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">{formatPriceMXN(PRECIO_POR_BOLETO_MXN)} por boleto</span>
               </p>
+              {selectedTickets.length > 0 && (
+                <div className="mt-3 p-3 bg-emerald-100 border border-emerald-300 rounded-xl">
+                  <p className="text-sm font-bold text-emerald-800 text-center mb-2">
+                    🎯 Números seleccionados ({selectedTickets.length}):
+                  </p>
+                  <p className="text-lg font-mono font-black text-emerald-900 text-center">
+                    {selectedTickets.slice(0, 10).map(formatearNumeroBoleto).join(' • ')}
+                    {selectedTickets.length > 10 && ` +${selectedTickets.length - 10} más`}
+                  </p>
+                </div>
+              )}
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -736,9 +765,9 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                   onClick={() => handleTicketSelect(amount)}
                   className={`p-4 rounded-2xl border-2 font-bold transition-all duration-300 text-center hover:scale-105 hover:shadow-lg group ${
                     tickets === amount
-                      ? 'border-purple-500 bg-gradient-to-br from-purple-100 to-purple-200 text-purple-800 shadow-xl scale-105 ring-2 ring-purple-300/50'
-                      : 'border-gray-300/60 bg-gradient-to-br from-white to-gray-50 text-gray-700 hover:border-purple-400 hover:bg-gradient-to-br hover:from-purple-50 hover:to-purple-100 hover:text-purple-700 hover:shadow-purple-200/50'
-                  }`}
+                      ? 'border-emerald-500 bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-800 shadow-xl scale-105 ring-2 ring-emerald-300/50'
+                      : 'border-gray-300/60 bg-gradient-to-br from-white to-gray-50 text-gray-700 hover:border-emerald-400 hover:bg-gradient-to-br hover:from-emerald-50 hover:to-emerald-100 hover:text-emerald-700 hover:shadow-emerald-200/50'
+                  }`} disabled={selectedTickets.length > 0}
                 >
                   <div className="text-xl font-black mb-1">{amount}</div>
                   <div className="text-sm text-gray-500 font-medium">boleto{amount !== 1 ? 's' : ''}</div>
@@ -747,13 +776,16 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
             </div>
             
             <div className="mt-6">
-              <label className="block text-base font-medium text-gray-700 mb-3">O ingresa cantidad personalizada:</label>
+              <label className="block text-base font-medium text-gray-700 mb-3">
+                {selectedTickets.length > 0 ? 'Cantidad fija (tickets pre-seleccionados):' : 'O ingresa cantidad personalizada:'}
+              </label>
               <input
                 type="number"
                 placeholder="Cantidad personalizada"
                 value={customTickets}
                 onChange={(e) => handleCustomTickets(e.target.value)}
-                className="w-full p-4 border-2 border-gray-300/60 rounded-2xl font-medium text-center focus:border-emerald-500 focus:outline-none bg-gradient-to-br from-white to-gray-50 text-gray-900 placeholder-gray-400 transition-all duration-300 hover:shadow-md focus:shadow-lg backdrop-blur-sm"
+                disabled={selectedTickets.length > 0}
+                className="w-full p-4 border-2 border-gray-300/60 rounded-2xl font-medium text-center focus:border-emerald-500 focus:outline-none bg-gradient-to-br from-white to-gray-50 text-gray-900 placeholder-gray-400 transition-all duration-300 hover:shadow-md focus:shadow-lg backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 min="2"
                 max="10000"
               />
@@ -764,8 +796,15 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
             <div className="p-4 bg-gradient-to-r from-emerald-500 to-green-500 rounded-lg border-2 border-emerald-400 shadow-lg">
               <div className="space-y-2">
                 <p className="text-lg font-bold text-white text-center">
-                  🎯 {formatMexicanNumber(tickets)} boletos | Total: {formatPriceMXN(calculatePrice())}
+                  🎯 {formatMexicanNumber(tickets)} boleto{tickets !== 1 ? 's' : ''} | Total: {formatPriceMXN(calculatePrice())}
                 </p>
+                {selectedTickets.length > 0 && (
+                  <div className="bg-white/20 rounded p-2">
+                    <p className="text-sm text-emerald-100 text-center font-medium">
+                      🎯 Números: {selectedTickets.slice(0, 8).map(formatearNumeroBoleto).join(', ')}{selectedTickets.length > 8 && ` +${selectedTickets.length - 8} más`}
+                    </p>
+                  </div>
+                )}
                 {hasDiscount && getDiscount() > 0 && (
                   <div className="flex items-center justify-between bg-white/20 rounded p-2">
                     <span className="text-sm text-emerald-100 line-through">
@@ -872,7 +911,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-700 block mb-2">CLABE:</span>
-                      <div className="p-3 bg-white border-2 border-blue-300 rounded-lg font-mono text-sm text-gray-900 select-all">
+                      <div className="p-3 bg-white border-2 border-emerald-300 rounded-lg font-mono text-sm text-gray-900 select-all">
                         {selectedPaymentMethod.details.clabe}
                       </div>
                     </div>
@@ -880,7 +919,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                       <span className="text-sm font-medium text-gray-700">Monto a transferir:</span>
                       <span className="font-bold text-lg text-emerald-700">{formatPriceMXN(calculatePrice())}</span>
                     </div>
-                    <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <p className="text-sm text-gray-600 bg-emerald-50 p-3 rounded-lg border border-emerald-200">
                       🏦 {selectedPaymentMethod.details.instructions}
                     </p>
                   </div>
@@ -958,7 +997,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                   type="text"
                   value={customerData.nombre}
                   onChange={(e) => handleInputChange('nombre', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-sm"
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
                   placeholder="Tu nombre"
                 />
                 {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
@@ -972,7 +1011,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                   type="text"
                   value={customerData.apellidos}
                   onChange={(e) => handleInputChange('apellidos', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-sm"
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
                   placeholder="Tus apellidos"
                 />
                 {errors.apellidos && <p className="text-red-500 text-xs mt-1">{errors.apellidos}</p>}
@@ -986,7 +1025,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                   type="tel"
                   value={customerData.telefono}
                   onChange={(e) => handleInputChange('telefono', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-sm"
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
                   placeholder="+52 55 1234 5678"
                 />
                 {errors.telefono && <p className="text-red-500 text-xs mt-1">{errors.telefono}</p>}
@@ -1000,7 +1039,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                   type="email"
                   value={customerData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-sm"
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
                   placeholder="tu@email.com"
                 />
                 {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
@@ -1022,7 +1061,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                 <select
                   value={customerData.estado}
                   onChange={(e) => handleInputChange('estado', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-sm"
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
                 >
                   <option value="">Selecciona tu estado</option>
                   {estados.map((estado) => (
@@ -1040,7 +1079,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                   type="text"
                   value={customerData.ciudad}
                   onChange={(e) => handleInputChange('ciudad', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-sm"
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
                   placeholder="Tu ciudad"
                 />
                 {errors.ciudad && <p className="text-red-500 text-xs mt-1">{errors.ciudad}</p>}
@@ -1053,7 +1092,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                 <textarea
                   value={customerData.infoAdicional}
                   onChange={(e) => handleInputChange('infoAdicional', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-sm"
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
                   rows={2}
                   placeholder="Información adicional (opcional)"
                   maxLength={500}
@@ -1190,7 +1229,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
         </div>
 
         {/* Footer simplificado */}
-        <div className="border-t border-emerald-200 bg-gradient-to-r from-emerald-50 to-blue-50 p-4">
+        <div className="border-t border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 p-4">
           <div className="flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0">
             <button
               onClick={openWhatsApp}
