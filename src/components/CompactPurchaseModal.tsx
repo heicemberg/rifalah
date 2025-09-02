@@ -7,6 +7,7 @@ import { useTickets, useTicketActions, useCheckout } from '../stores/raffle-stor
 import { formatPrice, validateEmail, validateWhatsApp, generateId } from '../lib/utils';
 import { useOCRProcessor, type ReceiptData } from '../lib/ocr-processor';
 import { useSupabaseSync } from '../hooks/useSupabaseSync';
+import { useRealTimeTickets } from '../hooks/useRealTimeTickets';
 import { guardarCompra, obtenerMetadata, type CompraCompleta } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -75,8 +76,16 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
   // Hook de Supabase para funciones reales
   const { isConnected, getRealAvailableTickets } = useSupabaseSync();
   
+  // Hook para precios correctos
+  const { PRECIO_POR_BOLETO_MXN, calculatePrice } = useRealTimeTickets();
+  
+  // Debug log on every render (dev only)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('📊 CompactPurchaseModal render - selectedTickets:', selectedTickets, 'isOpen:', isOpen);
+  }
+  
   const [step, setStep] = useState<'select' | 'details' | 'payment' | 'upload'>('select');
-  const [selectedOption, setSelectedOption] = useState(QUICK_OPTIONS[2]); // Default: 10 tickets (más popular)
+  const [selectedOption, setSelectedOption] = useState(QUICK_OPTIONS[0]); // Default: 2 tickets - más conservador
   const [selectedPayment, setSelectedPayment] = useState(PAYMENT_METHODS[0]);
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
@@ -137,31 +146,60 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
 
   // Auto-detectar tickets pre-seleccionados cuando se abre el modal
   useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 CompactPurchaseModal useEffect - isOpen:', isOpen, 'selectedTickets.length:', selectedTickets.length, 'selectedTickets:', selectedTickets);
+      console.log('🔍 Current selectedOption:', selectedOption);
+    }
+    
     if (isOpen && selectedTickets.length > 0) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Tickets pre-seleccionados detectados. Creando opción personalizada...');
+        console.log('✅ selectedTickets:', selectedTickets);
+        console.log('✅ Precio calculado:', calculatePrice(selectedTickets.length));
+      }
       // Si hay tickets seleccionados, crear una opción personalizada
       const customOption = {
         tickets: selectedTickets.length,
-        price: selectedTickets.length * 50, // $50 MXN por ticket
+        price: calculatePrice(selectedTickets.length), // Usar precio correcto con descuentos
         discount: 0,
         popular: true,
         desc: `Tus ${selectedTickets.length} números elegidos`,
         badge: '🎯 SELECCIONADOS',
         conversion: `Números: ${selectedTickets.slice(0, 5).map(n => n.toString().padStart(4, '0')).join(', ')}${selectedTickets.length > 5 ? ` +${selectedTickets.length - 5} más` : ''}`
       };
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🎯 Opción personalizada creada:', customOption);
+      }
       setSelectedOption(customOption);
       setStep('details'); // Saltar directamente a detalles
     } else if (isOpen) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('⚠️ Modal abierto sin selección previa - usando default QUICK_OPTIONS[0]:', QUICK_OPTIONS[0]);
+      }
       // Reset al abrir sin selección previa
       setStep('select');
-      setSelectedOption(QUICK_OPTIONS[2]);
+      setSelectedOption(QUICK_OPTIONS[0]); // Consistente con el estado inicial
     }
-  }, [isOpen, selectedTickets]);
+  }, [isOpen, selectedTickets, calculatePrice]);
 
   if (!isOpen) return null;
 
   const handleQuickSelect = (option: typeof QUICK_OPTIONS[0]) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🎯 handleQuickSelect called with option:', option);
+    }
     setSelectedOption(option);
-    quickSelect(option.tickets);
+    // Only call quickSelect if this isn't a pre-selected ticket option
+    if (option.badge !== '🎯 SELECCIONADOS') {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🎲 Generating new random tickets');
+      }
+      quickSelect(option.tickets);
+    } else {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✋ Skipping quickSelect for pre-selected tickets');
+      }
+    }
     setStep('details');
   };
 
@@ -297,6 +335,13 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
         const metadata = obtenerMetadata();
         const [nombre, ...apellidos] = customerInfo.name.trim().split(' ');
         
+        if (process.env.NODE_ENV === 'development') {
+          console.log('💾 Preparando datos de compra:');
+          console.log('- selectedTickets:', selectedTickets);
+          console.log('- selectedOption:', selectedOption);
+          console.log('- Usando números específicos:', selectedTickets.length > 0);
+        }
+        
         const datosCompra: CompraCompleta = {
           nombre: nombre,
           apellidos: apellidos.join(' ') || '',
@@ -391,20 +436,20 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden border border-emerald-100">
         {/* Enhanced Header with Urgency & Social Proof */}
         <div className="relative">
           {/* Urgency Banner */}
           {step === 'select' && (
-            <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-center py-2 px-4 font-bold text-sm animate-pulse">
+            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white text-center py-3 px-4 font-bold text-sm animate-pulse shadow-lg">
               ⏰ PROMOCIÓN SE ACABA EN: {formatTime(timeLeft)} • Solo quedan {Math.floor(Math.random() * 150) + 50} boletos con descuento
             </div>
           )}
           
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-blue-50">
+          <div className="flex items-center justify-between p-6 border-b border-emerald-100 bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50">
             <div className="flex-1">
-              <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-transparent">
                 {step === 'select' && '🎫 ¡Elige Tus Números de la Suerte!'}
                 {step === 'details' && '📝 Tus Datos (Paso 2/4)'}
                 {step === 'payment' && '💳 ¿Cómo Quieres Pagar? (Paso 3/4)'}
@@ -413,19 +458,19 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
               
               {/* Live Social Proof */}
               <div className="flex items-center gap-4 mt-2 text-sm">
-                <div className="flex items-center gap-1 text-green-600">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <div className="flex items-center gap-1 text-emerald-600">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-lg"></div>
                   <Users className="w-4 h-4" />
                   <span className="font-medium">{showingOthers} personas viendo ahora</span>
                 </div>
                 
-                <div className="flex items-center gap-1 text-blue-600">
+                <div className="flex items-center gap-1 text-teal-600">
                   <Shield className="w-4 h-4" />
                   <span className="font-medium">100% Confiable</span>
                 </div>
                 
                 {step !== 'select' && (
-                  <div className="flex items-center gap-1 text-purple-600">
+                  <div className="flex items-center gap-1 text-green-600">
                     <Clock className="w-4 h-4" />
                     <span className="font-medium">Números apartados por 30 min</span>
                   </div>
@@ -435,7 +480,7 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
             
             <button
               onClick={onClose}
-              className="p-2 hover:bg-red-100 hover:text-red-600 rounded-lg transition-colors ml-4"
+              className="p-2 hover:bg-red-100 hover:text-red-600 rounded-xl transition-all duration-200 ml-4 hover:scale-110"
             >
               <X className="w-5 h-5" />
             </button>
@@ -447,26 +492,26 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
           {step === 'select' && (
             <div className="space-y-5">
               {/* Compelling Headline */}
-              <div className="text-center space-y-2">
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+              <div className="text-center space-y-3">
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-transparent">
                   ¡Más Boletos = Más Oportunidades de Ganar! 🎯
                 </h3>
                 <p className="text-gray-600 text-sm">
-                  <strong>🚀 Miles ya están participando</strong> • Elige tu estrategia ganadora
+                  <strong className="text-emerald-600">🚀 Miles ya están participando</strong> • Elige tu estrategia ganadora
                 </p>
               </div>
 
               {/* Trust Badges Row */}
-              <div className="flex justify-center gap-4 py-2">
-                <div className="flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+              <div className="flex justify-center gap-3 py-2">
+                <div className="flex items-center gap-1 bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-700 px-3 py-2 rounded-full text-xs font-medium shadow-sm border border-emerald-200">
                   <Shield className="w-3 h-3" />
                   Pago Seguro
                 </div>
-                <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
+                <div className="flex items-center gap-1 bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 px-3 py-2 rounded-full text-xs font-medium shadow-sm border border-teal-200">
                   <Zap className="w-3 h-3" />
                   Entrega Inmediata
                 </div>
-                <div className="flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-medium">
+                <div className="flex items-center gap-1 bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 px-3 py-2 rounded-full text-xs font-medium shadow-sm border border-amber-200">
                   <Award className="w-3 h-3" />
                   100% Verificado
                 </div>
@@ -479,25 +524,25 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                     onClick={() => handleQuickSelect(option)}
                     className={`relative bg-gradient-to-br border-2 rounded-xl p-4 text-center transition-all duration-200 hover:shadow-xl hover:scale-105 transform ${
                       option.popular 
-                        ? 'from-yellow-50 to-orange-50 border-yellow-400 ring-2 ring-yellow-300 shadow-lg animate-pulse-slow' 
-                        : 'from-white to-gray-50 border-gray-200 hover:border-blue-400 hover:from-blue-50 hover:to-blue-100'
+                        ? 'from-amber-50 via-yellow-50 to-orange-50 border-amber-400 ring-2 ring-amber-300 shadow-lg animate-pulse-slow' 
+                        : 'from-white to-emerald-50 border-emerald-200 hover:border-emerald-400 hover:from-emerald-50 hover:to-green-100'
                     }`}
                   >
                     {/* Enhanced Popular Badge */}
                     {option.popular && (
-                      <div className="absolute -top-3 -right-3 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg animate-bounce">
+                      <div className="absolute -top-3 -right-3 bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-400 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg animate-bounce border border-amber-300">
                         ⭐ MÁS ELEGIDO
                       </div>
                     )}
 
                     {/* Custom Badge */}
                     {option.badge && (
-                      <div className="absolute -top-2 -left-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
+                      <div className="absolute -top-2 -left-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md border border-emerald-400">
                         {option.badge}
                       </div>
                     )}
                     
-                    <div className="text-4xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-1">
+                    <div className="text-4xl font-black bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-transparent mb-1">
                       {option.tickets}
                     </div>
                     
@@ -506,18 +551,18 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                     </div>
                     
                     {/* Value Proposition */}
-                    <div className="text-xs text-blue-600 font-medium mb-2">
+                    <div className="text-xs text-emerald-600 font-medium mb-2">
                       {option.conversion}
                     </div>
                     
                     {option.discount > 0 && (
-                      <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-2 shadow-md animate-pulse">
+                      <div className="bg-gradient-to-r from-red-500 via-pink-500 to-rose-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-2 shadow-md animate-pulse border border-red-400">
                         🔥 DESCUENTO {option.discount}%
                       </div>
                     )}
                     
                     <div className="space-y-1">
-                      <div className="text-2xl font-black bg-gradient-to-r from-green-500 to-green-600 bg-clip-text text-transparent">
+                      <div className="text-2xl font-black bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 bg-clip-text text-transparent">
                         {formatPrice(option.price)}
                       </div>
                       
@@ -542,22 +587,22 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
               </div>
 
               {/* Bottom Value Props */}
-              <div className="bg-gradient-to-r from-green-50 via-blue-50 to-purple-50 border border-blue-200 rounded-xl p-4 text-center space-y-2">
+              <div className="bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 border border-emerald-200 rounded-xl p-4 text-center space-y-2 shadow-sm">
                 <h4 className="font-bold text-gray-800 flex items-center justify-center gap-2">
-                  <Lock className="w-4 h-4 text-green-600" />
+                  <Lock className="w-4 h-4 text-emerald-600" />
                   ¿Por qué elegir más boletos?
                 </h4>
                 <div className="grid grid-cols-1 gap-2 text-sm text-gray-700">
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-sm"></div>
                     <span><strong>Más chances de ganar</strong> la camioneta del año</span>
                   </div>
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-teal-500 rounded-full shadow-sm"></div>
                     <span><strong>Descuentos automáticos</strong> por volumen</span>
                   </div>
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-green-500 rounded-full shadow-sm"></div>
                     <span><strong>Números aleatorios</strong> seleccionados por ti</span>
                   </div>
                 </div>
@@ -569,31 +614,31 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
           {step === 'details' && (
             <div className="space-y-5">
               {/* Purchase Summary with Excitement */}
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4 text-center shadow-sm relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-green-100/50 to-emerald-100/50 animate-pulse"></div>
+              <div className="bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 border-2 border-emerald-200 rounded-xl p-4 text-center shadow-sm relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-100/50 to-green-100/50 animate-pulse"></div>
                 <div className="relative">
-                  <h3 className="text-green-800 font-bold text-xl mb-2">
+                  <h3 className="text-emerald-800 font-bold text-xl mb-2">
                     🎉 ¡Excelente Elección!
                   </h3>
-                  <p className="text-green-700 font-bold text-lg">
+                  <p className="text-emerald-700 font-bold text-lg">
                     {selectedOption.tickets} boletos por {formatPrice(selectedOption.price)}
                   </p>
                   {/* Mostrar números específicos si fueron preseleccionados */}
                   {selectedTickets.length > 0 && (
                     <div className="mt-2 p-2 bg-white rounded-lg border border-green-200">
-                      <p className="text-green-800 text-sm font-bold mb-1">🎯 Tus números elegidos:</p>
-                      <p className="text-green-700 text-sm font-mono">
+                      <p className="text-emerald-800 text-sm font-bold mb-1">🎯 Tus números elegidos:</p>
+                      <p className="text-emerald-700 text-sm font-mono">
                         {selectedTickets.slice(0, 8).map(n => n.toString().padStart(4, '0')).join(' • ')}
                         {selectedTickets.length > 8 && ` • +${selectedTickets.length - 8} más`}
                       </p>
                     </div>
                   )}
                   <div className="flex items-center justify-center gap-4 mt-2 text-sm">
-                    <div className="flex items-center gap-1 text-green-600">
+                    <div className="flex items-center gap-1 text-emerald-600">
                       <Clock className="w-4 h-4" />
                       <span>Reservados por 30min</span>
                     </div>
-                    <div className="flex items-center gap-1 text-blue-600">
+                    <div className="flex items-center gap-1 text-teal-600">
                       <Zap className="w-4 h-4" />
                       <span>{selectedTickets.length > 0 ? 'Números específicos' : 'Números automáticos'}</span>
                     </div>
@@ -602,18 +647,18 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
               </div>
 
               {/* Progress Indicator */}
-              <div className="bg-gray-100 rounded-full h-2 relative overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500 ease-out" 
+              <div className="bg-gray-100 rounded-full h-3 relative overflow-hidden">
+                <div className="bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 h-3 rounded-full transition-all duration-500 ease-out shadow-sm" 
                      style={{width: '50%'}}></div>
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
               </div>
               <p className="text-center text-sm font-medium text-gray-600">
-                Paso 2 de 4 • <span className="text-blue-600">¡Solo falta tu información!</span>
+                Paso 2 de 4 • <span className="text-emerald-600">¡Solo falta tu información!</span>
               </p>
 
               {/* Security & Trust Messaging */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                <div className="flex items-center justify-center gap-2 text-blue-700 font-medium text-sm">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center shadow-sm">
+                <div className="flex items-center justify-center gap-2 text-emerald-700 font-medium text-sm">
                   <Shield className="w-4 h-4" />
                   <span>Tus datos están 100% seguros y encriptados</span>
                 </div>
@@ -622,7 +667,7 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                    <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">1</div>
+                    <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white text-xs font-bold">1</div>
                     ¿Cuál es tu nombre completo?
                   </label>
                   <input
@@ -632,9 +677,9 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                       setCustomerInfo(prev => ({ ...prev, name: e.target.value }));
                       if (errors.name) setErrors(prev => ({...prev, name: ''}));
                     }}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-lg ${
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-lg ${
                       errors.name ? 'border-red-300 bg-red-50' : 
-                      customerInfo.name ? 'border-green-300 bg-green-50' : 'border-gray-200'
+                      customerInfo.name ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200'
                     }`}
                     placeholder="Ejemplo: María González López"
                   />
@@ -645,7 +690,7 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                     </p>
                   )}
                   {customerInfo.name && !errors.name && (
-                    <p className="text-green-600 text-sm mt-2 flex items-center gap-1">
+                    <p className="text-emerald-600 text-sm mt-2 flex items-center gap-1">
                       <Check className="w-4 h-4" />
                       ¡Perfecto! 👍
                     </p>
@@ -654,7 +699,7 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
 
                 <div>
                   <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                    <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">2</div>
+                    <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white text-xs font-bold">2</div>
                     Tu WhatsApp (para confirmar tu ganancia)
                   </label>
                   <input
@@ -664,9 +709,9 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                       setCustomerInfo(prev => ({ ...prev, whatsapp: e.target.value }));
                       if (errors.whatsapp) setErrors(prev => ({...prev, whatsapp: ''}));
                     }}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-lg ${
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-lg ${
                       errors.whatsapp ? 'border-red-300 bg-red-50' : 
-                      customerInfo.whatsapp && !errors.whatsapp ? 'border-green-300 bg-green-50' : 'border-gray-200'
+                      customerInfo.whatsapp && !errors.whatsapp ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200'
                     }`}
                     placeholder="+52 55 1234 5678"
                   />
@@ -677,7 +722,7 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                     </p>
                   )}
                   {customerInfo.whatsapp && !errors.whatsapp && (
-                    <p className="text-green-600 text-sm mt-2 flex items-center gap-1">
+                    <p className="text-emerald-600 text-sm mt-2 flex items-center gap-1">
                       <Check className="w-4 h-4" />
                       ¡Te contactaremos aquí cuando ganes! 🎉
                     </p>
@@ -686,7 +731,7 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
 
                 <div>
                   <label className="block text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                    <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">3</div>
+                    <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white text-xs font-bold">3</div>
                     Email (para enviar tus boletos)
                   </label>
                   <input
@@ -696,9 +741,9 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                       setCustomerInfo(prev => ({ ...prev, email: e.target.value }));
                       if (errors.email) setErrors(prev => ({...prev, email: ''}));
                     }}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-lg ${
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-lg ${
                       errors.email ? 'border-red-300 bg-red-50' : 
-                      customerInfo.email && !errors.email ? 'border-green-300 bg-green-50' : 'border-gray-200'
+                      customerInfo.email && !errors.email ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200'
                     }`}
                     placeholder="tu@email.com"
                   />
@@ -709,7 +754,7 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                     </p>
                   )}
                   {customerInfo.email && !errors.email && (
-                    <p className="text-green-600 text-sm mt-2 flex items-center gap-1">
+                    <p className="text-emerald-600 text-sm mt-2 flex items-center gap-1">
                       <Check className="w-4 h-4" />
                       ¡Recibirás tus boletos instantáneamente! 📧
                     </p>
@@ -724,7 +769,7 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                 className={`w-full font-bold py-4 px-6 rounded-xl shadow-lg transform transition-all duration-200 text-lg relative overflow-hidden ${
                   !customerInfo.name || !customerInfo.whatsapp || !customerInfo.email
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 text-white hover:from-green-600 hover:via-emerald-600 hover:to-green-700 hover:shadow-xl hover:scale-105'
+                    : 'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white hover:from-emerald-600 hover:via-green-600 hover:to-teal-600 hover:shadow-xl hover:scale-105'
                 }`}
               >
                 <div className="flex items-center justify-center gap-3">
@@ -758,23 +803,23 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
           {step === 'payment' && (
             <div className="space-y-5">
               {/* Payment Summary with Urgency */}
-              <div className="bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-green-300 rounded-xl p-4 text-center shadow-lg relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-100/30 to-green-100/30 animate-pulse"></div>
+              <div className="bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 border-2 border-emerald-300 rounded-xl p-4 text-center shadow-lg relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-100/30 via-green-100/30 to-teal-100/30 animate-pulse"></div>
                 <div className="relative">
-                  <h3 className="text-green-800 font-bold text-xl mb-2">
+                  <h3 className="text-emerald-800 font-bold text-xl mb-2">
                     💰 ¡Solo falta el pago final!
                   </h3>
-                  <div className="text-3xl font-black bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                  <div className="text-3xl font-black bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-transparent">
                     {formatPrice(selectedOption.price)}
                   </div>
-                  <p className="text-green-700 font-medium mt-1">
+                  <p className="text-emerald-700 font-medium mt-1">
                     Por {selectedOption.tickets} boletos {selectedTickets.length > 0 ? 'con tus números elegidos' : 'con números automáticos'}
                   </p>
                   {/* Mostrar números específicos en el resumen de pago */}
                   {selectedTickets.length > 0 && (
                     <div className="mt-2 p-2 bg-white rounded-lg border border-green-200">
-                      <p className="text-green-800 text-xs font-bold mb-1">Números seleccionados:</p>
-                      <p className="text-green-700 text-xs font-mono">
+                      <p className="text-emerald-800 text-xs font-bold mb-1">Números seleccionados:</p>
+                      <p className="text-emerald-700 text-xs font-mono">
                         {selectedTickets.slice(0, 6).map(n => n.toString().padStart(4, '0')).join(' • ')}
                         {selectedTickets.length > 6 && ` • +${selectedTickets.length - 6} más`}
                       </p>
@@ -788,13 +833,13 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
               </div>
 
               {/* Progress Indicator */}
-              <div className="bg-gray-100 rounded-full h-2 relative overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500 ease-out" 
+              <div className="bg-gray-100 rounded-full h-3 relative overflow-hidden">
+                <div className="bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 h-3 rounded-full transition-all duration-500 ease-out shadow-sm" 
                      style={{width: '75%'}}></div>
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
               </div>
               <p className="text-center text-sm font-medium text-gray-600">
-                Paso 3 de 4 • <span className="text-green-600">¡Casi terminamos! Elige tu método preferido</span>
+                Paso 3 de 4 • <span className="text-emerald-600">¡Casi terminamos! Elige tu método preferido</span>
               </p>
 
               <div>
@@ -806,14 +851,14 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                     <button
                       key={method.id}
                       onClick={() => setSelectedPayment(method)}
-                      className={`p-3 border-2 rounded-lg transition-all duration-200 relative ${
+                      className={`p-3 border-2 rounded-xl transition-all duration-200 relative ${
                         selectedPayment.id === method.id
-                          ? 'border-blue-500 bg-blue-50 shadow-md'
-                          : 'border-gray-200 hover:border-blue-300'
+                          ? 'border-emerald-500 bg-emerald-50 shadow-md'
+                          : 'border-gray-200 hover:border-emerald-300 hover:bg-emerald-50'
                       }`}
                     >
                       {method.badge && (
-                        <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs font-bold px-1 py-0.5 rounded-full text-[10px]">
+                        <div className="absolute -top-1 -right-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-1 py-0.5 rounded-full text-[10px] shadow-sm">
                           {method.badge.split(' ')[1] || method.badge}
                         </div>
                       )}
@@ -835,7 +880,7 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                         </div>
                         <div className={`w-6 h-6 rounded-full border-2 transition-all flex items-center justify-center ${
                           selectedPayment.id === method.id
-                            ? 'bg-blue-500 border-blue-500 scale-110'
+                            ? 'bg-emerald-500 border-emerald-500 scale-110'
                             : 'border-gray-300'
                         }`}>
                           {selectedPayment.id === method.id && (
@@ -849,51 +894,51 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
               </div>
 
               {/* Enhanced Payment Details */}
-              <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-200 rounded-xl p-5 shadow-lg">
-                <h4 className="font-bold text-blue-800 mb-4 flex items-center gap-2 text-lg">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+              <div className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 border-2 border-emerald-200 rounded-xl p-5 shadow-lg">
+                <h4 className="font-bold text-emerald-800 mb-4 flex items-center gap-2 text-lg">
+                  <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
                     💳
                   </div>
                   Instrucciones de Pago - {selectedPayment.name}
                 </h4>
                 <div className="space-y-4">
                   {selectedPayment.id === 'binance' ? (
-                    <div className="bg-white rounded-xl p-4 text-center border-2 border-blue-200 shadow-sm">
-                      <div className="w-40 h-40 mx-auto bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center mb-3 shadow-inner">
+                    <div className="bg-white rounded-xl p-4 text-center border-2 border-emerald-200 shadow-sm">
+                      <div className="w-40 h-40 mx-auto bg-gradient-to-br from-emerald-100 to-teal-100 rounded-xl flex items-center justify-center mb-3 shadow-inner">
                         <div className="text-center">
                           <div className="text-4xl mb-2">📱</div>
-                          <span className="text-blue-600 text-sm font-medium">Código QR Binance</span>
+                          <span className="text-emerald-600 text-sm font-medium">Código QR Binance</span>
                         </div>
                       </div>
-                      <p className="text-sm text-blue-700 font-medium">Escanea con tu app Binance Pay</p>
+                      <p className="text-sm text-emerald-700 font-medium">Escanea con tu app Binance Pay</p>
                     </div>
                   ) : null}
                   
                   <div 
-                    className="bg-white border-2 border-dashed border-blue-400 rounded-xl p-4 cursor-pointer hover:bg-blue-50 transition-all transform hover:scale-102 shadow-sm"
+                    className="bg-white border-2 border-dashed border-emerald-400 rounded-xl p-4 cursor-pointer hover:bg-emerald-50 transition-all transform hover:scale-102 shadow-sm"
                     onClick={() => copyToClipboard(selectedPayment.account)}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold text-gray-800 text-lg break-all">{selectedPayment.account}</p>
-                      <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:shadow-lg transition-all">
+                      <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:shadow-lg transition-all">
                         📋 COPIAR
                       </div>
                     </div>
-                    <p className="text-sm text-blue-600 font-medium flex items-center gap-1">
+                    <p className="text-sm text-emerald-600 font-medium flex items-center gap-1">
                       <Zap className="w-4 h-4" />
                       Toca para copiar automáticamente al portapapeles
                     </p>
                   </div>
                   
-                  <div className="bg-white rounded-xl p-4 border border-blue-200 shadow-sm">
+                  <div className="bg-white rounded-xl p-4 border border-emerald-200 shadow-sm">
                     <div className="text-sm text-gray-700 whitespace-pre-line leading-relaxed font-medium">
                       {selectedPayment.details}
                     </div>
                   </div>
 
                   {/* Security Reminder */}
-                  <div className="bg-green-100 border border-green-200 rounded-lg p-3 text-center">
-                    <div className="flex items-center justify-center gap-2 text-green-700 font-medium text-sm">
+                  <div className="bg-emerald-100 border border-emerald-200 rounded-lg p-3 text-center">
+                    <div className="flex items-center justify-center gap-2 text-emerald-700 font-medium text-sm">
                       <Shield className="w-4 h-4" />
                       <span>Pago 100% seguro • Nunca compartas tu información bancaria</span>
                     </div>
@@ -904,7 +949,7 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
               {/* Enhanced CTA Button */}
               <button
                 onClick={() => setStep('upload')}
-                className="w-full bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:from-green-600 hover:via-emerald-600 hover:to-green-700 hover:shadow-xl transform hover:scale-105 transition-all duration-200 text-lg relative overflow-hidden"
+                className="w-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:from-emerald-600 hover:via-green-600 hover:to-teal-600 hover:shadow-xl transform hover:scale-105 transition-all duration-200 text-lg relative overflow-hidden"
               >
                 <div className="flex items-center justify-center gap-3">
                   <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
@@ -921,10 +966,10 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
               </button>
 
               {/* Help Text */}
-              <div className="text-center text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
+              <div className="text-center text-sm text-gray-600 bg-emerald-50 rounded-lg p-3 border border-emerald-100">
                 <p className="flex items-center justify-center gap-1 font-medium">
-                  <AlertCircle className="w-4 h-4 text-blue-500" />
-                  ¿Necesitas ayuda? Contacta por WhatsApp: <span className="text-blue-600 font-bold">+52 55 1234-5678</span>
+                  <AlertCircle className="w-4 h-4 text-emerald-500" />
+                  ¿Necesitas ayuda? Contacta por WhatsApp: <span className="text-emerald-600 font-bold">+52 55 1234-5678</span>
                 </p>
               </div>
             </div>
@@ -935,24 +980,24 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
             <div className="space-y-5">
               {/* Final Step Header */}
               <div className="text-center space-y-3">
-                <div className="mx-auto w-16 h-16 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                <div className="mx-auto w-16 h-16 bg-gradient-to-r from-emerald-400 via-green-400 to-teal-500 rounded-full flex items-center justify-center shadow-lg">
                   <div className="text-white text-2xl">🎉</div>
                 </div>
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-transparent">
                   ¡Último Paso para Ganar!
                 </h3>
                 <p className="text-gray-600 text-lg">
-                  Sube tu comprobante y <span className="font-bold text-green-600">¡listo!</span>
+                  Sube tu comprobante y <span className="font-bold text-emerald-600">¡listo!</span>
                 </p>
               </div>
 
               {/* Progress Indicator - Complete */}
               <div className="bg-gray-100 rounded-full h-3 relative overflow-hidden">
-                <div className="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full transition-all duration-1000 ease-out" 
+                <div className="bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 h-3 rounded-full transition-all duration-1000 ease-out shadow-sm" 
                      style={{width: '100%'}}></div>
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer"></div>
               </div>
-              <p className="text-center text-sm font-bold text-green-600 animate-pulse">
+              <p className="text-center text-sm font-bold text-emerald-600 animate-pulse">
                 ✅ Paso 4 de 4 • ¡Proceso casi completado!
               </p>
 
@@ -960,27 +1005,27 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
               <div
                 onClick={() => !isProcessing && !isSavingPurchase && fileInputRef.current?.click()}
                 className={`border-3 border-dashed rounded-2xl p-8 text-center transition-all duration-300 transform hover:scale-102 ${
-                  isProcessing || isSavingPurchase ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-indigo-50 cursor-not-allowed' :
-                  uploadedFile ? 'border-green-400 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' :
-                  'border-gray-300 hover:border-blue-400 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 cursor-pointer shadow-md hover:shadow-lg'
+                  isProcessing || isSavingPurchase ? 'border-emerald-400 bg-gradient-to-br from-emerald-50 to-teal-50 cursor-not-allowed' :
+                  uploadedFile ? 'border-emerald-400 bg-gradient-to-br from-emerald-50 to-green-50 shadow-lg' :
+                  'border-gray-300 hover:border-emerald-400 hover:bg-gradient-to-br hover:from-emerald-50 hover:to-teal-50 cursor-pointer shadow-md hover:shadow-lg'
                 }`}
               >
                 {isProcessing ? (
                   <div className="space-y-4">
                     <div className="relative">
-                      <Loader2 className="w-16 h-16 text-blue-500 mx-auto animate-spin" />
-                      <div className="absolute inset-0 bg-blue-200 rounded-full animate-ping opacity-25"></div>
+                      <Loader2 className="w-16 h-16 text-emerald-500 mx-auto animate-spin" />
+                      <div className="absolute inset-0 bg-emerald-200 rounded-full animate-ping opacity-25"></div>
                     </div>
-                    <h4 className="text-blue-700 font-bold text-lg">
+                    <h4 className="text-emerald-700 font-bold text-lg">
                       🤖 Procesando tu comprobante...
                     </h4>
-                    <p className="text-sm text-blue-600">
+                    <p className="text-sm text-emerald-600">
                       ✨ Tecnología OCR extrayendo datos automáticamente
                     </p>
                     <div className="flex justify-center gap-1">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
                     </div>
                   </div>
                 ) : uploadedFile ? (
@@ -989,29 +1034,29 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                       <Check className="w-16 h-16 text-green-500 mx-auto" />
                       <div className="absolute inset-0 bg-green-200 rounded-full animate-pulse opacity-50"></div>
                     </div>
-                    <h4 className="text-green-700 font-bold text-lg">
+                    <h4 className="text-emerald-700 font-bold text-lg">
                       ✅ ¡Comprobante Subido!
                     </h4>
-                    <p className="text-green-600 font-medium">
+                    <p className="text-emerald-600 font-medium">
                       📄 {uploadedFile.name}
                     </p>
                     {ocrData && (
                       <div className="bg-white rounded-xl p-4 shadow-inner border border-green-200">
                         <h5 className="font-bold text-gray-800 mb-2">📊 Datos Extraídos:</h5>
                         {ocrData.amount && (
-                          <p className="text-green-700 flex items-center gap-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <p className="text-emerald-700 flex items-center gap-2">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
                             💰 Monto: <span className="font-bold">${ocrData.amount}</span>
                           </p>
                         )}
                         {ocrData.bank && (
                           <p className="text-gray-700 flex items-center gap-2">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
                             🏦 Banco: <span className="font-medium">{ocrData.bank}</span>
                           </p>
                         )}
                         <div className={`mt-2 p-2 rounded-lg ${
-                          ocrData.confidence > 70 ? 'bg-green-100 text-green-800' :
+                          ocrData.confidence > 70 ? 'bg-emerald-100 text-emerald-800' :
                           ocrData.confidence > 50 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
                         }`}>
                           <p className="text-sm font-medium flex items-center gap-2">
@@ -1025,22 +1070,22 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                 ) : isSavingPurchase ? (
                   <div className="space-y-4">
                     <div className="relative">
-                      <Loader2 className="w-16 h-16 text-green-500 mx-auto animate-spin" />
-                      <div className="absolute inset-0 bg-green-200 rounded-full animate-ping opacity-25"></div>
+                      <Loader2 className="w-16 h-16 text-emerald-500 mx-auto animate-spin" />
+                      <div className="absolute inset-0 bg-emerald-200 rounded-full animate-ping opacity-25"></div>
                     </div>
-                    <h4 className="text-green-700 font-bold text-xl">
+                    <h4 className="text-emerald-700 font-bold text-xl">
                       💾 Guardando tu compra...
                     </h4>
-                    <p className="text-green-600">
+                    <p className="text-emerald-600">
                       {isConnected 
                         ? '📡 Registrando en la base de datos...' 
                         : '💾 Guardando localmente...'
                       }
                     </p>
                     <div className="flex justify-center gap-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
                     </div>
                   </div>
                 ) : (
@@ -1060,8 +1105,8 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                         📱 JPG, PNG • Máximo 10MB
                       </p>
                     </div>
-                    <div className="bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg p-3 text-sm">
-                      <p className="text-blue-700 font-medium flex items-center justify-center gap-2">
+                    <div className="bg-gradient-to-r from-emerald-100 to-teal-100 rounded-lg p-3 text-sm">
+                      <p className="text-emerald-700 font-medium flex items-center justify-center gap-2">
                         <Zap className="w-4 h-4" />
                         ✨ Procesamiento automático con IA
                       </p>
@@ -1082,15 +1127,15 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
               {/* Verification Status */}
               <div className={`border-2 rounded-xl p-4 text-center ${
                 ocrData?.confidence && ocrData.confidence > 70 ? 
-                'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300 shadow-lg' : 
+                'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-300 shadow-lg' : 
                 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-300'
               }`}>
                 <div className={`text-lg font-bold mb-2 ${
-                  ocrData?.confidence && ocrData.confidence > 70 ? 'text-green-800' : 'text-yellow-800'
+                  ocrData?.confidence && ocrData.confidence > 70 ? 'text-emerald-800' : 'text-yellow-800'
                 }`}>
                   {ocrData?.confidence && ocrData.confidence > 70 ? (
                     <div className="flex items-center justify-center gap-2">
-                      <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                      <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
                         ✅
                       </div>
                       <span>¡Verificación Automática Exitosa!</span>
@@ -1106,7 +1151,7 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
                 </div>
                 
                 <div className={`text-sm ${
-                  ocrData?.confidence && ocrData.confidence > 70 ? 'text-green-700' : 'text-yellow-700'
+                  ocrData?.confidence && ocrData.confidence > 70 ? 'text-emerald-700' : 'text-yellow-700'
                 }`}>
                   {ocrData?.confidence && ocrData.confidence > 70 ? (
                     <div className="space-y-2">
@@ -1132,32 +1177,32 @@ const CompactPurchaseModal: React.FC<CompactPurchaseModalProps> = ({ isOpen, onC
               {/* Success Actions */}
               {uploadedFile && (
                 <div className="space-y-3">
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 text-center">
-                    <h4 className="font-bold text-blue-800 mb-2 flex items-center justify-center gap-2">
-                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">ℹ️</div>
+                  <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4 text-center shadow-sm">
+                    <h4 className="font-bold text-emerald-800 mb-2 flex items-center justify-center gap-2">
+                      <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm">ℹ️</div>
                       ¿Qué sigue ahora?
                     </h4>
-                    <div className="space-y-2 text-sm text-blue-700">
+                    <div className="space-y-2 text-sm text-emerald-700">
                       <p className="flex items-center justify-center gap-2">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
                         <span>📧 Enviaremos tus boletos por email</span>
                       </p>
                       <p className="flex items-center justify-center gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
                         <span>📱 Confirmación por WhatsApp</span>
                       </p>
                       <p className="flex items-center justify-center gap-2">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                         <span>🎯 ¡Ya participas en el sorteo!</span>
                       </p>
                     </div>
                   </div>
 
                   {/* Contact Support */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-center">
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
                     <p className="text-sm text-gray-600 font-medium">
                       💬 ¿Dudas? Escríbenos a WhatsApp: 
-                      <span className="text-green-600 font-bold ml-1">+52 55 1234-5678</span>
+                      <span className="text-emerald-600 font-bold ml-1">+52 55 1234-5678</span>
                     </p>
                   </div>
                 </div>
