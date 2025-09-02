@@ -9,7 +9,7 @@ export const GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-XXXXXXXXXX';
 
 // Inicializar Google Analytics
 export const initGA = () => {
-  if (typeof window !== 'undefined' && GA_TRACKING_ID && GA_TRACKING_ID !== 'G-XXXXXXXXXX' && window.gtag) {
+  if (typeof window !== 'undefined' && window.gtag && GA_TRACKING_ID && GA_TRACKING_ID !== 'G-XXXXXXXXXX') {
     window.gtag('config', GA_TRACKING_ID, {
       page_title: document.title,
       page_location: window.location.href,
@@ -19,8 +19,8 @@ export const initGA = () => {
 
 // Enviar página vista
 export const pageview = (url: string) => {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('config', GA_TRACKING_ID, {
+  if (typeof window !== 'undefined') {
+    window.gtag?.('config', GA_TRACKING_ID, {
       page_path: url,
     });
   }
@@ -33,8 +33,8 @@ export const event = ({ action, category, label, value }: {
   label?: string;
   value?: number;
 }) => {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', action, {
+  if (typeof window !== 'undefined') {
+    window.gtag?.('event', action, {
       event_category: category,
       event_label: label,
       value: value,
@@ -88,8 +88,8 @@ export const raffleEvents = {
     });
 
     // Custom rifa event
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'purchase', {
+    if (typeof window !== 'undefined') {
+      window.gtag?.('event', 'purchase', {
         transaction_id: orderId,
         value: amount,
         currency: 'USD',
@@ -190,8 +190,8 @@ export const raffleEvents = {
 export const trackConversion = {
   // Landing page optimization
   landingPageView: (source?: string, medium?: string, campaign?: string) => {
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'page_view', {
+    if (typeof window !== 'undefined') {
+      window.gtag?.('event', 'page_view', {
         page_title: 'Rifa Silverado Z71 2024',
         page_location: window.location.href,
         source,
