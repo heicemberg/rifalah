@@ -679,20 +679,20 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black bg-opacity-60 backdrop-blur-sm">
-      <div className="relative w-full max-w-3xl max-h-[95vh] overflow-hidden bg-white rounded-xl shadow-2xl animate-bounce-in">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-emerald-200/30 bg-gradient-to-r from-emerald-600/95 via-green-600/95 to-teal-600/95 backdrop-blur-sm">
-          <div>
-            <h2 className="text-2xl font-bold text-white drop-shadow-sm">🎯 Compra Rápida de Boletos</h2>
-            <div className="flex items-center mt-2 space-x-4 text-emerald-100">
-              <div className="text-base flex items-center">
-                ⏰ <span className="font-mono font-bold ml-2 bg-white/20 px-2 py-1 rounded-lg">{formatTime(timeLeft)}</span>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
+      <div className="relative w-full sm:max-w-3xl h-[100vh] sm:h-auto sm:max-h-[95vh] overflow-hidden bg-white sm:rounded-xl shadow-2xl animate-bounce-in sm:m-2">
+        {/* Header - Optimizado móvil */}
+        <div className="flex items-center justify-between p-3 sm:p-6 border-b border-emerald-200/30 bg-gradient-to-r from-emerald-600/95 via-green-600/95 to-teal-600/95 backdrop-blur-sm">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg sm:text-2xl font-bold text-white drop-shadow-sm truncate">🎯 Compra Rápida</h2>
+            <div className="flex flex-wrap items-center mt-1 sm:mt-2 gap-2 sm:space-x-4 text-emerald-100">
+              <div className="text-sm sm:text-base flex items-center">
+                ⏰ <span className="font-mono font-bold ml-1 bg-white/20 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded text-xs sm:text-sm">{formatTime(timeLeft)}</span>
               </div>
-              <div className="text-base flex items-center">
-                📊 <span className="font-bold ml-2 bg-white/20 px-2 py-1 rounded-lg">{Math.round(progress)}% completo</span>
+              <div className="text-sm sm:text-base flex items-center">
+                📊 <span className="font-bold ml-1 bg-white/20 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded text-xs sm:text-sm">{Math.round(progress)}%</span>
               </div>
-              <div className="text-sm flex items-center">
+              <div className="text-xs sm:text-sm flex items-center">
                 {dbConnected ? (
                   <span className="bg-green-500/20 text-green-100 px-2 py-1 rounded-full flex items-center">
                     <div className="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
@@ -714,10 +714,10 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
           </div>
           <button
             onClick={onClose}
-            className="p-3 text-white hover:bg-white/40 rounded-2xl transition-all duration-300 hover:scale-110 bg-white/20 shadow-xl backdrop-blur-sm border border-white/30"
+            className="p-2 sm:p-3 text-white hover:bg-white/40 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-110 bg-white/20 shadow-xl backdrop-blur-sm border border-white/30 flex-shrink-0"
             title="Cerrar"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -733,16 +733,20 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
           </div>
         </div>
 
-        {/* Content */}
-        <div className="max-h-[calc(95vh-120px)] overflow-y-auto p-6 space-y-8 bg-gradient-to-b from-gray-50/50 to-white">
-          {/* Sección de Boletos */}
-          <div className="space-y-6">
+        {/* Content - Scroll optimizado móvil */}
+        <div className="h-[calc(100vh-140px)] sm:max-h-[calc(95vh-120px)] overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-8 bg-gradient-to-b from-gray-50/50 to-white overscroll-contain"
+             style={{
+               WebkitOverflowScrolling: 'touch',
+               scrollBehavior: 'smooth'
+             }}>
+          {/* Sección de Boletos - Compacta móvil */}
+          <div className="space-y-3 sm:space-y-6">
             <h3 className="text-xl font-bold text-gray-900 flex items-center">
               <span className="mr-3 text-2xl">🎫</span>
               Selecciona tus boletos
             </h3>
-            <div className="p-5 bg-gradient-to-r from-emerald-50/80 via-green-50/80 to-emerald-50/80 backdrop-blur-sm rounded-2xl border border-emerald-200/50 shadow-sm">
-              <p className="text-base text-gray-700 font-medium text-center leading-relaxed">
+            <div className="p-3 sm:p-5 bg-gradient-to-r from-emerald-50/80 via-green-50/80 to-emerald-50/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-emerald-200/50 shadow-sm">
+              <p className="text-sm sm:text-base text-gray-700 font-medium text-center leading-relaxed">
                 💡 Mínimo 2 boletos • Máximo 10,000 • <span className="font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">{formatPriceMXN(PRECIO_POR_BOLETO_MXN)} por boleto</span>
               </p>
               {selectedTickets.length > 0 && (
@@ -758,25 +762,25 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
               )}
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4">
               {[2, 5, 10, 25, 50, 100].map((amount) => (
                 <button
                   key={amount}
                   onClick={() => handleTicketSelect(amount)}
-                  className={`p-4 rounded-2xl border-2 font-bold transition-all duration-300 text-center hover:scale-105 hover:shadow-lg group ${
+                  className={`p-2 sm:p-4 rounded-xl sm:rounded-2xl border-2 font-bold transition-all duration-300 text-center hover:scale-105 hover:shadow-lg group ${
                     tickets === amount
                       ? 'border-emerald-500 bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-800 shadow-xl scale-105 ring-2 ring-emerald-300/50'
                       : 'border-gray-300/60 bg-gradient-to-br from-white to-gray-50 text-gray-700 hover:border-emerald-400 hover:bg-gradient-to-br hover:from-emerald-50 hover:to-emerald-100 hover:text-emerald-700 hover:shadow-emerald-200/50'
                   }`} disabled={selectedTickets.length > 0}
                 >
-                  <div className="text-xl font-black mb-1">{amount}</div>
-                  <div className="text-sm text-gray-500 font-medium">boleto{amount !== 1 ? 's' : ''}</div>
+                  <div className="text-lg sm:text-xl font-black mb-0.5 sm:mb-1">{amount}</div>
+                  <div className="text-xs sm:text-sm text-gray-500 font-medium">boleto{amount !== 1 ? 's' : ''}</div>
                 </button>
               ))}
             </div>
             
             <div className="mt-6">
-              <label className="block text-base font-medium text-gray-700 mb-3">
+              <label className="block text-sm sm:text-base font-medium text-gray-700 mb-2 sm:mb-3">
                 {selectedTickets.length > 0 ? 'Cantidad fija (tickets pre-seleccionados):' : 'O ingresa cantidad personalizada:'}
               </label>
               <input
@@ -785,7 +789,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                 value={customTickets}
                 onChange={(e) => handleCustomTickets(e.target.value)}
                 disabled={selectedTickets.length > 0}
-                className="w-full p-4 border-2 border-gray-300/60 rounded-2xl font-medium text-center focus:border-emerald-500 focus:outline-none bg-gradient-to-br from-white to-gray-50 text-gray-900 placeholder-gray-400 transition-all duration-300 hover:shadow-md focus:shadow-lg backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full p-3 sm:p-4 border-2 border-gray-300/60 rounded-xl sm:rounded-2xl font-medium text-center focus:border-emerald-500 focus:outline-none bg-gradient-to-br from-white to-gray-50 text-gray-900 placeholder-gray-400 transition-all duration-300 hover:shadow-md focus:shadow-lg backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 min="2"
                 max="10000"
               />
@@ -793,9 +797,9 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
             
             {errors.tickets && <p className="text-red-600 text-sm font-medium bg-red-50 p-2 rounded">{errors.tickets}</p>}
             
-            <div className="p-4 bg-gradient-to-r from-emerald-500 to-green-500 rounded-lg border-2 border-emerald-400 shadow-lg">
+            <div className="p-3 sm:p-4 bg-gradient-to-r from-emerald-500 to-green-500 rounded-lg border-2 border-emerald-400 shadow-lg">
               <div className="space-y-2">
-                <p className="text-lg font-bold text-white text-center">
+                <p className="text-base sm:text-lg font-bold text-white text-center">
                   🎯 {formatMexicanNumber(tickets)} boleto{tickets !== 1 ? 's' : ''} | Total: {formatPriceMXN(calculatePrice())}
                 </p>
                 {selectedTickets.length > 0 && (
@@ -819,33 +823,33 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
             </div>
           </div>
 
-          {/* Métodos de Pago */}
-          <div className="space-y-4">
+          {/* Métodos de Pago - Compacto móvil */}
+          <div className="space-y-3 sm:space-y-4">
             <h3 className="text-lg font-bold text-gray-900 flex items-center">
               <span className="mr-2">💳</span>
               Método de pago
             </h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               {paymentMethods.map((method) => (
                 <button
                   key={method.id}
                   onClick={() => handlePaymentSelect(method.id)}
-                  className={`p-3 rounded-lg border-2 transition-all ${
+                  className={`p-2 sm:p-3 rounded-lg border-2 transition-all ${
                     selectedPayment === method.id
                       ? 'border-emerald-500 bg-emerald-50 shadow-lg scale-105'
                       : 'border-gray-300 bg-white hover:border-emerald-400 hover:shadow-md hover:bg-emerald-50'
                   }`}
                 >
-                  <div className="flex items-center justify-center h-10 mb-2">
+                  <div className="flex items-center justify-center h-8 sm:h-10 mb-1 sm:mb-2">
                     <Image
                       src={method.logo}
                       alt={method.name}
-                      width={40}
-                      height={40}
-                      className="max-h-10 w-auto"
+                      width={32}
+                      height={32}
+                      className="max-h-8 sm:max-h-10 w-auto"
                     />
                   </div>
-                  <p className="font-bold text-gray-800 text-sm">{method.name}</p>
+                  <p className="font-bold text-gray-800 text-xs sm:text-sm">{method.name}</p>
                 </button>
               ))}
             </div>
@@ -853,7 +857,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
             
             {/* Detalles del método de pago seleccionado */}
             {selectedPaymentMethod && (
-              <div className="p-4 bg-gradient-to-r from-blue-50 to-emerald-50 rounded-lg border-2 border-emerald-200 shadow-inner">
+              <div className="p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-emerald-50 rounded-lg border-2 border-emerald-200 shadow-inner">
                 <h4 className="font-bold text-gray-900 mb-3 flex items-center">
                   <span className="mr-2">📋</span>
                   Datos para {selectedPaymentMethod.name}
@@ -928,18 +932,31 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
             )}
           </div>
 
-          {/* Upload de Comprobante */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center">
-              <span className="mr-2">📸</span>
-              Comprobante de pago
-            </h3>
+          {/* Upload de Comprobante - Compacto móvil */}
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                <span className="mr-2">📸</span>
+                Comprobante
+              </h3>
+              <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold">
+                Opcional ahora
+              </div>
+            </div>
+            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-sm text-amber-800 text-center font-medium">
+                ⚠️ <strong>Importante:</strong> El comprobante es necesario para validar tu compra y asignar tus boletos oficialmente
+              </p>
+              <p className="text-xs text-amber-700 text-center mt-1">
+                Puedes subirlo ahora o enviarlo después por WhatsApp
+              </p>
+            </div>
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`p-6 border-2 border-dashed rounded-lg text-center cursor-pointer transition-all ${
+              className={`p-4 sm:p-6 border-2 border-dashed rounded-lg text-center cursor-pointer transition-all ${
                 isDragOver
                   ? 'border-emerald-500 bg-emerald-50'
                   : uploadedFile.archivo
@@ -976,70 +993,75 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
             {errors.file && <p className="text-red-600 text-sm font-medium bg-red-50 p-2 rounded">{errors.file}</p>}
           </div>
 
-          {/* Formulario de Datos Simplificado */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center">
-              <span className="mr-2">👤</span>
-              Para contactarte (solo lo esencial)
-            </h3>
+          {/* Formulario de Datos Simplificado - Móvil friendly */}
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                <span className="mr-2">👤</span>
+                Datos básicos
+              </h3>
+              <div className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">
+                Solo 30 segundos
+              </div>
+            </div>
             
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-emerald-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-gray-700 text-center">
-                💡 Solo necesitamos tu nombre y una forma de contactarte. ¡Todo lo demás es opcional!
+            <div className="p-3 sm:p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+              <p className="text-sm text-gray-700 text-center font-medium">
+                🚀 Solo necesitamos tu nombre y contacto. ¡Lo demás es opcional!
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1 select-none">
                   Nombre completo *
                 </label>
                 <input
                   type="text"
                   value={customerData.nombre}
                   onChange={(e) => handleInputChange('nombre', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
+                  className="w-full p-2.5 sm:p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
                   placeholder="Tu nombre"
                 />
                 {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1 select-none">
                   Apellidos *
                 </label>
                 <input
                   type="text"
                   value={customerData.apellidos}
                   onChange={(e) => handleInputChange('apellidos', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
+                  className="w-full p-2.5 sm:p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
                   placeholder="Tus apellidos"
                 />
                 {errors.apellidos && <p className="text-red-500 text-xs mt-1">{errors.apellidos}</p>}
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Teléfono *
+                <label className="block text-xs font-medium text-gray-700 mb-1 select-none">
+                  WhatsApp *
                 </label>
                 <input
                   type="tel"
                   value={customerData.telefono}
                   onChange={(e) => handleInputChange('telefono', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
+                  className="w-full p-2.5 sm:p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
                   placeholder="+52 55 1234 5678"
                 />
                 {errors.telefono && <p className="text-red-500 text-xs mt-1">{errors.telefono}</p>}
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Email *
+                <label className="block text-xs font-medium text-gray-700 mb-1 select-none">
+                  Email (opcional)
                 </label>
                 <input
                   type="email"
                   value={customerData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
+                  className="w-full p-2.5 sm:p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
                   placeholder="tu@email.com"
                 />
                 {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
@@ -1054,67 +1076,60 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Estado/Región *
-                </label>
-                <select
-                  value={customerData.estado}
-                  onChange={(e) => handleInputChange('estado', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
-                >
-                  <option value="">Selecciona tu estado</option>
-                  {estados.map((estado) => (
-                    <option key={estado} value={estado}>{estado}</option>
-                  ))}
-                </select>
-                {errors.estado && <p className="text-red-500 text-xs mt-1">{errors.estado}</p>}
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Ciudad *
-                </label>
-                <input
-                  type="text"
-                  value={customerData.ciudad}
-                  onChange={(e) => handleInputChange('ciudad', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
-                  placeholder="Tu ciudad"
-                />
-                {errors.ciudad && <p className="text-red-500 text-xs mt-1">{errors.ciudad}</p>}
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Información adicional
-                </label>
-                <textarea
-                  value={customerData.infoAdicional}
-                  onChange={(e) => handleInputChange('infoAdicional', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
-                  rows={2}
-                  placeholder="Información adicional (opcional)"
-                  maxLength={500}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {customerData.infoAdicional.length}/500 caracteres
-                </p>
+              {/* Campos opcionales colapsables */}
+              <div className="sm:col-span-2">
+                <details className="group">
+                  <summary className="flex items-center justify-between cursor-pointer p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <span className="text-sm font-medium text-gray-700">📍 Datos adicionales (opcional)</span>
+                    <svg className="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </summary>
+                  <div className="mt-3 space-y-3 sm:grid sm:grid-cols-2 sm:gap-3 sm:space-y-0">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1 select-none">
+                        Estado/Región
+                      </label>
+                      <select
+                        value={customerData.estado}
+                        onChange={(e) => handleInputChange('estado', e.target.value)}
+                        className="w-full p-2.5 sm:p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
+                      >
+                        <option value="">Selecciona tu estado</option>
+                        {estados.map((estado) => (
+                          <option key={estado} value={estado}>{estado}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1 select-none">
+                        Ciudad
+                      </label>
+                      <input
+                        type="text"
+                        value={customerData.ciudad}
+                        onChange={(e) => handleInputChange('ciudad', e.target.value)}
+                        className="w-full p-2.5 sm:p-2 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm"
+                        placeholder="Tu ciudad"
+                      />
+                    </div>
+                  </div>
+                </details>
               </div>
             </div>
           </div>
           
-          {/* Resumen Final y Confirmación */}
+          {/* Resumen Final y Confirmación - Optimizado móvil */}
           {(tickets >= 2 && selectedPayment && customerData.nombre && (customerData.telefono || customerData.email)) && (
-            <div className="space-y-4 p-4 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border-2 border-emerald-200 shadow-inner">
+            <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border-2 border-emerald-200 shadow-inner">
               <h3 className="text-lg font-bold text-gray-900 flex items-center">
                 <span className="mr-2">📋</span>
                 Resumen de tu orden
               </h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0">
                 {/* Columna izquierda: Detalles de compra */}
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <div className="bg-white p-3 rounded-lg border border-emerald-200">
                     <h4 className="font-bold text-emerald-800 mb-2">🎫 Boletos</h4>
                     <p className="text-gray-800">
@@ -1146,7 +1161,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                 </div>
                 
                 {/* Columna derecha: Datos del cliente */}
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <div className="bg-white p-3 rounded-lg border border-emerald-200">
                     <h4 className="font-bold text-emerald-800 mb-2">👤 Datos de contacto</h4>
                     <p className="text-gray-800 font-medium">{customerData.nombre}</p>
@@ -1200,21 +1215,21 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                   <button
                     onClick={handleSubmit}
                     disabled={isLoading}
-                    className="w-full bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 hover:from-green-600 hover:via-emerald-600 hover:to-green-700 text-white text-2xl font-black py-6 px-8 rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 border-4 border-green-400 hover:border-green-500 animate-pulse hover:animate-none"
+                    className="w-full bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 hover:from-green-600 hover:via-emerald-600 hover:to-green-700 text-white text-lg sm:text-2xl font-black py-4 sm:py-6 px-4 sm:px-8 rounded-xl sm:rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 border-2 sm:border-4 border-green-400 hover:border-green-500 animate-pulse hover:animate-none"
                   >
                     {isLoading ? (
                       <div className="flex items-center justify-center space-x-3">
-                        <svg className="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-6 w-6 sm:h-8 sm:w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                         <span>Procesando tu compra...</span>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-center space-x-3">
-                        <span className="text-3xl">🚀</span>
+                      <div className="flex items-center justify-center space-x-2 sm:space-x-3">
+                        <span className="text-xl sm:text-3xl">🚀</span>
                         <span>ENVIAR MI ORDEN</span>
-                        <span className="text-3xl">🎯</span>
+                        <span className="text-xl sm:text-3xl">🎯</span>
                       </div>
                     )}
                   </button>
@@ -1228,22 +1243,23 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
           )}
         </div>
 
-        {/* Footer simplificado */}
-        <div className="border-t border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 p-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0">
+        {/* Footer simplificado - Sticky móvil */}
+        <div className="border-t border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 p-3 sm:p-4 sticky bottom-0 sm:relative">
+          <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0">
             <button
               onClick={openWhatsApp}
-              className="flex items-center space-x-2 text-green-600 hover:text-green-700 font-medium transition-colors"
+              className="flex items-center space-x-1.5 sm:space-x-2 text-green-600 hover:text-green-700 font-medium transition-colors text-sm sm:text-base"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.306"/>
               </svg>
-              <span>💬 ¿Dudas? Escríbenos por WhatsApp</span>
+              <span className="hidden sm:inline">💬 ¿Dudas? Escríbenos por WhatsApp</span>
+              <span className="sm:hidden">💬 WhatsApp</span>
             </button>
 
             <button
               onClick={onClose}
-              className="px-6 py-3 border-2 border-gray-300 text-gray-700 bg-white rounded-lg hover:bg-gray-50 font-medium transition-colors"
+              className="px-4 sm:px-6 py-2 sm:py-3 border-2 border-gray-300 text-gray-700 bg-white rounded-lg hover:bg-gray-50 font-medium transition-colors text-sm sm:text-base"
             >
               Cerrar
             </button>
