@@ -5,7 +5,6 @@
 'use client';
 
 import React from 'react';
-import { ErrorBoundary } from '../components/ErrorBoundary';
 
 // ============================================================================
 // TIPOS
@@ -21,9 +20,9 @@ interface AppProvidersProps {
 
 export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   return (
-    <ErrorBoundary>
+    <>
       {children}
-    </ErrorBoundary>
+    </>
   );
 };
 
