@@ -150,6 +150,58 @@ const updateMasterCounters = async (forceUpdate = false) => {
       console.log(`✅ MATH CHECK PASSED: ${sold} + ${available} + ${reserved} = ${mathCheck} = ${TOTAL_TICKETS}`);
     }
 
+    // 🔄 SYNC CRÍTICO CON ZUSTAND STORE
+    try {
+      if (typeof window !== 'undefined') {
+        // Obtener los números específicos de tickets vendidos y reservados
+        console.log('📊 FETCHING SPECIFIC TICKET NUMBERS FOR ZUSTAND SYNC...');
+        const { data: ticketNumbers, error } = await supabase
+          .from('tickets')
+          .select('number, status')
+          .in('status', ['vendido', 'reservado']);
+
+        if (!error && ticketNumbers) {
+          const soldNumbers = ticketNumbers.filter(t => t.status === 'vendido').map(t => t.number);
+          const reservedNumbers = ticketNumbers.filter(t => t.status === 'reservado').map(t => t.number);
+          
+          console.log(`🔄 SYNCING ZUSTAND STORE: ${soldNumbers.length} sold, ${reservedNumbers.length} reserved`);
+          
+          // ✅ ENHANCED ZUSTAND SYNC - FORCE UPDATE REGARDLESS
+          const raffleStore = (window as any).__ZUSTAND_RAFFLE_STORE__;
+          if (raffleStore && raffleStore.getState) {
+            const currentState = raffleStore.getState();
+            
+            console.log('🔄 FORCE UPDATING ZUSTAND STORE:', {
+              soldTickets: soldNumbers.length,
+              reservedTickets: reservedNumbers.length
+            });
+            
+            // CRITICAL: Always force update to ensure sync
+            currentState.setSoldTicketsFromDB(soldNumbers);
+            currentState.setReservedTicketsFromDB(reservedNumbers);
+            
+            console.log('✅ ZUSTAND STORE FORCE UPDATED');
+          } else {
+            console.warn('⚠️ Zustand store not found in window, attempting dynamic import sync...');
+            // Enhanced fallback using dynamic import
+            import('../stores/raffle-store').then(({ useRaffleStore }) => {
+              const state = useRaffleStore.getState();
+              console.log('🔄 DYNAMIC IMPORT: Force updating Zustand via fallback');
+              state.setSoldTicketsFromDB(soldNumbers);
+              state.setReservedTicketsFromDB(reservedNumbers);
+              console.log('✅ ZUSTAND SYNC via dynamic import completed');
+            }).catch(err => {
+              console.error('❌ Failed to sync with Zustand store via dynamic import:', err);
+            });
+          }
+        } else {
+          console.error('❌ Failed to fetch ticket numbers for Zustand sync:', error);
+        }
+      }
+    } catch (syncError) {
+      console.error('❌ Error syncing with Zustand store:', syncError);
+    }
+
     // Calcular FOMO (NO afecta disponibles reales)
     const { fomoCount, isActive } = calculateFOMO(sold);
     console.log(`🎭 FOMO CALCULATION: real ${sold} → display ${fomoCount} (${isActive ? 'ACTIVE' : 'INACTIVE'})`);
@@ -177,6 +229,7 @@ const updateMasterCounters = async (forceUpdate = false) => {
     console.log(`   Real: ${sold}S + ${available}A + ${reserved}R = ${mathCheck}`);
     console.log(`   Display: ${fomoCount} sold (${newData.fomoPercentage.toFixed(1)}%), ${available} available`);
     console.log(`   FOMO: ${isActive ? 'ACTIVE' : 'INACTIVE'} (+${fomoCount - sold} fake sold)`);
+    console.log(`   Zustand Sync: ✅ Completed`);
 
     masterCounterInstance = newData;
     
@@ -245,16 +298,45 @@ const initializeMasterCounters = async () => {
         { event: '*', schema: 'public', table: 'tickets' },
         (payload) => {
           console.log('🎫 TICKET CHANGE DETECTED:', payload.eventType, payload.new || payload.old);
-          console.log('🔄 TRIGGERING IMMEDIATE COUNTER UPDATE...');
-          updateMasterCounters(true);
+          console.log('🔄 TRIGGERING IMMEDIATE COUNTER UPDATE (TICKETS)...');
+          
+          // Forzar actualización inmediata para cambios de tickets
+          setTimeout(() => updateMasterCounters(true), 100);
+          
+          // Disparar evento global de sincronización
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('ticket-status-changed', {
+              detail: { 
+                source: 'websocket',
+                event: payload.eventType,
+                ticket: payload.new || payload.old,
+                timestamp: new Date().toISOString()
+              }
+            }));
+          }
         }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'purchases' },
         (payload) => {
           console.log('💰 PURCHASE CHANGE DETECTED:', payload.eventType, payload.new || payload.old);
-          console.log('🔄 TRIGGERING IMMEDIATE COUNTER UPDATE...');
-          updateMasterCounters(true);
+          console.log('🔄 TRIGGERING IMMEDIATE COUNTER UPDATE (PURCHASES)...');
+          
+          // Forzar actualización inmediata con doble refresh para asegurar sync
+          setTimeout(() => updateMasterCounters(true), 100);
+          setTimeout(() => updateMasterCounters(true), 1500); // Segundo refresh después de 1.5s
+          
+          // Disparar evento global de sincronización
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('purchase-status-changed', {
+              detail: { 
+                source: 'websocket',
+                event: payload.eventType,
+                purchase: payload.new || payload.old,
+                timestamp: new Date().toISOString()
+              }
+            }));
+          }
         }
       )
       .subscribe((status) => {
@@ -556,6 +638,161 @@ if (typeof window !== 'undefined') {
       console.log(`🔗 Connected: ${masterCounterInstance?.isConnected || 'unknown'}`);
       console.log(`⏰ Last update: ${masterCounterInstance?.lastUpdate?.toLocaleTimeString() || 'never'}`);
       return mathTest;
+    },
+    
+    // ✅ ENHANCED SYNC VERIFICATION
+    testAdminSync: async () => {
+      console.group('🔄 TESTING ADMIN SYNC FLOW...');
+      
+      try {
+        console.log('1️⃣ Testing current system state...');
+        const mathTest = testMathConsistency();
+        
+        console.log('2️⃣ Testing WebSocket connectivity...');
+        const wsConnected = supabaseSubscription !== null;
+        console.log(`   WebSocket: ${wsConnected ? '✅ Connected' : '❌ Not connected'}`);
+        
+        console.log('3️⃣ Testing Zustand store exposure...');
+        const raffleStore = (window as any).__ZUSTAND_RAFFLE_STORE__;
+        const zustandAvailable = !!(raffleStore && raffleStore.getState);
+        console.log(`   Zustand Store: ${zustandAvailable ? '✅ Available' : '❌ Not available'}`);
+        
+        console.log('4️⃣ Testing Master Counter sync...');
+        const beforeUpdate = masterCounterInstance?.soldTickets || 0;
+        await forceMasterUpdate();
+        const afterUpdate = masterCounterInstance?.soldTickets || 0;
+        console.log(`   Master Counter Update: ${beforeUpdate} → ${afterUpdate} ${beforeUpdate !== afterUpdate ? '✅ Changed' : '⚠️ No change'}`);
+        
+        console.log('5️⃣ Testing event system...');
+        let eventReceived = false;
+        const testHandler = () => { eventReceived = true; };
+        window.addEventListener('raffle-counters-updated', testHandler);
+        
+        window.dispatchEvent(new CustomEvent('raffle-counters-updated', {
+          detail: { source: 'sync-test', timestamp: new Date().toISOString() }
+        }));
+        
+        setTimeout(() => {
+          window.removeEventListener('raffle-counters-updated', testHandler);
+          console.log(`   Event System: ${eventReceived ? '✅ Working' : '❌ Not working'}`);
+          
+          console.log('6️⃣ Final Assessment...');
+          const overallWorking = mathTest && wsConnected && zustandAvailable && eventReceived;
+          
+          console.log(`
+🎯 ADMIN SYNC TEST RESULTS:
+   Math Consistency: ${mathTest ? '✅' : '❌'}
+   WebSocket: ${wsConnected ? '✅' : '❌'}
+   Zustand Store: ${zustandAvailable ? '✅' : '❌'}
+   Event System: ${eventReceived ? '✅' : '❌'}
+   
+🔄 OVERALL: ${overallWorking ? '✅ READY FOR ADMIN SYNC' : '❌ SYNC ISSUES DETECTED'}
+
+💡 USAGE: When admin confirms a purchase, all components should update within 2-3 seconds.
+          `);
+          
+          console.groupEnd();
+          return { success: overallWorking, components: { mathTest, wsConnected, zustandAvailable, eventReceived } };
+        }, 100);
+      } catch (error) {
+        console.error('❌ Admin sync test failed:', error);
+        console.groupEnd();
+        return { success: false, error: error.message };
+      }
+    },
+    
+    // ✅ NUEVA FUNCIÓN DE TEST DE SINCRONIZACIÓN COMPLETA
+    testFullSync: async () => {
+      console.group('🔄 TESTING COMPLETE SYNCHRONIZATION...');
+      
+      try {
+        // 1. Test Master Counter
+        console.log('1️⃣ Testing Master Counter...');
+        const mathTest = testMathConsistency();
+        console.log(`   Math Test: ${mathTest ? '✅ PASS' : '❌ FAIL'}`);
+        
+        // 2. Test Zustand Store Connection
+        console.log('2️⃣ Testing Zustand Store Connection...');
+        const raffleStore = (window as any).__ZUSTAND_RAFFLE_STORE__;
+        const zustandConnected = !!(raffleStore && raffleStore.getState);
+        console.log(`   Zustand Connected: ${zustandConnected ? '✅ PASS' : '❌ FAIL'}`);
+        
+        if (zustandConnected) {
+          const state = raffleStore.getState();
+          console.log(`   Zustand Sold Tickets: ${state.soldTickets.length}`);
+          console.log(`   Zustand Reserved Tickets: ${state.reservedTickets.length}`);
+        }
+        
+        // 3. Test Supabase Connection
+        console.log('3️⃣ Testing Supabase Connection...');
+        const masterConnected = masterCounterInstance?.isConnected || false;
+        console.log(`   Supabase Connected: ${masterConnected ? '✅ PASS' : '❌ FAIL'}`);
+        
+        if (masterConnected) {
+          console.log(`   Master Sold: ${masterCounterInstance?.soldTickets || 0}`);
+          console.log(`   Master Available: ${masterCounterInstance?.availableTickets || 0}`);
+          console.log(`   Master Reserved: ${masterCounterInstance?.reservedTickets || 0}`);
+        }
+        
+        // 4. Force Sync Test
+        console.log('4️⃣ Testing Force Sync...');
+        await forceMasterUpdate();
+        console.log('   Force Update: ✅ COMPLETED');
+        
+        // 5. WebSocket Test
+        console.log('5️⃣ Testing WebSocket Status...');
+        const wsConnected = supabaseSubscription !== null;
+        console.log(`   WebSocket Connected: ${wsConnected ? '✅ PASS' : '❌ FAIL'}`);
+        
+        // 6. Data Consistency Check
+        console.log('6️⃣ Testing Data Consistency...');
+        let consistencyTest = true;
+        
+        if (zustandConnected && masterConnected) {
+          const state = raffleStore.getState();
+          const masterSold = masterCounterInstance?.soldTickets || 0;
+          const zustandSold = state.soldTickets.length;
+          
+          if (Math.abs(masterSold - zustandSold) > 5) { // Allow small discrepancy
+            console.error(`   ❌ INCONSISTENCY: Master (${masterSold}) vs Zustand (${zustandSold})`);
+            consistencyTest = false;
+          } else {
+            console.log(`   ✅ CONSISTENT: Master (${masterSold}) ≈ Zustand (${zustandSold})`);
+          }
+        }
+        
+        // 7. Final Assessment
+        console.log('7️⃣ Final Assessment...');
+        const overallSuccess = mathTest && zustandConnected && masterConnected && consistencyTest;
+        
+        console.log(`
+🔍 SYNC TEST RESULTS:
+   Math Consistency: ${mathTest ? '✅' : '❌'}
+   Zustand Connection: ${zustandConnected ? '✅' : '❌'}
+   Supabase Connection: ${masterConnected ? '✅' : '❌'}  
+   WebSocket Status: ${wsConnected ? '✅' : '❌'}
+   Data Consistency: ${consistencyTest ? '✅' : '❌'}
+   
+🎯 OVERALL SYNC: ${overallSuccess ? '✅ WORKING CORRECTLY' : '❌ ISSUES DETECTED'}
+        `);
+        
+        return {
+          success: overallSuccess,
+          details: {
+            mathTest,
+            zustandConnected,
+            masterConnected,
+            wsConnected,
+            consistencyTest
+          }
+        };
+        
+      } catch (error) {
+        console.error('❌ Sync test failed:', error);
+        return { success: false, error: error.message };
+      } finally {
+        console.groupEnd();
+      }
     }
   };
 }

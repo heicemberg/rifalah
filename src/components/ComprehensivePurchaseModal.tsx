@@ -7,8 +7,7 @@ import { useSupabaseConnection } from '../hooks/useSupabaseConnection';
 import toast from 'react-hot-toast';
 import { publicToast } from '../lib/toast-utils';
 import { useRaffleStore, useTickets } from '../stores/raffle-store';
-import { useRealTimeTickets } from '../hooks/useRealTimeTickets';
-import { useSupabaseSync } from '../hooks/useSupabaseSync';
+import { useMasterCounters } from '../hooks/useMasterCounters';
 
 // Tipos para la estructura de datos
 interface TicketData {
@@ -122,10 +121,50 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
   const { availableTickets, markTicketsAsSold } = useRaffleStore();
   // Obtener tickets seleccionados del grid
   const { selectedTickets } = useTickets();
-  // Hook para precios y formateo mexicano
-  const { formatMexicanNumber, formatPriceMXN, calculatePrice: calculatePriceMXN, PRECIO_POR_BOLETO_MXN } = useRealTimeTickets();
-  // Hook para sincronización con Supabase y tickets reales
-  const { getRealAvailableTickets, isConnected } = useSupabaseSync();
+  // Master counter system for unified state
+  const masterCounters = useMasterCounters();
+  const { isConnected } = masterCounters;
+  
+  // Pricing constants and functions (self-contained)
+  const PRECIO_POR_BOLETO_MXN = 199;
+  const formatMexicanNumber = (num: number): string => num.toLocaleString('es-MX');
+  const formatPriceMXN = (amount: number): string => `$${formatMexicanNumber(amount)} MXN`;
+  const calculatePriceMXN = (quantity: number): number => quantity * PRECIO_POR_BOLETO_MXN;
+  
+  // Function to get real available tickets from Supabase
+  const getRealAvailableTickets = useCallback(async (): Promise<number[]> => {
+    try {
+      if (!isConnected) {
+        console.warn('No connection to Supabase, returning empty array');
+        return [];
+      }
+
+      const { data: unavailableTickets, error } = await (await import('../lib/supabase')).supabase
+        .from('tickets')
+        .select('number')
+        .in('status', ['vendido', 'reservado']);
+
+      if (error) {
+        console.error('Error fetching unavailable tickets:', error);
+        return [];
+      }
+
+      const unavailableNumbers = new Set(unavailableTickets?.map((t: any) => t.number) || []);
+      const availableTickets: number[] = [];
+
+      for (let i = 1; i <= 10000; i++) {
+        if (!unavailableNumbers.has(i)) {
+          availableTickets.push(i);
+        }
+      }
+
+      console.log(`📊 Real available tickets: ${availableTickets.length}`);
+      return availableTickets;
+    } catch (error) {
+      console.error('Error in getRealAvailableTickets:', error);
+      return [];
+    }
+  }, [isConnected]);
   // Hook para manejo robusto de conexión a Supabase
   const { isConnected: dbConnected, isLoading: dbLoading, error: dbError, retry: retryConnection } = useSupabaseConnection();
   

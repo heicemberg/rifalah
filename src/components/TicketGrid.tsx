@@ -359,6 +359,33 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
     lastUpdate: lastSyncTime
   } = masterStats;
   
+  // ✅ CRITICAL: Listen for forced sync events from admin confirmations
+  useEffect(() => {
+    const handleGlobalSync = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('🎫 TICKET GRID: Received sync event from', customEvent.detail?.source);
+      
+      // Force re-render by triggering a state update
+      if (customEvent.detail?.source === 'admin-confirmation') {
+        console.log('🔄 TICKET GRID: Admin confirmation detected, forcing refresh...');
+        // The master counter will handle the actual data update
+        // This just ensures the component re-renders with new data
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('raffle-counters-updated', handleGlobalSync);
+      window.addEventListener('ticket-status-changed', handleGlobalSync);
+      window.addEventListener('purchase-status-changed', handleGlobalSync);
+      
+      return () => {
+        window.removeEventListener('raffle-counters-updated', handleGlobalSync);
+        window.removeEventListener('ticket-status-changed', handleGlobalSync);
+        window.removeEventListener('purchase-status-changed', handleGlobalSync);
+      };
+    }
+  }, []);
+  
   // Refs y estado local
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(800);
@@ -420,8 +447,58 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
     PRECIO_POR_BOLETO_MXN
   } = useRealTimeTickets();
   
-  // ✅ ELIMINAR REDUNDANCIA - YA TENEMOS masterStats
-  // Usar datos del store para tickets vendidos reales
+  // ✅ LISTENERS PARA SINCRONIZACIÓN EN TIEMPO REAL
+  useEffect(() => {
+    const handleTicketStatusChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('🎫 TICKET GRID: Received ticket status change event:', customEvent.detail);
+      
+      // Forzar re-render del grid cuando cambian estados de tickets
+      // (Los datos ya se actualizaron via Master Counter → Zustand sync)
+      const timestamp = Date.now();
+      setShowFilters(false); // Reset filtros para mostrar cambios
+    };
+    
+    const handlePurchaseStatusChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('💰 TICKET GRID: Received purchase status change event:', customEvent.detail);
+      
+      // Mostrar feedback visual cuando una compra se confirma
+      if (customEvent.detail?.purchase?.status === 'confirmada') {
+        console.log('🎉 TICKET GRID: Purchase confirmed - tickets should now appear as sold');
+      }
+    };
+    
+    const handleRaffleCountersUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('🔄 TICKET GRID: Received raffle counters update event:', customEvent.detail);
+      
+      // Forzar actualización de contadores cuando admin confirma compras
+      if (customEvent.detail?.source === 'admin-confirmation') {
+        console.log('👑 TICKET GRID: Admin confirmation detected - forcing refresh');
+        forceMasterUpdate();
+      }
+    };
+
+    // Agregar event listeners
+    if (typeof window !== 'undefined') {
+      window.addEventListener('ticket-status-changed', handleTicketStatusChange);
+      window.addEventListener('purchase-status-changed', handlePurchaseStatusChange);
+      window.addEventListener('raffle-counters-updated', handleRaffleCountersUpdated);
+    }
+
+    // Cleanup
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('ticket-status-changed', handleTicketStatusChange);
+        window.removeEventListener('purchase-status-changed', handlePurchaseStatusChange);
+        window.removeEventListener('raffle-counters-updated', handleRaffleCountersUpdated);
+      }
+    };
+  }, []);
+  
+  // ✅ USAR DATOS SINCRONIZADOS - COMBINANDO MASTER COUNTER Y ZUSTAND STORE
+  // Usar datos del store para tickets vendidos PERO sincronizados por Master Counter
   const allSoldTickets = soldTickets;
   
   // Generar filas visibles

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { inicializarTickets, verificarConexion, obtenerEstadisticasTickets } from '../lib/supabase';
-import { useSupabaseSync } from '../hooks/useSupabaseSync';
+import { useMasterCounters } from '../hooks/useMasterCounters';
 import { adminToast } from '../lib/toast-utils';
 
 // ============================================================================
@@ -19,7 +19,8 @@ export const SupabaseInitializer: React.FC = () => {
     reservados: number;
   } | null>(null);
   
-  const { isConnected, refreshData } = useSupabaseSync();
+  const masterCounters = useMasterCounters();
+  const { isConnected } = masterCounters;
 
   // Verificar estado de la base de datos al montar
   useEffect(() => {
@@ -60,7 +61,12 @@ export const SupabaseInitializer: React.FC = () => {
       if (success) {
         adminToast.success('✅ Base de datos inicializada correctamente!');
         await checkDatabaseStatus();
-        await refreshData();
+        // Trigger refresh of master counters
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('raffle-counters-updated', {
+            detail: { source: 'database-initialization', timestamp: new Date().toISOString() }
+          }));
+        }
       } else {
         adminToast.error('❌ Error al inicializar la base de datos');
       }

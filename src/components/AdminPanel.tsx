@@ -123,9 +123,11 @@ export default function AdminPanel() {
             duration: 4000
           });
           
-          // PASO 5: Trigger manual para componentes que podrían no haber actualizado
+          // PASO 5: ENHANCED - Force immediate Zustand + Master Counter sync
           if (typeof window !== 'undefined') {
-            console.log(`🔔 ADMIN: Disparando evento global de sincronización...`);
+            console.log(`🔔 ADMIN: ENHANCED sync - Forcing immediate updates...`);
+            
+            // Force Master Counter update
             window.dispatchEvent(new CustomEvent('raffle-counters-updated', {
               detail: { 
                 source: 'admin-confirmation',
@@ -133,6 +135,35 @@ export default function AdminPanel() {
                 timestamp: new Date().toISOString()
               }
             }));
+            
+            // CRITICAL: Force Zustand update directly if available
+            const raffleStore = (window as any).__ZUSTAND_RAFFLE_STORE__;
+            if (raffleStore && raffleStore.getState) {
+              console.log(`🔄 ADMIN: Force updating Zustand store directly...`);
+              
+              // Trigger a refresh of the Zustand store data
+              setTimeout(async () => {
+                try {
+                  const { data: ticketsData } = await (await import('../lib/supabase')).supabase
+                    .from('tickets')
+                    .select('number, status')
+                    .in('status', ['vendido', 'reservado']);
+                  
+                  if (ticketsData) {
+                    const soldNumbers = ticketsData.filter((t: any) => t.status === 'vendido').map((t: any) => t.number);
+                    const reservedNumbers = ticketsData.filter((t: any) => t.status === 'reservado').map((t: any) => t.number);
+                    
+                    const state = raffleStore.getState();
+                    state.setSoldTicketsFromDB(soldNumbers);
+                    state.setReservedTicketsFromDB(reservedNumbers);
+                    
+                    console.log(`✅ ADMIN: Force Zustand sync completed - ${soldNumbers.length} sold, ${reservedNumbers.length} reserved`);
+                  }
+                } catch (err) {
+                  console.error('❌ ADMIN: Failed to force update Zustand:', err);
+                }
+              }, 500); // Half second delay for DB propagation
+            }
           }
         }
         

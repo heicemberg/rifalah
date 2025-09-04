@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useRaffleStore } from '@/stores/raffle-store'
 import { useBasicCounters } from '@/hooks/useMasterCounters'
@@ -47,6 +47,31 @@ export default function NewRaffePage() {
   }
   const PRECIO_POR_BOLETO_MXN = 199 // Match useRealTimeTickets pricing
   
+  // ✅ CRITICAL: Listen for admin confirmations to update counters immediately
+  useEffect(() => {
+    const handleGlobalSync = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('🏠 MAIN PAGE: Received sync event from', customEvent.detail?.source);
+      
+      if (customEvent.detail?.source === 'admin-confirmation') {
+        console.log('🔄 MAIN PAGE: Admin confirmation detected, counters will auto-refresh');
+        // The master counter system handles the actual updates
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('raffle-counters-updated', handleGlobalSync);
+      window.addEventListener('ticket-status-changed', handleGlobalSync);
+      window.addEventListener('purchase-status-changed', handleGlobalSync);
+      
+      return () => {
+        window.removeEventListener('raffle-counters-updated', handleGlobalSync);
+        window.removeEventListener('ticket-status-changed', handleGlobalSync);
+        window.removeEventListener('purchase-status-changed', handleGlobalSync);
+      };
+    }
+  }, []);
+  
   // Acceder al store para obtener los tickets seleccionados
   const { selectedTickets } = useRaffleStore()
 
@@ -55,6 +80,32 @@ export default function NewRaffePage() {
   const availableCount = masterCounters.availableTickets
   const totalCount = masterCounters.totalTickets
   const soldPercentage = Math.round(masterCounters.soldPercentage)
+  
+  // ✅ LISTENERS PARA ACTUALIZACIONES EN TIEMPO REAL
+  useEffect(() => {
+    const handleAdminConfirmation = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('🏠 MAIN PAGE: Received admin confirmation event:', customEvent.detail);
+      
+      // Forzar validación matemática cuando admin confirma compras
+      if (customEvent.detail?.source === 'admin-confirmation') {
+        console.log('👑 MAIN PAGE: Admin confirmation - forcing math validation');
+        validateNow();
+      }
+    };
+
+    // Agregar listener para eventos de confirmación de admin
+    if (typeof window !== 'undefined') {
+      window.addEventListener('raffle-counters-updated', handleAdminConfirmation);
+    }
+
+    // Cleanup
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('raffle-counters-updated', handleAdminConfirmation);
+      }
+    };
+  }, [validateNow]);
 
   return (
     <main className="bg-black text-white font-sans">

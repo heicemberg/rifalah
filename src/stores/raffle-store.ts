@@ -668,4 +668,12 @@ export const useAdminConfig = () => {
 // EXPORT DEL STORE Y TIPOS
 // ============================================================================
 
+// Exponer store globalmente para acceso desde Master Counter
+if (typeof window !== 'undefined') {
+  (window as any).__ZUSTAND_RAFFLE_STORE__ = useRaffleStore;
+  
+  // Log para debug
+  console.log('🔧 ZUSTAND STORE exposed globally for Master Counter sync');
+}
+
 export default useRaffleStore;
