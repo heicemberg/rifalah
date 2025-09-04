@@ -697,7 +697,7 @@ if (typeof window !== 'undefined') {
       } catch (error) {
         console.error('❌ Admin sync test failed:', error);
         console.groupEnd();
-        return { success: false, error: error.message };
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
       }
     },
     
@@ -789,7 +789,7 @@ if (typeof window !== 'undefined') {
         
       } catch (error) {
         console.error('❌ Sync test failed:', error);
-        return { success: false, error: error.message };
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
       } finally {
         console.groupEnd();
       }
