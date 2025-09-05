@@ -5,8 +5,8 @@
 
 'use client';
 
-import React from 'react';
-import { Dice1, Dice5, DicesIcon, Zap, Gift, Trophy } from 'lucide-react';
+import React, { useState } from 'react';
+import { Dice1, Dice5, DicesIcon, Zap, Gift, Trophy, Hash, Edit } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface QuickSelectionCardsProps {
@@ -20,12 +20,15 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
   availableCount,
   isLoading = false
 }) => {
+  const [showCustomModal, setShowCustomModal] = useState(false);
+  const [customAmount, setCustomAmount] = useState('');
+
   const cards = [
     {
-      count: 1,
-      title: '1 Número',
+      count: 2,
+      title: '2 Números',
       subtitle: 'al Azar',
-      price: '$250',
+      price: '$500',
       icon: Dice1,
       color: 'bg-gradient-to-br from-blue-500 to-blue-600',
       hoverColor: 'hover:from-blue-600 hover:to-blue-700',
@@ -54,8 +57,53 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
       hoverColor: 'hover:from-purple-600 hover:to-purple-700',
       textColor: 'text-white',
       popular: false
+    },
+    {
+      count: 25,
+      title: '25 Números',
+      subtitle: 'al Azar',
+      price: '$6,250',
+      icon: Gift,
+      color: 'bg-gradient-to-br from-orange-500 to-orange-600',
+      hoverColor: 'hover:from-orange-600 hover:to-orange-700',
+      textColor: 'text-white',
+      popular: false,
+      badge: 'Buena Suerte'
+    },
+    {
+      count: 50,
+      title: '50 Números',
+      subtitle: 'al Azar',
+      price: '$12,500',
+      icon: Trophy,
+      color: 'bg-gradient-to-br from-red-500 to-red-600',
+      hoverColor: 'hover:from-red-600 hover:to-red-700',
+      textColor: 'text-white',
+      popular: false,
+      badge: 'Gran Premio'
+    },
+    {
+      count: 100,
+      title: '100 Números',
+      subtitle: 'al Azar',
+      price: '$25,000',
+      icon: Zap,
+      color: 'bg-gradient-to-br from-yellow-500 to-yellow-600',
+      hoverColor: 'hover:from-yellow-600 hover:to-yellow-700',
+      textColor: 'text-black',
+      popular: false,
+      badge: '¡Máximo!'
     }
   ];
+
+  const handleCustomSelect = () => {
+    const amount = parseInt(customAmount);
+    if (amount >= 2 && amount <= 100 && amount <= availableCount) {
+      onQuickSelect(amount);
+      setShowCustomModal(false);
+      setCustomAmount('');
+    }
+  };
 
   return (
     <div className="mb-8">
@@ -68,7 +116,7 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4 max-w-7xl mx-auto">
         {cards.map((card) => {
           const Icon = card.icon;
           const canSelect = availableCount >= card.count;
@@ -142,6 +190,53 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
             </div>
           );
         })}
+        
+        {/* Card Personalizada */}
+        <div className="relative">
+          <button
+            onClick={() => setShowCustomModal(true)}
+            disabled={isLoading || availableCount < 2}
+            className={cn(
+              'w-full p-4 sm:p-6 rounded-2xl shadow-lg transition-all duration-300 transform',
+              'hover:scale-105 hover:shadow-xl',
+              'active:scale-95',
+              'border-2 border-dashed border-gray-400',
+              'bg-gradient-to-br from-gray-100 to-gray-200',
+              'hover:from-gray-200 hover:to-gray-300',
+              'text-gray-800',
+              'disabled:opacity-50 disabled:cursor-not-allowed hover:disabled:scale-100'
+            )}
+          >
+            <div className="flex flex-col items-center text-center space-y-3">
+              {/* Icono */}
+              <div className="relative">
+                <Edit size={32} className="drop-shadow-sm" />
+              </div>
+              
+              {/* Título */}
+              <div>
+                <div className="font-bold text-base sm:text-lg leading-tight">
+                  Otro Número
+                </div>
+                <div className="text-xs sm:text-sm opacity-90">
+                  Tú Decides
+                </div>
+              </div>
+              
+              {/* Rango */}
+              <div className="font-bold text-sm sm:text-base">
+                2-100 números
+              </div>
+              
+              <div className="text-xs opacity-75">
+                Cantidad personalizada
+              </div>
+            </div>
+            
+            {/* Efecto de resplandor sutil */}
+            <div className="absolute inset-0 rounded-2xl bg-white opacity-0 hover:opacity-20 transition-opacity duration-300 pointer-events-none" />
+          </button>
+        </div>
       </div>
 
       {/* Información adicional */}
@@ -160,6 +255,102 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
         </div>
         <div className="flex-1 border-t border-gray-200"></div>
       </div>
+
+      {/* Modal para Cantidad Personalizada */}
+      {showCustomModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50" 
+            onClick={() => setShowCustomModal(false)} 
+          />
+          
+          {/* Modal */}
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md">
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-xl font-bold text-gray-800">
+                  🎯 Cantidad Personalizada
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Elige cuántos números quieres seleccionar al azar
+                </p>
+              </div>
+
+              {/* Content */}
+              <div className="px-6 py-6 space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Cantidad de números (mínimo 2, máximo 100)
+                  </label>
+                  <input
+                    type="number"
+                    min="2"
+                    max="100"
+                    value={customAmount}
+                    onChange={(e) => setCustomAmount(e.target.value)}
+                    className="w-full px-4 py-3 text-center text-2xl font-bold border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors"
+                    placeholder="Ej: 15"
+                    autoFocus
+                  />
+                  {customAmount && (
+                    <div className="mt-2 text-center text-lg font-bold text-green-600">
+                      Precio total: ${(parseInt(customAmount) * 250).toLocaleString('es-MX')}
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-blue-50 rounded-xl p-4">
+                  <div className="flex items-start space-x-3">
+                    <Hash className="text-blue-600 mt-1" size={20} />
+                    <div className="text-sm text-blue-800">
+                      <div className="font-medium mb-1">📊 Datos importantes:</div>
+                      <ul className="space-y-1 text-xs">
+                        <li>• Disponibles: <span className="font-bold">{availableCount.toLocaleString('es-MX')}</span> números</li>
+                        <li>• Precio por boleto: <span className="font-bold">$250</span></li>
+                        <li>• Los números se eligen automáticamente</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {parseInt(customAmount) > availableCount && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                    <p className="text-red-800 text-sm">
+                      ⚠️ Solo hay {availableCount.toLocaleString('es-MX')} números disponibles
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-gray-200 flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowCustomModal(false);
+                    setCustomAmount('');
+                  }}
+                  className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-xl transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleCustomSelect}
+                  disabled={!customAmount || parseInt(customAmount) < 2 || parseInt(customAmount) > 100 || parseInt(customAmount) > availableCount}
+                  className={cn(
+                    'flex-1 px-4 py-3 font-bold rounded-xl transition-colors',
+                    'bg-blue-600 hover:bg-blue-700 text-white',
+                    'disabled:opacity-50 disabled:cursor-not-allowed'
+                  )}
+                >
+                  Seleccionar {customAmount} Números
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

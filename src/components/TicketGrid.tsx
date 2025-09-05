@@ -46,6 +46,21 @@ interface VirtualizedRowProps {
   };
 }
 
+interface ReorganizedRowProps {
+  rowIndex: number;
+  tickets: Array<{
+    number: number;
+    isSelected: boolean;
+    isSold: boolean;
+    isReserved: boolean;
+    isAvailable: boolean;
+  }>;
+  columnsPerRow: number;
+  onTicketClick: (ticketNumber: number) => void;
+  cellSize: number;
+  rowHeight: number;
+}
+
 // Configuración de virtualización mejorada - NÚMEROS MÁS GRANDES
 const CELL_SIZE_MOBILE = 64;
 const CELL_SIZE_TABLET = 72;
@@ -333,6 +348,67 @@ const VirtualizedRow: React.FC<VirtualizedRowProps> = React.memo(({
 VirtualizedRow.displayName = 'VirtualizedRow';
 
 // ============================================================================
+// COMPONENTE DE FILA REORGANIZADA (para filtros)
+// ============================================================================
+
+const ReorganizedRow: React.FC<ReorganizedRowProps> = React.memo(({
+  tickets,
+  columnsPerRow,
+  onTicketClick,
+  cellSize,
+  rowHeight
+}) => {
+  const ticketElements = [];
+  
+  // Agregar tickets reales
+  tickets.forEach(ticket => {
+    ticketElements.push(
+      <TicketCell
+        key={ticket.number}
+        ticketNumber={ticket.number}
+        isSelected={ticket.isSelected}
+        isSold={ticket.isSold}
+        isReserved={ticket.isReserved}
+        onTicketClick={onTicketClick}
+        cellSize={cellSize}
+      />
+    );
+  });
+  
+  // Rellenar celdas vacías hasta completar la fila
+  while (ticketElements.length < columnsPerRow) {
+    ticketElements.push(
+      <div
+        key={`empty-${ticketElements.length}`}
+        style={{
+          width: cellSize,
+          height: cellSize,
+          minWidth: cellSize,
+          minHeight: cellSize
+        }}
+        className="opacity-0"
+      />
+    );
+  }
+  
+  return (
+    <div
+      className="flex justify-center items-center"
+      style={{
+        height: rowHeight,
+        paddingBottom: CELL_GAP,
+        gap: CELL_GAP,
+        width: '100%'
+      }}
+    >
+      {ticketElements}
+    </div>
+  );
+});
+
+ReorganizedRow.displayName = 'ReorganizedRow';
+
+// ============================================================================
 // COMPONENTE PRINCIPAL
 // ============================================================================
 
@@ -532,31 +608,118 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
   // Usar datos del store para tickets vendidos PERO sincronizados por Master Counter
   const allSoldTickets = soldTickets;
   
-  // Generar filas visibles
+  // 🎯 REORGANIZACIÓN INTELIGENTE DE TICKETS PARA FILTROS
+  const reorganizedTicketMap = useMemo(() => {
+    // Si no hay filtros activos, usar orden normal
+    if (!filterSettings.hideOccupied && !filterSettings.showOnlyAvailable && !filterSettings.showOnlySelected) {
+      return null; // Usar sistema de virtualización normal
+    }
+
+    const allTickets = [];
+    const availableTickets = [];
+    const otherTickets = [];
+
+    // Clasificar todos los tickets
+    for (let i = 1; i <= TOTAL_TICKETS; i++) {
+      const isSelected = selectedTickets.includes(i);
+      const isSold = allSoldTickets.includes(i);
+      const isReserved = reservedTickets.includes(i);
+      const isAvailable = !isSold && !isReserved;
+
+      const ticket = {
+        number: i,
+        isSelected,
+        isSold,
+        isReserved,
+        isAvailable
+      };
+
+      // Aplicar filtros
+      let shouldShow = true;
+      
+      if (filterSettings.hideOccupied && (isSold || isReserved)) {
+        shouldShow = false;
+      }
+      
+      if (filterSettings.showOnlyAvailable && !isAvailable) {
+        shouldShow = false;
+      }
+      
+      if (filterSettings.showOnlySelected && !isSelected) {
+        shouldShow = false;
+      }
+
+      if (shouldShow) {
+        // Priorizar tickets disponibles al inicio
+        if (isAvailable) {
+          availableTickets.push(ticket);
+        } else {
+          otherTickets.push(ticket);
+        }
+      }
+    }
+
+    // Reorganizar: disponibles primero, luego otros
+    const reorganizedTickets = [...availableTickets, ...otherTickets];
+    
+    console.log(`🔄 FILTRO REORGANIZADO: ${availableTickets.length} disponibles + ${otherTickets.length} otros = ${reorganizedTickets.length} total`);
+    
+    return reorganizedTickets;
+  }, [selectedTickets, allSoldTickets, reservedTickets, filterSettings]);
+
+  // 🎯 GENERAR FILAS VISIBLES (Normal o Reorganizado)
   const visibleRows = useMemo(() => {
     const rows = [];
-    
-    for (let rowIndex = visibleRange.start; rowIndex < visibleRange.end; rowIndex++) {
-      const startTicket = rowIndex * columnsPerRow + 1;
-      const endTicket = Math.min(startTicket + columnsPerRow - 1, TOTAL_TICKETS);
+
+    // Modo reorganizado para filtros
+    if (reorganizedTicketMap) {
+      const totalReorganizedTickets = reorganizedTicketMap.length;
+      const totalRows = Math.ceil(totalReorganizedTickets / columnsPerRow);
       
-      if (startTicket <= TOTAL_TICKETS) {
-        rows.push(
-          <VirtualizedRow
-            key={rowIndex}
-            rowIndex={rowIndex}
-            startTicket={startTicket}
-            endTicket={endTicket}
-            columnsPerRow={columnsPerRow}
-            selectedTickets={selectedTickets}
-            soldTickets={allSoldTickets}
-            reservedTickets={reservedTickets}
-            onTicketClick={handleTicketClick}
-            cellSize={cellSize}
-            rowHeight={rowHeight}
-            filterSettings={filterSettings}
-          />
-        );
+      for (let rowIndex = visibleRange.start; rowIndex < Math.min(visibleRange.end, totalRows); rowIndex++) {
+        const startIndex = rowIndex * columnsPerRow;
+        const endIndex = Math.min(startIndex + columnsPerRow, totalReorganizedTickets);
+        const rowTickets = reorganizedTicketMap.slice(startIndex, endIndex);
+        
+        if (rowTickets.length > 0) {
+          rows.push(
+            <ReorganizedRow
+              key={`reorganized-${rowIndex}`}
+              rowIndex={rowIndex}
+              tickets={rowTickets}
+              columnsPerRow={columnsPerRow}
+              onTicketClick={handleTicketClick}
+              cellSize={cellSize}
+              rowHeight={rowHeight}
+            />
+          );
+        }
+      }
+    } 
+    // Modo normal para sin filtros
+    else {
+      for (let rowIndex = visibleRange.start; rowIndex < visibleRange.end; rowIndex++) {
+        const startTicket = rowIndex * columnsPerRow + 1;
+        const endTicket = Math.min(startTicket + columnsPerRow - 1, TOTAL_TICKETS);
+        
+        if (startTicket <= TOTAL_TICKETS) {
+          rows.push(
+            <VirtualizedRow
+              key={rowIndex}
+              rowIndex={rowIndex}
+              startTicket={startTicket}
+              endTicket={endTicket}
+              columnsPerRow={columnsPerRow}
+              selectedTickets={selectedTickets}
+              soldTickets={allSoldTickets}
+              reservedTickets={reservedTickets}
+              onTicketClick={handleTicketClick}
+              cellSize={cellSize}
+              rowHeight={rowHeight}
+              filterSettings={filterSettings}
+            />
+          );
+        }
       }
     }
     
@@ -570,7 +733,8 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
     handleTicketClick,
     cellSize,
     rowHeight,
-    filterSettings
+    filterSettings,
+    reorganizedTicketMap
   ]);
   
   return (
