@@ -73,14 +73,14 @@ const calculateFOMO = (realSoldCount: number): { fomoCount: number; isActive: bo
   const fomoPercentage = Math.min(maxPercentage, basePercentage + increment);
   const fomoCount = Math.floor((fomoPercentage / 100) * TOTAL_TICKETS);
   
-  // ✅ LOG para debug: verificar crecimiento dinámico
-  if (Math.random() < 0.05) { // 5% chance to log
-    console.log(`🎭 FOMO Dynamic: ${minutesElapsed.toFixed(1)} min → ${fomoPercentage.toFixed(2)}% → ${fomoCount} tickets`);
-  }
+  // 🔧 FIX CRÍTICO: Si ventas reales > FOMO base, incrementar FOMO dinámicamente
+  const finalFomoCount = Math.max(realSoldCount, fomoCount);
   
-  // Retornar el mayor entre real y FOMO
+  // Sistema dinámico activado
+  
+  // 🚀 CRITICAL FIX: Asegurar que el contador SIEMPRE suba cuando hay ventas reales
   return { 
-    fomoCount: Math.max(realSoldCount, fomoCount), 
+    fomoCount: finalFomoCount, 
     isActive: true 
   };
 };
@@ -204,7 +204,7 @@ const updateMasterCounters = async (forceUpdate = false) => {
 
     // Calcular FOMO (NO afecta disponibles reales)
     const { fomoCount, isActive } = calculateFOMO(sold);
-    console.log(`🎭 FOMO CALCULATION: real ${sold} → display ${fomoCount} (${isActive ? 'ACTIVE' : 'INACTIVE'})`);
+    // Sistema de contadores actualizado
 
     // Crear nueva instancia del master counter
     const newData: MasterCounterData = {
@@ -225,11 +225,7 @@ const updateMasterCounters = async (forceUpdate = false) => {
       isLoading: false
     };
 
-    console.log(`📊 MASTER COUNTER UPDATED:`);
-    console.log(`   Real: ${sold}S + ${available}A + ${reserved}R = ${mathCheck}`);
-    console.log(`   Display: ${fomoCount} sold (${newData.fomoPercentage.toFixed(1)}%), ${available} available`);
-    console.log(`   FOMO: ${isActive ? 'ACTIVE' : 'INACTIVE'} (+${fomoCount - sold} fake sold)`);
-    console.log(`   Zustand Sync: ✅ Completed`);
+    console.log(`📊 CONTADOR ACTUALIZADO: ${fomoCount} vendidos (${newData.fomoPercentage.toFixed(1)}%), ${available} disponibles`);
 
     masterCounterInstance = newData;
     

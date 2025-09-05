@@ -167,7 +167,14 @@ export default function AdminPanel() {
           console.log(`🎯 ADMIN: Compra confirmada - iniciando sincronización global...`);
           
           // PASO 1: Forzar actualización inmediata del master counter
+          console.log(`🔄 ADMIN: Forzando actualización INMEDIATA del master counter...`);
           await refreshData();
+          
+          // PASO 1.5: Force additional master counter update via direct function call
+          if (typeof window !== 'undefined' && (window as any).raffleCounterTest) {
+            console.log(`🔄 ADMIN: Executing direct master counter force update...`);
+            await (window as any).raffleCounterTest.forceUpdate();
+          }
           
           // PASO 2: Dar tiempo para que WebSocket propague (crítico para sync)
           console.log(`⏱️ ADMIN: Esperando propagación WebSocket...`);
