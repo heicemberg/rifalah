@@ -31,59 +31,122 @@ export default function AdminPanel() {
   }, []);
 
   const cargarCompras = async () => {
+    console.log('📊 ADMIN: Cargando compras...');
+    
     try {
       setLoading(true);
       
+      // HYBRID APPROACH: Load from both sources
+      let comprasSupabase: CompraConDetalles[] = [];
+      let comprasLocales: CompraConDetalles[] = [];
+      let supabaseError = null;
+      
+      // STEP 1: Try to load from Supabase
       if (isConnected) {
-        // Cargar desde Supabase
-        const comprasSupabase = await obtenerCompras();
-        setCompras(comprasSupabase || []);
-        toast.success(`${comprasSupabase?.length || 0} compras cargadas desde Supabase • ${visualPercentage}% mostrado`);
-        
-        // Sincronizar datos de tickets también
-        await refreshData();
-      } else {
-        // Fallback a localStorage si Supabase no está disponible
-        console.warn('Supabase no disponible, usando localStorage como fallback');
+        try {
+          console.log('🔄 ADMIN: Cargando desde Supabase...');
+          comprasSupabase = await obtenerCompras() || [];
+          console.log(`✅ ADMIN: ${comprasSupabase.length} compras desde Supabase`);
+          
+          // Sync ticket counters
+          await refreshData();
+        } catch (error) {
+          console.error('❌ ADMIN: Error cargando desde Supabase:', error);
+          supabaseError = error instanceof Error ? error.message : 'Error desconocido';
+        }
+      }
+      
+      // STEP 2: Always load localStorage as backup/complement
+      try {
+        console.log('📦 ADMIN: Cargando desde localStorage...');
         const datosLocalStorage = JSON.parse(localStorage.getItem('compras-registradas') || '[]');
         
-        // Convertir formato si es necesario (fallback para localStorage)
-        const comprasFormateadas: CompraConDetalles[] = datosLocalStorage.map((compra: any) => ({
-          id: compra.id || Date.now().toString(),
-          customer_id: 'local',
+        comprasLocales = datosLocalStorage.map((compra: any) => ({
+          id: compra.id || `local-${Date.now()}`,
+          customer_id: compra.customer_id || 'local',
           total_amount: compra.precio_total || 0,
-          unit_price: compra.precio_unitario || 10,
+          unit_price: compra.precio_unitario || 199,
           discount_applied: compra.descuento_aplicado || 0,
-          payment_method: compra.metodo_pago || '',
-          payment_reference: compra.referencia_pago || '',
-          payment_proof_url: compra.captura_comprobante_url || '',
-          status: compra.estado_compra || 'pendiente',
+          payment_method: compra.metodo_pago || 'Desconocido',
+          payment_reference: compra.referencia_pago || `RF-${Date.now()}`,
+          payment_proof_url: compra.captura_comprobante_url || null,
+          status: (compra.estado_compra || 'pendiente') as PurchaseStatus,
           created_at: compra.fecha_compra || new Date().toISOString(),
+          notes: compra.source === 'local-backup' ? 'Guardado localmente (sin conexión)' : undefined,
           customer: {
-            id: 'local',
-            name: `${compra.nombre || ''} ${compra.apellidos || ''}`.trim(),
+            id: compra.customer_id || 'local',
+            name: `${compra.nombre || ''} ${compra.apellidos || ''}`.trim() || 'Cliente Local',
             email: compra.email || '',
             phone: compra.telefono || '',
             city: compra.ciudad || '',
             state: compra.estado || ''
           },
-          tickets: compra.numeros_boletos?.map((num: number) => ({
+          tickets: (compra.numeros_boletos || []).map((num: number) => ({
             id: `ticket-${num}`,
             number: num,
-            status: 'vendido' as const,
-            customer_id: 'local'
-          })) || []
-        }));
+            status: 'reservado' as const, // Local orders start as reserved until confirmed
+            customer_id: compra.customer_id || 'local',
+            purchase_id: compra.id
+          }))
+        })) as CompraConDetalles[];
         
-        setCompras(comprasFormateadas);
-        toast(`${comprasFormateadas.length} compras cargadas desde localStorage (Supabase no disponible)`, { 
+        console.log(`📦 ADMIN: ${comprasLocales.length} compras desde localStorage`);
+      } catch (localError) {
+        console.error('❌ ADMIN: Error cargando localStorage:', localError);
+      }
+      
+      // STEP 3: Combine and deduplicate orders
+      const todasLasCompras: CompraConDetalles[] = [];
+      const idsVistos = new Set<string>();
+      
+      // Add Supabase orders first (they have priority)
+      comprasSupabase.forEach(compra => {
+        if (!idsVistos.has(compra.id)) {
+          todasLasCompras.push(compra);
+          idsVistos.add(compra.id);
+        }
+      });
+      
+      // Add local orders that aren't in Supabase
+      comprasLocales.forEach(compra => {
+        if (!idsVistos.has(compra.id)) {
+          // Mark as local-only
+          todasLasCompras.push({
+            ...compra,
+            notes: (compra.notes || '') + ' [LOCAL ONLY]'
+          });
+          idsVistos.add(compra.id);
+        }
+      });
+      
+      // Sort by creation date (newest first)
+      todasLasCompras.sort((a, b) => 
+        new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      );
+      
+      setCompras(todasLasCompras);
+      
+      // STEP 4: Show appropriate status message
+      const supabaseCount = comprasSupabase.length;
+      const localCount = comprasLocales.length;
+      const totalCount = todasLasCompras.length;
+      
+      if (isConnected && !supabaseError) {
+        toast.success(`✅ ${totalCount} órdenes cargadas (${supabaseCount} BD + ${localCount} locales) • ${visualPercentage.toFixed(1)}% mostrado`);
+      } else if (supabaseError) {
+        toast.error(`⚠️ BD no disponible: ${localCount} órdenes locales cargadas • Error: ${supabaseError}`, { duration: 6000 });
+      } else {
+        toast(`📦 ${localCount} órdenes desde localStorage (BD offline)`, { 
           icon: '⚠️',
           style: { background: '#fbbf24', color: '#92400e' }
         });
       }
+      
+      console.log(`📊 ADMIN: Total cargadas: ${totalCount} (${supabaseCount} BD + ${localCount} local)`);
+      
     } catch (error) {
-      console.error('Error al cargar compras:', error);
-      toast.error('Error al cargar las compras');
+      console.error('❌ ADMIN: Error crítico cargando compras:', error);
+      toast.error(`Error crítico al cargar compras: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       setCompras([]);
     } finally {
       setLoading(false);

@@ -144,37 +144,44 @@ export async function verificarConexion(): Promise<boolean> {
 }
 
 /**
- * Guarda una compra completa con manejo robusto de errores
+ * Guarda una compra completa con manejo robusto de errores y asignación de tickets
  */
 export async function guardarCompra(datosCompra: CompraCompleta): Promise<{ customer: Customer; purchase: Purchase; tickets: Ticket[] }> {
   try {
+    console.log('💾 SUPABASE: Iniciando guardado de compra:', {
+      nombre: datosCompra.nombre,
+      boletos: datosCompra.cantidad_boletos,
+      numeros: datosCompra.numeros_boletos?.length || 0
+    });
+
     // Verificar conexión primero
     const isConnected = await verificarConexion();
     if (!isConnected) {
       throw new Error('No se pudo establecer conexión con la base de datos. Intenta más tarde.');
     }
 
-    console.log('💾 Guardando compra:', datosCompra);
-
-    // Crear cliente
+    // PASO 1: Crear cliente
+    console.log('👤 SUPABASE: Creando cliente...');
     const { data: customer, error: customerError } = await supabase
       .from('customers')
       .insert([{
-        name: `${datosCompra.nombre} ${datosCompra.apellidos}`,
-        email: datosCompra.email,
-        phone: datosCompra.telefono,
-        city: datosCompra.ciudad,
-        state: datosCompra.estado
+        name: `${datosCompra.nombre} ${datosCompra.apellidos}`.trim(),
+        email: datosCompra.email || '',
+        phone: datosCompra.telefono || '',
+        city: datosCompra.ciudad || '',
+        state: datosCompra.estado || ''
       }])
       .select()
       .single();
 
     if (customerError) {
-      console.error('❌ Error al crear cliente:', customerError);
+      console.error('❌ SUPABASE: Error al crear cliente:', customerError);
       throw new Error(`Error al crear cliente: ${customerError.message}`);
     }
+    console.log('✅ SUPABASE: Cliente creado:', customer.id);
 
-    // Crear compra
+    // PASO 2: Crear compra
+    console.log('💰 SUPABASE: Creando compra...');
     const { data: purchase, error: purchaseError } = await supabase
       .from('purchases')
       .insert([{
@@ -185,30 +192,128 @@ export async function guardarCompra(datosCompra: CompraCompleta): Promise<{ cust
         payment_method: datosCompra.metodo_pago,
         payment_reference: datosCompra.referencia_pago,
         payment_proof_url: datosCompra.captura_comprobante_url,
-        browser_info: datosCompra.navegador,
-        device_info: datosCompra.dispositivo,
-        ip_address: datosCompra.ip_address,
-        user_agent: datosCompra.user_agent,
+        browser_info: datosCompra.navegador || 'unknown',
+        device_info: datosCompra.dispositivo || 'unknown',
+        ip_address: datosCompra.ip_address || 'unknown',
+        user_agent: datosCompra.user_agent || 'unknown',
         status: 'pendiente'
       }])
       .select()
       .single();
 
     if (purchaseError) {
-      console.error('❌ Error al crear compra:', purchaseError);
+      console.error('❌ SUPABASE: Error al crear compra:', purchaseError);
       throw new Error(`Error al crear compra: ${purchaseError.message}`);
+    }
+    console.log('✅ SUPABASE: Compra creada:', purchase.id);
+
+    // PASO 3: CRITICAL FIX - Reservar tickets específicos si se proporcionaron
+    let ticketsCreados: Ticket[] = [];
+    
+    if (datosCompra.numeros_boletos && datosCompra.numeros_boletos.length > 0) {
+      console.log('🎫 SUPABASE: Reservando tickets específicos:', datosCompra.numeros_boletos);
+      
+      try {
+        // Verificar que los tickets estén disponibles
+        const { data: ticketsExistentes, error: checkError } = await supabase
+          .from('tickets')
+          .select('number, status')
+          .in('number', datosCompra.numeros_boletos);
+
+        if (checkError) {
+          console.error('❌ SUPABASE: Error verificando tickets:', checkError);
+          throw checkError;
+        }
+
+        const ticketsNoDisponibles = ticketsExistentes?.filter(t => t.status !== 'disponible') || [];
+        
+        
+        if (ticketsNoDisponibles.length > 0) {
+          console.warn('⚠️ SUPABASE: Algunos tickets ya no están disponibles:', ticketsNoDisponibles.map(t => t.number));
+          // En lugar de fallar, intentar asignar tickets disponibles automáticamente
+          console.log('🔄 SUPABASE: Intentando asignación automática de tickets...');
+          ticketsCreados = await asignarNumerosDisponibles(purchase.id, customer.id, datosCompra.cantidad_boletos);
+        } else {
+          // Todos los tickets están disponibles, reservarlos
+          const ahora = new Date().toISOString();
+          
+          const { data: ticketsReservados, error: reserveError } = await supabase
+            .from('tickets')
+            .update({
+              status: 'reservado',
+              customer_id: customer.id,
+              purchase_id: purchase.id,
+              reserved_at: ahora
+            })
+            .in('number', datosCompra.numeros_boletos)
+            .eq('status', 'disponible')
+            .select();
+
+          if (reserveError) {
+            console.error('❌ SUPABASE: Error reservando tickets:', reserveError);
+            throw reserveError;
+          }
+
+          ticketsCreados = ticketsReservados || [];
+          console.log(`✅ SUPABASE: ${ticketsCreados.length} tickets reservados exitosamente`);
+          
+          // Trigger synchronization event
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('raffle-counters-updated', {
+                detail: { 
+                  source: 'ticket-reservation',
+                  reservedTickets: ticketsCreados.length,
+                  timestamp: new Date().toISOString()
+                }
+              }));
+            }, 100);
+          }
+        }
+      } catch (ticketError) {
+        console.error('❌ SUPABASE: Error manejando tickets específicos:', ticketError);
+        // Fallback: asignar tickets automáticamente
+        console.log('🔄 SUPABASE: Fallback - asignación automática...');
+        try {
+          ticketsCreados = await asignarNumerosDisponibles(purchase.id, customer.id, datosCompra.cantidad_boletos);
+        } catch (fallbackError) {
+          console.error('❌ SUPABASE: Error en asignación de fallback:', fallbackError);
+          // No fallar la compra por esto - se pueden asignar después en admin
+          console.warn('⚠️ SUPABASE: Compra creada sin tickets asignados - se asignarán en confirmación admin');
+        }
+      }
+    } else {
+      // No se proporcionaron números específicos - solo crear la compra
+      console.log('📝 SUPABASE: Compra creada sin tickets específicos - se asignarán al confirmar');
     }
 
     const resultado = {
       customer,
       purchase,
-      tickets: []
+      tickets: ticketsCreados
     };
 
-    console.log('✅ Compra guardada exitosamente');
+    console.log('✅ SUPABASE: Compra guardada exitosamente:', {
+      customerId: customer.id,
+      purchaseId: purchase.id,
+      ticketsCount: ticketsCreados.length
+    });
+    
     return resultado;
   } catch (error) {
-    console.error('❌ Error completo en guardarCompra:', error);
+    console.error('❌ SUPABASE: Error completo en guardarCompra:', error);
+    
+    // Enhanced error handling with more specific messages
+    if (error instanceof Error) {
+      if (error.message.includes('duplicate key')) {
+        throw new Error('Error: datos duplicados detectados. Intenta de nuevo.');
+      } else if (error.message.includes('network') || error.message.includes('timeout')) {
+        throw new Error('Error de conexión. Verifica tu internet e intenta de nuevo.');
+      } else if (error.message.includes('authentication')) {
+        throw new Error('Error de autenticación con la base de datos. Contacta soporte.');
+      }
+    }
+    
     throw error;
   }
 }

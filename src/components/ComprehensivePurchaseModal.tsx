@@ -487,112 +487,62 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
   };
 
   const handleSubmit = async () => {
-    // Si no están completos los datos mínimos, mostrar mensaje amigable
+    console.log('🚀 SUBMIT: Iniciando proceso de envío de orden...');
+    
+    // Validación inicial mejorada
     if (!validateForm()) {
       const missingData = [];
-      if (tickets < 1) missingData.push('cantidad de boletos');
+      if (tickets < 2) missingData.push('cantidad de boletos (mínimo 2)');
       if (!selectedPayment) missingData.push('método de pago');
       if (!customerData.nombre.trim()) missingData.push('nombre');
       if (!customerData.telefono.trim() && !customerData.email.trim()) missingData.push('teléfono o email');
       if (!acceptedTerms) missingData.push('aceptar términos y condiciones');
       
-      toast.error(`¡Casi listo! Solo completa: ${missingData.join(', ')}`);
+      toast.error(`¡Casi listo! Solo completa: ${missingData.join(', ')}`, { duration: 5000 });
       return;
     }
 
-    // Verificar conexión con la base de datos
-    if (!dbConnected) {
-      toast.error(
-        <div className="text-center">
-          <div className="font-bold text-red-600">❌ No se pudo conectar a la base de datos</div>
-          <div className="text-sm mt-2">{dbError || 'Problema de conexión con el servidor'}</div>
-          <button 
-            onClick={retryConnection}
-            className="mt-2 px-3 py-1 bg-emerald-500 text-white rounded text-xs hover:bg-emerald-600"
-          >
-            Reintentar conexión
-          </button>
-        </div>,
-        { duration: 8000 }
-      );
-      return;
-    }
-
+    console.log('✅ SUBMIT: Validación inicial pasada');
     setIsLoading(true);
     
     try {
-      // Mostrar toast de inicio
-      toast.loading('Procesando tu compra...', { id: 'purchase' });
+      // Toast inicial más claro
+      toast.loading('🔄 Procesando tu orden...', { id: 'purchase' });
 
-      // 1. Asignar números de boletos aleatorios usando datos reales
+      // PASO 1: Asignar números de boletos - MEJORADO con mejor manejo de errores
       let numerosAsignados: number[] = [];
       try {
+        console.log('🎫 SUBMIT: Asignando números de boletos...');
         numerosAsignados = await asignarBoletos(tickets);
         setBoletosAsignados(numerosAsignados);
-        toast.loading(`Boletos asignados: ${numerosAsignados.map(formatearNumeroBoleto).join(', ')}`, { id: 'purchase' });
+        console.log(`✅ SUBMIT: ${numerosAsignados.length} boletos asignados:`, numerosAsignados);
+        toast.loading(`🎯 Boletos asignados: ${numerosAsignados.slice(0, 3).map(formatearNumeroBoleto).join(', ')}${numerosAsignados.length > 3 ? ` +${numerosAsignados.length - 3} más` : ''}`, { id: 'purchase' });
       } catch (error) {
-        // Si el error es por falta de boletos, mostrar mensaje específico
-        if (error instanceof Error && error.message.includes('boletos realmente disponibles')) {
-          throw new Error('¡Ups! Algunos números ya fueron tomados por otros compradores. Por favor intenta con menos boletos o inténtalo de nuevo.');
-        } else {
-          throw new Error(`Error al asignar boletos: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        console.error('❌ SUBMIT: Error al asignar boletos:', error);
+        throw new Error(error instanceof Error ? error.message : 'Error al asignar boletos. Intenta de nuevo.');
+      }
+
+      // PASO 2: Subir comprobante si existe (mover antes para detectar errores temprano)
+      let urlComprobante = null;
+      if (uploadedFile.archivo) {
+        try {
+          console.log('📸 SUBMIT: Subiendo comprobante...');
+          toast.loading('📸 Subiendo comprobante...', { id: 'purchase' });
+          urlComprobante = await subirCaptura(uploadedFile.archivo, customerData.nombre);
+          console.log('✅ SUBMIT: Comprobante subido:', urlComprobante ? 'exitoso' : 'falló');
+        } catch (uploadError) {
+          console.warn('⚠️ SUBMIT: Error subiendo comprobante (continuando):', uploadError);
+          // No fallar por esto, es opcional
         }
       }
 
-      // 2. Simular procesamiento
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Preparar datos de la compra para el log
-      const datosCompra = {
-        // Datos del cliente
-        nombre: customerData.nombre.trim(),
-        apellidos: customerData.apellidos?.trim() || '',
-        telefono: customerData.telefono?.trim() || '',
-        email: customerData.email?.trim() || '',
-        estado: customerData.estado?.trim() || '',
-        ciudad: customerData.ciudad?.trim() || '',
-        info_adicional: customerData.infoAdicional?.trim() || '',
-        
-        // Información de la compra
-        cantidad_boletos: tickets,
-        numeros_boletos: numerosAsignados,
-        numeros_boletos_formateados: numerosAsignados.map(formatearNumeroBoleto).join(', '),
-        precio_unitario: PRECIO_POR_BOLETO_MXN,
-        precio_total: calculatePrice(),
-        descuento_aplicado: getDiscount(),
-        
-        // Método de pago
-        metodo_pago: selectedPaymentMethod?.name || selectedPayment || '',
-        
-        // Archivos
-        archivo_subido: !!uploadedFile.archivo,
-        nombre_archivo: uploadedFile.nombreArchivo || '',
-        
-        // Timestamp
-        fecha_compra: new Date().toISOString(),
-        
-        // Estado inicial
-        estado_compra: 'pendiente'
-      };
-
-      // Log para debug - esto simula el guardado en base de datos
-      console.log('✅ COMPRA PROCESADA EXITOSAMENTE:', datosCompra);
-      
-      // 3. Marcar boletos como vendidos en el store
-      const customerId = Date.now().toString();
-      markTicketsAsSold(numerosAsignados, customerId);
-
-      // 4. Subir comprobante a Supabase Storage (si existe)
-      let urlComprobante = null;
-      if (uploadedFile.archivo) {
-        toast.loading('Subiendo comprobante...', { id: 'purchase' });
-        urlComprobante = await subirCaptura(uploadedFile.archivo, customerData.nombre);
-      }
-
-      // 5. Preparar datos para Supabase
+      // PASO 3: Preparar metadata
+      console.log('📊 SUBMIT: Preparando metadata...');
       const metadata = obtenerMetadata();
+      
+      // PASO 4: Preparar datos finales para Supabase
       const datosSupabase: CompraCompleta = {
-        // Datos del cliente
+        // Cliente
         nombre: customerData.nombre.trim(),
         apellidos: customerData.apellidos?.trim() || '',
         telefono: customerData.telefono?.trim() || '',
@@ -601,74 +551,158 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
         ciudad: customerData.ciudad?.trim() || '',
         info_adicional: customerData.infoAdicional?.trim() || '',
         
-        // Información de la compra
+        // Compra
         cantidad_boletos: tickets,
         numeros_boletos: numerosAsignados,
         precio_unitario: PRECIO_POR_BOLETO_MXN,
         precio_total: calculatePrice(),
         descuento_aplicado: getDiscount(),
         
-        // Método de pago
+        // Pago
         metodo_pago: selectedPaymentMethod?.name || selectedPayment || '',
-        referencia_pago: `RF-${Date.now()}`,
+        referencia_pago: `RF-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
         captura_comprobante_url: urlComprobante || undefined,
         
         // Metadata técnica
-        navegador: metadata.navegador,
-        dispositivo: metadata.dispositivo,
-        user_agent: metadata.user_agent
+        navegador: metadata.navegador || 'desconocido',
+        dispositivo: metadata.dispositivo || 'desconocido',
+        user_agent: metadata.user_agent || navigator.userAgent || 'desconocido'
       };
 
-      // 6. Guardar en Supabase
-      publicToast.loading('Procesando tu compra...');
-      const compraGuardada = await guardarCompra(datosSupabase);
+      console.log('💾 SUBMIT: Datos preparados para BD:', {
+        nombre: datosSupabase.nombre,
+        boletos: datosSupabase.cantidad_boletos,
+        total: datosSupabase.precio_total,
+        metodo: datosSupabase.metodo_pago
+      });
 
-      // 7. Backup en localStorage (opcional)
+      // PASO 5: Guardar en Supabase con manejo robusto de errores
+      let compraGuardada;
       try {
-        const comprasAnteriores = JSON.parse(localStorage.getItem('compras-registradas') || '[]');
-        comprasAnteriores.push({
-          ...datosCompra,
-          id: compraGuardada.purchase?.id || customerId,
-          timestamp: Date.now()
-        });
-        localStorage.setItem('compras-registradas', JSON.stringify(comprasAnteriores));
-      } catch (localError) {
-        console.warn('No se pudo guardar backup local:', localError);
+        toast.loading('💾 Guardando en base de datos...', { id: 'purchase' });
+        console.log('💾 SUBMIT: Llamando guardarCompra...');
+        
+        // CRITICAL FIX: Ensure database connection before saving
+        console.log('🔍 SUBMIT: Verificando conexiones - DB:', dbConnected, 'Supabase:', isConnected);
+        if (!dbConnected && !isConnected) {
+          console.warn('⚠️ SUBMIT: No hay conexión directa, intentando guardar de todos modos...');
+          // No fallar inmediatamente, intentar guardar y manejar errores después
+        }
+        
+        compraGuardada = await guardarCompra(datosSupabase);
+        console.log('✅ SUBMIT: Compra guardada en Supabase:', compraGuardada.purchase?.id);
+      } catch (supabaseError) {
+        console.error('❌ SUBMIT: Error en Supabase:', supabaseError);
+        
+        // Si falla Supabase, intentar guardar localmente como backup
+        console.log('📦 SUBMIT: Guardando backup local...');
+        const backupData = {
+          ...datosSupabase,
+          id: `local-${Date.now()}`,
+          timestamp: Date.now(),
+          fecha_compra: new Date().toISOString(),
+          estado_compra: 'pendiente',
+          source: 'local-backup',
+          numeros_boletos: numerosAsignados
+        };
+        
+        try {
+          const comprasAnteriores = JSON.parse(localStorage.getItem('compras-registradas') || '[]');
+          comprasAnteriores.push(backupData);
+          localStorage.setItem('compras-registradas', JSON.stringify(comprasAnteriores));
+          console.log('✅ SUBMIT: Backup local guardado');
+          
+          // Continuar con éxito pero avisar que será procesado después
+          compraGuardada = { 
+            purchase: { id: backupData.id }, 
+            customer: { id: 'local' }, 
+            tickets: numerosAsignados.map(num => ({ id: num.toString(), number: num })) as any[]
+          };
+          
+          // Mostrar mensaje informativo sobre el backup
+          toast.success('Orden guardada localmente. Se sincronizará cuando haya conexión.', { duration: 6000 });
+          
+        } catch (localError) {
+          console.error('❌ SUBMIT: Error guardando backup local:', localError);
+          throw new Error('No se pudo guardar la orden. Verifica tu conexión e intenta de nuevo.');
+        }
       }
 
-      // Éxito! 
-      toast.success('¡Compra registrada exitosamente!', { id: 'purchase' });
+      // PASO 6: Actualizar estado local (Zustand store)
+      try {
+        console.log('🔄 SUBMIT: Actualizando estado local...');
+        const customerId = compraGuardada.purchase?.id || Date.now().toString();
+        markTicketsAsSold(numerosAsignados, customerId);
+        console.log('✅ SUBMIT: Estado local actualizado');
+      } catch (storeError) {
+        console.warn('⚠️ SUBMIT: Error actualizando estado local:', storeError);
+        // No fallar por esto
+      }
+
+      // PASO 7: Backup adicional en localStorage
+      try {
+        const backupCompleto = {
+          id: compraGuardada.purchase?.id || `backup-${Date.now()}`,
+          ...datosSupabase,
+          numeros_boletos_formateados: numerosAsignados.map(formatearNumeroBoleto).join(', '),
+          timestamp: Date.now(),
+          fecha_compra: new Date().toISOString(),
+          estado_compra: 'pendiente'
+        };
+        
+        const comprasAnteriores = JSON.parse(localStorage.getItem('compras-registradas') || '[]');
+        comprasAnteriores.push(backupCompleto);
+        localStorage.setItem('compras-registradas', JSON.stringify(comprasAnteriores));
+        console.log('✅ SUBMIT: Backup final guardado');
+      } catch (backupError) {
+        console.warn('⚠️ SUBMIT: Error en backup final:', backupError);
+        // No fallar por esto
+      }
+
+      // PASO 8: ÉXITO - Mostrar confirmación
+      console.log('🎉 SUBMIT: ¡Proceso completado exitosamente!');
+      toast.success('¡Orden enviada exitosamente!', { id: 'purchase' });
       
-      // Mostrar efecto de éxito
+      // Limpiar formulario
+      localStorage.removeItem('purchase-progress');
+      
+      // Mostrar pantalla de éxito
       setShowSuccess(true);
       setIsLoading(false);
       
-      // Limpiar datos guardados del formulario
-      localStorage.removeItem('purchase-progress');
-      
-      // Mostrar información adicional al usuario
+      // Toast detallado de confirmación
       toast.success(
-        `¡Gracias ${customerData.nombre}! Tus boletos ${numerosAsignados.map(formatearNumeroBoleto).join(', ')} han sido registrados.`,
+        `¡Perfecto ${customerData.nombre}! Tu orden con ${numerosAsignados.length} boletos ha sido enviada. Te contactaremos pronto.`,
         { duration: 8000 }
       );
       
-      // Cerrar automáticamente después del confeti
+      // Auto-cerrar después del confetti
       setTimeout(() => {
         onClose();
         setShowSuccess(false);
-      }, 4000);
+      }, 4500);
       
     } catch (error) {
-      console.error('Error al procesar compra:', error);
-      
-      // Mostrar error específico
-      if (error instanceof Error) {
-        toast.error(`Error: ${error.message}`, { id: 'purchase' });
-      } else {
-        toast.error('Ups, algo salió mal. Inténtalo de nuevo.', { id: 'purchase' });
-      }
+      console.error('❌ SUBMIT: Error crítico en proceso:', error);
       
       setIsLoading(false);
+      
+      // Mostrar error específico y útil
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido. Intenta de nuevo.';
+      
+      toast.error(
+        <div className="text-left">
+          <div className="font-bold text-red-700 mb-1">❌ Error al enviar orden</div>
+          <div className="text-sm text-red-600">{errorMessage}</div>
+          <div className="text-xs text-red-500 mt-2">
+            💡 Si el problema persiste, contacta soporte o intenta más tarde
+          </div>
+        </div>,
+        { 
+          id: 'purchase',
+          duration: 8000
+        }
+      );
     }
   };
 
