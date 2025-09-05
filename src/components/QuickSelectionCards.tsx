@@ -98,7 +98,8 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
 
   const handleCustomSelect = () => {
     const amount = parseInt(customAmount);
-    if (amount >= 2 && amount <= 100 && amount <= availableCount) {
+    const maxAllowed = Math.min(100, availableCount);
+    if (amount >= 2 && amount <= maxAllowed) {
       onQuickSelect(amount);
       setShowCustomModal(false);
       setCustomAmount('');
@@ -116,7 +117,7 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4 max-w-7xl mx-auto">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4 max-w-7xl mx-auto">
         {cards.map((card) => {
           const Icon = card.icon;
           const canSelect = availableCount >= card.count;
@@ -225,7 +226,7 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
               
               {/* Rango */}
               <div className="font-bold text-sm sm:text-base">
-                2-100 números
+                2-{Math.min(100, availableCount)} números
               </div>
               
               <div className="text-xs opacity-75">
@@ -282,12 +283,12 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
               <div className="px-6 py-6 space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cantidad de números (mínimo 2, máximo 100)
+                    Cantidad de números (mínimo 2, máximo {Math.min(100, availableCount)})
                   </label>
                   <input
                     type="number"
                     min="2"
-                    max="100"
+                    max={Math.min(100, availableCount)}
                     value={customAmount}
                     onChange={(e) => setCustomAmount(e.target.value)}
                     className="w-full px-4 py-3 text-center text-2xl font-bold border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors"
@@ -337,7 +338,7 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
                 </button>
                 <button
                   onClick={handleCustomSelect}
-                  disabled={!customAmount || parseInt(customAmount) < 2 || parseInt(customAmount) > 100 || parseInt(customAmount) > availableCount}
+                  disabled={!customAmount || parseInt(customAmount) < 2 || parseInt(customAmount) > Math.min(100, availableCount)}
                   className={cn(
                     'flex-1 px-4 py-3 font-bold rounded-xl transition-colors',
                     'bg-blue-600 hover:bg-blue-700 text-white',

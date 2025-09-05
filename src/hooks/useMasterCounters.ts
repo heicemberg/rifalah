@@ -45,49 +45,32 @@ const FOMO_THRESHOLD = 18; // % umbral para desactivar FOMO
 
 let fomoSessionStart: number | null = null;
 
-const calculateFOMO = (realSoldCount: number): { fomoCount: number; isActive: boolean } => {
+const calculateFOMO = (realSoldCount: number): { fomoCount: number; displaySoldCount: number; isActive: boolean } => {
   const realPercentage = (realSoldCount / TOTAL_TICKETS) * 100;
   
   // Si ventas reales >= 18%, desactivar FOMO y mostrar solo reales
   if (realPercentage >= FOMO_THRESHOLD) {
-    return { fomoCount: realSoldCount, isActive: false };
+    return { 
+      fomoCount: 0, 
+      displaySoldCount: realSoldCount, 
+      isActive: false 
+    };
   }
   
-  // Inicializar sesión FOMO
-  if (!fomoSessionStart) {
-    if (typeof window !== 'undefined') {
-      fomoSessionStart = parseInt(localStorage.getItem('fomo_session_start') || Date.now().toString());
-      localStorage.setItem('fomo_session_start', fomoSessionStart.toString());
-    } else {
-      fomoSessionStart = Date.now();
-    }
-  }
+  // 🎯 NUEVA LÓGICA FOMO: 1200 FIJOS + VENDIDOS REALES (SUMA DINÁMICA)
+  const FOMO_BASE_FIXED = 1200; // Tickets FOMO fijos que siempre se muestran
   
-  // Calcular FOMO gradual: 8% inicial → 12% máximo
-  const minutesElapsed = (Date.now() - fomoSessionStart) / (1000 * 60);
-  const basePercentage = 8;
-  const maxPercentage = 12;
+  // FOMO se suma a los vendidos reales, no es MAX
+  const fomoTickets = FOMO_BASE_FIXED;
+  const displaySoldCount = realSoldCount + fomoTickets;
   
-  // Crecimiento muy gradual: 0.05% cada 2 minutos
-  const increment = Math.floor(minutesElapsed / 2) * 0.05;
-  const fomoPercentage = Math.min(maxPercentage, basePercentage + increment);
-  const fomoBaseCount = Math.floor((fomoPercentage / 100) * TOTAL_TICKETS);
+  // 🔍 Debug log para seguimiento de la nueva lógica
+  console.log(`🎯 NUEVA LÓGICA SUMA: Reales(${realSoldCount}) + FOMO(${fomoTickets}) = Display(${displaySoldCount})`);
   
-  // 🎯 LÓGICA CORREGIDA: MAX entre FOMO_base y ventas_reales
-  // Esto garantiza que:
-  // 1. Cuando hay pocas ventas → muestra FOMO base para crear urgencia
-  // 2. Cuando ventas reales > FOMO base → muestra ventas reales
-  // 3. NUNCA suma ambos → previene overselling matemático
-  const finalFomoCount = Math.max(fomoBaseCount, realSoldCount);
-  
-  // 🔍 Debug log para seguimiento preciso de cada cambio
-  if (realSoldCount > 0) { // Log cada vez que hay ventas reales
-    console.log(`🎯 LÓGICA MAX: Base(${fomoBaseCount}) vs Real(${realSoldCount}) = Display(${finalFomoCount})`);
-  }
-  
-  // 🚀 LÓGICA MAX: Previene overselling matemático manteniendo 10,000 total
+  // 🚀 LÓGICA SUMA: FOMO fijos + ventas reales
   return { 
-    fomoCount: finalFomoCount, 
+    fomoCount: fomoTickets,
+    displaySoldCount: displaySoldCount, 
     isActive: true 
   };
 };
@@ -209,30 +192,34 @@ const updateMasterCounters = async (forceUpdate = false) => {
       console.error('❌ Error syncing with Zustand store:', syncError);
     }
 
-    // Calcular FOMO (NO afecta disponibles reales)
-    const { fomoCount, isActive } = calculateFOMO(sold);
-    // Sistema de contadores actualizado
-
+    // 🎯 NUEVA LÓGICA FOMO: Calcular FOMO + disponibles ajustados
+    const { fomoCount, displaySoldCount, isActive } = calculateFOMO(sold);
+    
+    // 🔢 DISPONIBLES RECALCULADOS: 10,000 - (reales + fomo)
+    const adjustedAvailable = TOTAL_TICKETS - displaySoldCount - reserved;
+    
+    console.log(`📊 CÁLCULO AJUSTADO: Total(${TOTAL_TICKETS}) - Display(${displaySoldCount}) - Reservados(${reserved}) = Disponibles(${adjustedAvailable})`);
+    
     // Crear nueva instancia del master counter
     const newData: MasterCounterData = {
       totalTickets: TOTAL_TICKETS,
-      soldTickets: sold,              // ✅ Real vendidos de BD
-      reservedTickets: reserved,      // ✅ Real reservados de BD  
-      availableTickets: available,    // ✅ Real disponibles calculados: total - sold - reserved
+      soldTickets: sold,                    // ✅ Real vendidos de BD
+      reservedTickets: reserved,            // ✅ Real reservados de BD  
+      availableTickets: adjustedAvailable,  // ✅ AJUSTADO: total - (display) - reserved
       
-      fomoSoldTickets: fomoCount,     // ✅ Solo para display público
+      fomoSoldTickets: displaySoldCount,    // ✅ SUMA: reales + FOMO para display
       fomoIsActive: isActive,
       
-      soldPercentage: (sold / TOTAL_TICKETS) * 100,           // ✅ Real %
-      fomoPercentage: (fomoCount / TOTAL_TICKETS) * 100,      // ✅ Display %
-      availablePercentage: (available / TOTAL_TICKETS) * 100, // ✅ Real %
+      soldPercentage: (sold / TOTAL_TICKETS) * 100,                      // ✅ Real %
+      fomoPercentage: (displaySoldCount / TOTAL_TICKETS) * 100,         // ✅ Display %
+      availablePercentage: (adjustedAvailable / TOTAL_TICKETS) * 100,   // ✅ Disponibles %
       
       isConnected: true,
       lastUpdate: new Date(),
       isLoading: false
     };
 
-    console.log(`📊 CONTADOR ACTUALIZADO: ${fomoCount} vendidos (${newData.fomoPercentage.toFixed(1)}%), ${available} disponibles`);
+    console.log(`📊 CONTADOR ACTUALIZADO: ${displaySoldCount} vendidos display (${newData.fomoPercentage.toFixed(1)}%), ${adjustedAvailable} disponibles`);
 
     masterCounterInstance = newData;
     
@@ -445,32 +432,30 @@ export const useMasterCounters = (): MasterCounterData => {
 export const useBasicCounters = () => {
   const data = useMasterCounters();
   
-  // 🎯 MATEMÁTICA EXACTA CORREGIDA - PREVIENE OVERSELLING:
-  // Los disponibles se calculan desde vendidos mostrados para mantener suma = 10,000
-  const displaySoldTickets = data.fomoSoldTickets;  // FOMO o real (max de ambos)
-  const displayAvailableTickets = data.totalTickets - displaySoldTickets - data.reservedTickets; // ✅ CALCULADO PARA GARANTIZAR SUMA EXACTA
+  // 🎯 NUEVA LÓGICA: Usar datos ya calculados del master counter
+  const displaySoldTickets = data.fomoSoldTickets;  // Ya incluye reales + FOMO (1200)
+  const displayAvailableTickets = data.availableTickets; // Ya ajustado: 10,000 - display - reserved
   
   // ✅ VERIFICACIÓN MATEMÁTICA GARANTIZADA - SUMA SIEMPRE 10,000
-  // CRITICAL: displaySold + displayAvailable + reserved = 10,000 SIEMPRE
   const mathCheck = displaySoldTickets + displayAvailableTickets + data.reservedTickets;
   
   if (mathCheck !== data.totalTickets) {
     console.error(`🚨 CRITICAL MATH ERROR: ${displaySoldTickets}S + ${displayAvailableTickets}A + ${data.reservedTickets}R = ${mathCheck} ≠ ${data.totalTickets}`);
-    console.error(`🔧 FORCING CORRECTION TO MAINTAIN MATHEMATICAL INTEGRITY`);
+    console.error(`🔧 MATHEMATICAL INTEGRITY BROKEN - NEEDS IMMEDIATE FIX`);
   } else {
     // 🔍 Log para verificar corrección en tiempo real
-    if (Math.random() < 0.05) { // 5% chance to log
+    if (Math.random() < 0.1) { // 10% chance to log
       console.log(`✅ MATH VERIFIED: ${displaySoldTickets}S + ${displayAvailableTickets}A + ${data.reservedTickets}R = ${mathCheck} = ${data.totalTickets}`);
-      console.log(`📊 DISPLAY: Real ${data.soldTickets} → Display ${displaySoldTickets} (max entre FOMO y reales)`);
-      console.log(`🎯 AVAILABLE: ${displayAvailableTickets} (calculado para mantener suma exacta = 10,000)`);
+      console.log(`📊 DISPLAY: Reales ${data.soldTickets} + FOMO 1200 = Display ${displaySoldTickets}`);
+      console.log(`🎯 AVAILABLE: ${displayAvailableTickets} (10,000 - ${displaySoldTickets} - ${data.reservedTickets})`);
     }
   }
   
   return {
     totalTickets: data.totalTickets,
-    soldTickets: displaySoldTickets,           // ✅ FOMO para mostrar al cliente
-    availableTickets: displayAvailableTickets, // ✅ REAL para mantener matemática exacta
-    soldPercentage: data.fomoPercentage,       // ✅ FOMO percentage para display
+    soldTickets: displaySoldTickets,           // ✅ Reales + FOMO (1200)
+    availableTickets: displayAvailableTickets, // ✅ Ajustado para mantener suma = 10,000
+    soldPercentage: data.fomoPercentage,       // ✅ Display percentage
     isConnected: data.isConnected,
     lastUpdate: data.lastUpdate
   };
@@ -511,10 +496,9 @@ export const useAdminCounters = () => {
 export const useDisplayStats = () => {
   const data = useMasterCounters();
   
-  // 🎯 SOLUCIÓN MATEMÁTICAMENTE PERFECTA - VERSIÓN CORREGIDA:
-  // Disponibles calculados desde vendidos mostrados para garantizar suma = 10,000
-  const displaySoldCount = data.fomoSoldTickets;     // FOMO o real (max)
-  const displayAvailableCount = data.totalTickets - displaySoldCount - data.reservedTickets; // ✅ CALCULADO PARA SUMA EXACTA
+  // 🎯 NUEVA LÓGICA: Usar datos pre-calculados del master counter
+  const displaySoldCount = data.fomoSoldTickets;     // Reales + FOMO (1200)
+  const displayAvailableCount = data.availableTickets; // Ya ajustado: 10,000 - display - reserved
   
   // ✅ VERIFICACIÓN AUTOMÁTICA - GARANTIZA SUMA = 10,000
   const sum = displaySoldCount + displayAvailableCount + data.reservedTickets;
@@ -523,11 +507,11 @@ export const useDisplayStats = () => {
   }
   
   return {
-    soldCount: displaySoldCount,               // ✅ FOMO para display
-    availableCount: displayAvailableCount,     // ✅ REAL para mantener matemática exacta
+    soldCount: displaySoldCount,               // ✅ Reales + FOMO (1200)
+    availableCount: displayAvailableCount,     // ✅ Pre-calculado para mantener suma = 10,000
     reservedCount: data.reservedTickets,       // ✅ REAL
     totalCount: data.totalTickets,             // ✅ REAL
-    soldPercentage: data.fomoPercentage,       // ✅ FOMO percentage
+    soldPercentage: data.fomoPercentage,       // ✅ Display percentage
     realSoldCount: data.soldTickets,           // ✅ Datos reales para admin
     isConnected: data.isConnected,
     lastUpdate: data.lastUpdate
@@ -538,17 +522,16 @@ export const useDisplayStats = () => {
 export const useTicketStats = () => {
   const data = useMasterCounters();
   
-  // 🎯 CORRECCIÓN CRÍTICA: Disponibles calculados desde vendidos mostrados
-  const realAvailable = data.availableTickets; // ✅ Datos reales de BD
-  const displayAvailable = data.totalTickets - data.fomoSoldTickets - data.reservedTickets; // ✅ Calculado para suma exacta
+  // 🎯 NUEVA LÓGICA: Usar datos pre-calculados del master counter
+  const displayAvailable = data.availableTickets; // Ya ajustado: 10,000 - display - reserved
   
   return {
     total: data.totalTickets,
     sold: data.soldTickets, // Reales de BD
     reserved: data.reservedTickets,
-    available: realAvailable, // ✅ Datos reales de BD
-    fomoSold: data.fomoSoldTickets, // Con FOMO para display
-    fomoAvailable: displayAvailable, // ✅ Calculado para mantener matemática exacta
+    available: displayAvailable, // ✅ Disponibles ajustados para suma = 10,000
+    fomoSold: data.fomoSoldTickets, // Reales + FOMO (1200)
+    fomoAvailable: displayAvailable, // ✅ Pre-calculado
     fomoActive: data.fomoIsActive,
     progress: {
       real: data.soldPercentage,
@@ -583,32 +566,38 @@ export const testMathConsistency = () => {
   console.log(`   Expected: ${totalTickets}`);
   console.log(`   Result: ${realMathValid ? '✅ PASS' : '❌ FAIL'}`);
   
-  // Test 2: FOMO display consistency
-  const displaySoldTickets = fomoSoldTickets;
-  const displayAvailableTickets = totalTickets - displaySoldTickets; // Available calculated to ensure sum = total
-  
-  console.log(`🎭 FOMO DISPLAY TEST:`);
-  console.log(`   Display Sold: ${displaySoldTickets} (real: ${soldTickets})`);
-  console.log(`   Display Available: ${displayAvailableTickets} (always real)`);
+  // Test 2: NUEVA LÓGICA FOMO display consistency  
+  const displaySoldTickets = fomoSoldTickets; // Reales + FOMO (1200)
+  const displayAvailableTickets = availableTickets; // Ya ajustado: 10,000 - display - reserved
+  const displaySum = displaySoldTickets + displayAvailableTickets + reservedTickets;
+
+  console.log(`🎭 NUEVA LÓGICA FOMO TEST:`);
+  console.log(`   Display Sold: ${displaySoldTickets} (reales: ${soldTickets} + FOMO: 1200)`);
+  console.log(`   Display Available: ${displayAvailableTickets} (ajustado)`);
+  console.log(`   Reserved: ${reservedTickets}`);
+  console.log(`   Display Sum: ${displaySum} (debe ser ${totalTickets})`);
   console.log(`   FOMO Active: ${fomoIsActive}`);
-  console.log(`   FOMO Difference: +${displaySoldTickets - soldTickets} fake sold`);
+  console.log(`   FOMO Addition: +1200 tickets fijos`);
   
-  // Test 3: Disponibles correctos (CRITICAL)
-  const expectedAvailable = totalTickets - soldTickets - reservedTickets;
-  const availableTestValid = availableTickets === expectedAvailable;
+  const displayMathValid = displaySum === totalTickets;
   
-  console.log(`🎯 AVAILABLE CALCULATION TEST:`);
-  console.log(`   Formula: ${totalTickets} - ${soldTickets} - ${reservedTickets} = ${expectedAvailable}`);
+  // Test 3: Nueva lógica de disponibles (CRITICAL)
+  const expectedDisplayAvailable = totalTickets - displaySoldTickets - reservedTickets;
+  const newLogicValid = availableTickets === expectedDisplayAvailable;
+  
+  console.log(`🎯 NUEVA LÓGICA DISPONIBLES TEST:`);
+  console.log(`   Formula: ${totalTickets} - ${displaySoldTickets} - ${reservedTickets} = ${expectedDisplayAvailable}`);
   console.log(`   Actual Available: ${availableTickets}`);
-  console.log(`   Result: ${availableTestValid ? '✅ PASS' : '❌ FAIL'}`);
+  console.log(`   Result: ${newLogicValid ? '✅ PASS' : '❌ FAIL'}`);
   
-  // Test 4: Sync integrity
-  const syncTestValid = realMathValid && availableTestValid;
+  // Test 4: Sync integrity con nueva lógica
+  const syncTestValid = realMathValid && displayMathValid && newLogicValid;
   
-  console.log(`🔄 OVERALL SYNC TEST:`);
+  console.log(`🔄 OVERALL NUEVA LÓGICA TEST:`);
   console.log(`   Real Math: ${realMathValid ? '✅' : '❌'}`);
-  console.log(`   Available Calc: ${availableTestValid ? '✅' : '❌'}`);
-  console.log(`   Overall: ${syncTestValid ? '✅ SYSTEM SYNCHRONIZED' : '❌ SYNC ISSUES DETECTED'}`);
+  console.log(`   Display Math: ${displayMathValid ? '✅' : '❌'}`);
+  console.log(`   Nueva Lógica: ${newLogicValid ? '✅' : '❌'}`);
+  console.log(`   Overall: ${syncTestValid ? '✅ SISTEMA CORRECTAMENTE SINCRONIZADO' : '❌ PROBLEMAS DE SINCRONIZACIÓN DETECTADOS'}`);
   
   console.groupEnd();
   
