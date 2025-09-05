@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { guardarCompra, subirCaptura, obtenerMetadata, type CompraCompleta } from '../lib/supabase';
 import { useSupabaseConnection } from '../hooks/useSupabaseConnection';
 import toast from 'react-hot-toast';
-import { publicToast } from '../lib/toast-utils';
 import { useRaffleStore, useTickets } from '../stores/raffle-store';
 import { useMasterCounters } from '../hooks/useMasterCounters';
 
@@ -166,7 +165,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
     }
   }, [isConnected]);
   // Hook para manejo robusto de conexión a Supabase
-  const { isConnected: dbConnected, isLoading: dbLoading, error: dbError, retry: retryConnection } = useSupabaseConnection();
+  const { isConnected: dbConnected, isLoading: dbLoading } = useSupabaseConnection();
   
   // Estados principales
   const [tickets, setTickets] = useState<number>(initialTickets);
@@ -195,7 +194,6 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
   const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutos en segundos
   const [progress, setProgress] = useState(0);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [isConfirmed, setIsConfirmed] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [boletosAsignados, setBoletosAsignados] = useState<number[]>([]);
 
@@ -731,21 +729,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
     window.open(whatsappUrl, '_blank');
   };
 
-  const handleConfirmAndContinue = () => {
-    if (!validateForm()) {
-      const missingData = [];
-      if (tickets < 2) missingData.push('cantidad de boletos');
-      if (!selectedPayment) missingData.push('método de pago');
-      if (!customerData.nombre.trim()) missingData.push('nombre');
-      if (!customerData.telefono.trim() && !customerData.email.trim()) missingData.push('teléfono o email');
-      if (!acceptedTerms) missingData.push('aceptar términos y condiciones');
-      
-      alert(`¡Casi listo! Solo completa: ${missingData.join(', ')}`);
-      return;
-    }
-    
-    setIsConfirmed(true);
-  };
+  // Función removida - no se usa
 
   const selectedPaymentMethod = paymentMethods.find(p => p.id === selectedPayment);
 

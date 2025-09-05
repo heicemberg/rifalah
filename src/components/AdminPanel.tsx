@@ -101,21 +101,21 @@ export default function AdminPanel() {
       
       // Add Supabase orders first (they have priority)
       comprasSupabase.forEach(compra => {
-        if (!idsVistos.has(compra.id)) {
+        if (compra.id && !idsVistos.has(compra.id)) {
           todasLasCompras.push(compra);
-          idsVistos.add(compra.id);
+          if (compra.id) idsVistos.add(compra.id);
         }
       });
       
       // Add local orders that aren't in Supabase
       comprasLocales.forEach(compra => {
-        if (!idsVistos.has(compra.id)) {
+        if (compra.id && !idsVistos.has(compra.id)) {
           // Mark as local-only
           todasLasCompras.push({
             ...compra,
             notes: (compra.notes || '') + ' [LOCAL ONLY]'
           });
-          idsVistos.add(compra.id);
+          if (compra.id) idsVistos.add(compra.id);
         }
       });
       
