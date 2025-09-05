@@ -17,8 +17,8 @@ export default function TestOrderFlowPage() {
     setResults(null);
     
     try {
-      const debugger = new OrderFlowDebugger();
-      const result = await debugger.testCompleteOrderFlow();
+      const orderDebugger = new OrderFlowDebugger();
+      const result = await orderDebugger.testCompleteOrderFlow();
       
       setResults(result);
       debugger.printSummary();
@@ -38,7 +38,7 @@ export default function TestOrderFlowPage() {
 
   const testCounters = async () => {
     try {
-      const debugger = new OrderFlowDebugger();
+      const orderDebugger = new OrderFlowDebugger();
       const result = await debugger.testCounterSync();
       
       if (result.success) {
