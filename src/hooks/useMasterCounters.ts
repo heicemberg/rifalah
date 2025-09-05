@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -43,7 +43,8 @@ let supabaseSubscription: any = null;
 const TOTAL_TICKETS = 10000;
 const FOMO_THRESHOLD = 18; // % umbral para desactivar FOMO
 
-let fomoSessionStart: number | null = null;
+// Variable removida - ya no se usa en la nueva lógica FOMO
+// const fomoSessionStart: number | null = null;
 
 const calculateFOMO = (realSoldCount: number): { fomoCount: number; displaySoldCount: number; isActive: boolean } => {
   const realPercentage = (realSoldCount / TOTAL_TICKETS) * 100;
@@ -193,7 +194,7 @@ const updateMasterCounters = async (forceUpdate = false) => {
     }
 
     // 🎯 NUEVA LÓGICA FOMO: Calcular FOMO + disponibles ajustados
-    const { fomoCount, displaySoldCount, isActive } = calculateFOMO(sold);
+    const { displaySoldCount, isActive } = calculateFOMO(sold);
     
     // 🔢 DISPONIBLES RECALCULADOS: 10,000 - (reales + fomo)
     const adjustedAvailable = TOTAL_TICKETS - displaySoldCount - reserved;

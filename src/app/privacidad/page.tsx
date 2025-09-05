@@ -42,7 +42,7 @@ export default function PrivacidadPage() {
                 <strong>Departamento de Datos Personales:</strong> Lic. María Fernández González
               </p>
               <p>
-                Rifas Silverado México S.A. de C.V. (en adelante "Rifas Silverado", "nosotros" o "la empresa") 
+                Rifas Silverado México S.A. de C.V. (en adelante &quot;Rifas Silverado&quot;, &quot;nosotros&quot; o &quot;la empresa&quot;) 
                 es responsable del uso y protección de sus datos personales, en términos de la 
                 Ley Federal de Protección de Datos Personales en Posesión de los Particulares.
               </p>
@@ -241,7 +241,7 @@ export default function PrivacidadPage() {
               <p>Envíe su solicitud a:</p>
               <div className="bg-green-50 p-4 rounded-lg">
                 <p><strong>Email:</strong> privacidad@rifa-silverado.mx</p>
-                <p><strong>Asunto:</strong> "Solicitud de Derechos ARCO"</p>
+                <p><strong>Asunto:</strong> &quot;Solicitud de Derechos ARCO&quot;</p>
                 <p><strong>Teléfono:</strong> +52 55 1234-5678 (Ext. 105)</p>
                 <p><strong>Horario de atención:</strong> Lunes a Viernes 9:00 - 17:00 hrs</p>
               </div>

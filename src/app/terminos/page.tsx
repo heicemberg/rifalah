@@ -233,7 +233,7 @@ export default function TerminosPage() {
               <ul className="list-disc list-inside space-y-2">
                 <li>El organizador no se responsabiliza por problemas técnicos, fallas del sistema o interrupciones del servicio</li>
                 <li>No hay responsabilidad por pérdida de datos o transacciones incompletas por causas ajenas</li>
-                <li>El premio se entrega "tal como está" según especificaciones del fabricante</li>
+                <li>El premio se entrega &quot;tal como está&quot; según especificaciones del fabricante</li>
                 <li>No se otorgan premios en efectivo equivalente al valor del vehículo</li>
                 <li>Los gastos posteriores (gasolina, mantenimiento, seguros adicionales) son responsabilidad del ganador</li>
               </ul>
