@@ -21,10 +21,11 @@ import {
   Heart,
   Target
 } from 'lucide-react'
-import ComprehensivePurchaseModal from '@/components/ComprehensivePurchaseModal'
+import PurchaseWizard from '@/components/PurchaseWizard'
 import TicketGrid from '@/components/TicketGrid'
 import OrganicNotifications from '@/components/OrganicNotifications'
 import MathDebugger from '@/components/MathDebugger'
+import FloatingPurchaseButton from '@/components/FloatingPurchaseButton'
 
 export default function NewRaffePage() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
@@ -765,13 +766,27 @@ export default function NewRaffePage() {
       </footer>
 
       {/* Modales */}
-      <ComprehensivePurchaseModal 
+      <PurchaseWizard
         isOpen={showPurchaseModal}
         onClose={() => setShowPurchaseModal(false)}
+        selectedTickets={selectedTickets}
+        onConfirmPurchase={async (customerData, paymentMethod) => {
+          console.log('🎯 Compra confirmada:', { customerData, paymentMethod });
+          // Aquí iría la lógica de procesamiento de compra
+          setShowPurchaseModal(false);
+        }}
+        isProcessing={false}
       />
       
       {/* Live Activities */}
       <OrganicNotifications />
+
+      {/* Botón Flotante de Compra */}
+      <FloatingPurchaseButton
+        selectedTickets={selectedTickets}
+        onOpenPurchaseModal={() => setShowPurchaseModal(true)}
+        isVisible={selectedTickets.length > 0}
+      />
       
       {/* Math Debugger - Solo en desarrollo */}
       <MathDebugger show={process.env.NODE_ENV === 'development'} />

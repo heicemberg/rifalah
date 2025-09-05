@@ -13,6 +13,7 @@ import { useBasicCounters, useDisplayStats, forceMasterUpdate } from '../hooks/u
 import { formatTicketNumber, cn } from '../lib/utils';
 import { TOTAL_TICKETS } from '../lib/constants';
 import { Gift, Zap, Trophy } from 'lucide-react';
+import QuickSelectionCards from './QuickSelectionCards';
 
 // ============================================================================
 // TIPOS Y CONSTANTES
@@ -390,10 +391,10 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(800);
   
-  // FILTROS PARA TICKETS - NUEVO ESTADO
+  // FILTROS PARA TICKETS - OPTIMIZADO PARA USUARIOS MEXICANOS
   const [showFilters, setShowFilters] = useState(false);
   const [filterSettings, setFilterSettings] = useState({
-    hideOccupied: false, // Ocultar tickets vendidos/reservados
+    hideOccupied: true, // ✅ POR DEFECTO: Ocultar ocupados para reducir fricción
     showOnlyAvailable: false, // Solo mostrar disponibles
     showOnlySelected: false // Solo mostrar seleccionados
   });
@@ -422,6 +423,36 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
       selectTicket(ticketNumber);
     }
   }, [selectedTickets, selectTicket, deselectTicket]);
+
+  // Handler para selección rápida de múltiples tickets
+  const handleQuickSelection = useCallback((count: number) => {
+    // Obtener tickets disponibles (no vendidos ni reservados ni seleccionados)
+    const availableTickets = [];
+    for (let i = 1; i <= TOTAL_TICKETS; i++) {
+      if (!soldTickets.includes(i) && !reservedTickets.includes(i) && !selectedTickets.includes(i)) {
+        availableTickets.push(i);
+      }
+    }
+
+    // Seleccionar aleatoriamente del total disponible
+    if (availableTickets.length < count) {
+      // No hay suficientes tickets disponibles
+      console.warn(`Solo hay ${availableTickets.length} tickets disponibles, no se pueden seleccionar ${count}`);
+      return;
+    }
+
+    // Seleccionar números aleatorios
+    const shuffled = [...availableTickets].sort(() => 0.5 - Math.random());
+    const selectedNumbers = shuffled.slice(0, count);
+
+    // Agregar a la selección actual
+    selectedNumbers.forEach(ticket => selectTicket(ticket));
+    
+    // Feedback visual y auditivo
+    if (typeof window !== 'undefined') {
+      console.log(`🎯 Selección rápida: ${count} números seleccionados automáticamente`);
+    }
+  }, [soldTickets, reservedTickets, selectedTickets, selectTicket]);
   
   // Efecto para medir el contenedor - MÁS ALTO
   useEffect(() => {
@@ -566,6 +597,13 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
           </div>
         </div>
       </div>
+
+      {/* Cards de Selección Rápida */}
+      <QuickSelectionCards
+        onQuickSelect={handleQuickSelection}
+        availableCount={realAvailableCount}
+        isLoading={false}
+      />
 
       {/* Leyenda Premium con Filtros */}
       <div className="mb-6 p-6 bg-gradient-to-r from-slate-50/95 to-emerald-50/95 backdrop-blur-sm rounded-3xl border-2 border-emerald-200/60 shadow-xl">
