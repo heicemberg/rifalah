@@ -284,12 +284,12 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                     <div className="text-sm text-gray-600 mb-2">Tus números:</div>
                     <div className="flex flex-wrap gap-2">
                       {selectedTickets.slice(0, 10).map(ticket => (
-                        <span key={ticket} className="bg-white px-3 py-1 rounded-lg text-sm font-mono">
+                        <span key={ticket} className="bg-gray-100 text-gray-800 px-3 py-1 rounded-lg text-sm font-mono border border-gray-200">
                           {formatTicketNumber(ticket)}
                         </span>
                       ))}
                       {selectedTickets.length > 10 && (
-                        <span className="bg-white px-3 py-1 rounded-lg text-sm">
+                        <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-lg text-sm border border-gray-200">
                           +{selectedTickets.length - 10} más
                         </span>
                       )}
