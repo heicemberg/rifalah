@@ -194,68 +194,99 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
+      {/* Premium Backdrop with Multiple Layers */}
+      <div 
+        className="fixed inset-0 bg-gradient-to-br from-slate-900/95 via-gray-900/95 to-black/95 backdrop-blur-xl transition-all duration-500" 
+        onClick={onClose}
+      >
+        <div className="absolute inset-0 bg-gradient-to-tr from-purple-900/20 via-transparent to-cyan-900/20" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.1),rgba(255,255,255,0))]" />
+      </div>
       
-      {/* Modal */}
+      {/* Modal Container Ultra Premium */}
       <div className="flex min-h-full items-center justify-center p-2 sm:p-4">
-        <div className="relative bg-white rounded-xl sm:rounded-2xl shadow-xl w-full max-w-2xl max-h-[98vh] sm:max-h-[95vh] overflow-hidden">
-          {/* Header */}
-          <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
-            <div className="flex items-center justify-between">
+        <div className="relative bg-gradient-to-br from-white via-gray-50/95 to-slate-50/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.4)] w-full max-w-2xl max-h-[98vh] sm:max-h-[95vh] overflow-hidden border border-white/20">
+          
+          {/* Decorative Background Elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-purple-400/10 via-transparent to-transparent rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-cyan-400/10 via-transparent to-transparent rounded-full blur-2xl" />
+          
+          {/* Header Ultra Premium */}
+          <div className="sticky top-0 z-10 bg-gradient-to-r from-slate-800 via-gray-800 to-slate-900 backdrop-blur-xl border-b border-white/10 px-4 sm:px-8 py-4 sm:py-6">
+            <div className="flex items-center justify-between mb-8">
               <div className="flex items-center space-x-4">
                 {currentStep > 1 && (
                   <button
                     onClick={handleBack}
-                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    className="p-3 rounded-xl hover:bg-white/10 transition-all duration-200 group backdrop-blur-sm border border-white/20"
                     disabled={isProcessing}
                   >
-                    <ArrowLeft size={20} />
+                    <ArrowLeft size={20} className="text-white group-hover:translate-x-[-2px] transition-transform" />
                   </button>
                 )}
                 <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+                  <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                     {steps[currentStep - 1].title}
                   </h2>
-                  <p className="text-xs sm:text-sm text-gray-600">
+                  <p className="text-sm sm:text-base text-slate-300 font-medium">
                     {steps[currentStep - 1].description}
                   </p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                className="p-3 rounded-xl hover:bg-white/10 transition-all duration-200 group backdrop-blur-sm border border-white/20"
                 disabled={isProcessing}
               >
-                <X size={20} />
+                <X size={20} className="text-white group-hover:rotate-90 transition-transform duration-300" />
               </button>
             </div>
             
-            {/* Progress Bar */}
-            <div className="flex items-center mt-4 space-x-2">
+            {/* Ultra Premium Progress Bar */}
+            <div className="flex items-center justify-between space-x-3">
               {steps.map((step, index) => (
                 <div key={step.number} className="flex items-center flex-1">
-                  <div className={cn(
-                    'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold',
-                    currentStep >= step.number 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-200 text-gray-600'
-                  )}>
-                    {currentStep > step.number ? <Check size={16} /> : step.number}
+                  <div className="relative">
+                    <div className={cn(
+                      'w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-black transition-all duration-500 shadow-lg border backdrop-blur-sm',
+                      currentStep >= step.number 
+                        ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-emerald-500/30 border-emerald-300/50 scale-110' 
+                        : currentStep === step.number
+                        ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-blue-500/30 border-blue-300/50 animate-pulse scale-105'
+                        : 'bg-white/10 text-white/50 border-white/20'
+                    )}>
+                      {currentStep > step.number ? (
+                        <Check size={18} className="animate-bounce" />
+                      ) : (
+                        <span className="font-black">{step.number}</span>
+                      )}
+                    </div>
+                    {/* Glow Effect for Current Step */}
+                    {currentStep === step.number && (
+                      <div className="absolute -inset-2 rounded-2xl bg-gradient-to-r from-blue-400 to-purple-500 opacity-30 animate-ping" />
+                    )}
                   </div>
                   {index < steps.length - 1 && (
-                    <div className={cn(
-                      'flex-1 h-1 mx-2',
-                      currentStep > step.number ? 'bg-blue-600' : 'bg-gray-200'
-                    )} />
+                    <div className="flex-1 mx-3">
+                      <div className={cn(
+                        'h-2 rounded-full transition-all duration-700 shadow-sm',
+                        currentStep > step.number 
+                          ? 'bg-gradient-to-r from-emerald-400 to-emerald-500 shadow-emerald-500/50' 
+                          : 'bg-white/20 backdrop-blur-sm'
+                      )}>
+                        {currentStep > step.number && (
+                          <div className="h-full bg-gradient-to-r from-white/30 to-transparent rounded-full animate-pulse" />
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Content */}
-          <div className="p-4 sm:p-6 overflow-y-auto max-h-[65vh] sm:max-h-[60vh]">
+          {/* Premium Content Container */}
+          <div className="relative p-6 sm:p-8 overflow-y-auto max-h-[65vh] sm:max-h-[60vh] bg-gradient-to-b from-white/95 to-gray-50/95 backdrop-blur-sm">
             {/* Paso 1: Confirmación de Selección */}
             {currentStep === 1 && (
               <div className="space-y-6">
@@ -431,95 +462,113 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                   </p>
                 </div>
 
-                <div className="space-y-6">
-                  {/* Nombre completo */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200">
-                    <label className="flex items-center text-sm font-bold text-blue-800 mb-3">
-                      <div className="bg-blue-500 p-2 rounded-lg mr-3">
-                        <Users size={16} className="text-white" />
-                      </div>
-                      Nombre completo *
-                    </label>
-                    <input
-                      type="text"
-                      value={customerData.name}
-                      onChange={(e) => setCustomerData(prev => ({ ...prev, name: e.target.value }))}
-                      className={cn(
-                        'w-full px-4 py-4 rounded-xl border-2 text-base font-medium shadow-sm',
-                        'bg-white/80 backdrop-blur-sm transition-all duration-200',
-                        validationErrors.name 
-                          ? 'border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-200' 
-                          : 'border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-200',
-                        'hover:bg-white hover:shadow-md'
+                <div className="space-y-8">
+                  {/* Nombre completo Ultra Premium */}
+                  <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                    <div className="relative bg-gradient-to-br from-white via-blue-50/80 to-indigo-50/60 p-6 rounded-2xl border border-white/20 backdrop-blur-xl shadow-xl">
+                      <label className="flex items-center text-base font-black text-slate-800 mb-4">
+                        <div className="bg-gradient-to-br from-blue-500 to-blue-700 p-3 rounded-xl mr-4 shadow-lg shadow-blue-500/30">
+                          <Users size={18} className="text-white" />
+                        </div>
+                        <span className="bg-gradient-to-r from-blue-700 to-purple-700 bg-clip-text text-transparent">
+                          Nombre completo *
+                        </span>
+                      </label>
+                      <input
+                        type="text"
+                        value={customerData.name}
+                        onChange={(e) => setCustomerData(prev => ({ ...prev, name: e.target.value }))}
+                        className={cn(
+                          'w-full px-6 py-4 rounded-xl border-2 text-lg font-semibold shadow-inner transition-all duration-300',
+                          'bg-white/90 backdrop-blur-sm placeholder:text-slate-400 text-slate-800',
+                          'focus:bg-white focus:shadow-2xl focus:scale-[1.02] transform',
+                          validationErrors.name 
+                            ? 'border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-200/50 shadow-red-200/50' 
+                            : 'border-blue-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-200/50 shadow-blue-200/30',
+                          'hover:shadow-lg hover:border-blue-400'
+                        )}
+                        placeholder="Ej: Juan Pérez García"
+                      />
+                      {validationErrors.name && (
+                        <p className="text-red-600 text-sm mt-3 font-semibold flex items-center bg-red-50 p-2 rounded-lg border border-red-200">
+                          <X size={16} className="mr-2" />
+                          {validationErrors.name}
+                        </p>
                       )}
-                      placeholder="Ej: Juan Pérez García"
-                    />
-                    {validationErrors.name && (
-                      <p className="text-red-600 text-sm mt-2 font-medium flex items-center">
-                        <X size={14} className="mr-1" />
-                        {validationErrors.name}
-                      </p>
-                    )}
+                    </div>
                   </div>
 
-                  {/* Teléfono */}
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200">
-                    <label className="flex items-center text-sm font-bold text-green-800 mb-3">
-                      <div className="bg-green-500 p-2 rounded-lg mr-3">
-                        <Phone size={16} className="text-white" />
-                      </div>
-                      Teléfono *
-                    </label>
-                    <input
-                      type="tel"
-                      value={customerData.phone}
-                      onChange={(e) => setCustomerData(prev => ({ ...prev, phone: e.target.value }))}
-                      className={cn(
-                        'w-full px-4 py-4 rounded-xl border-2 text-base font-medium shadow-sm',
-                        'bg-white/80 backdrop-blur-sm transition-all duration-200',
-                        validationErrors.phone 
-                          ? 'border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-200' 
-                          : 'border-green-200 focus:border-green-500 focus:ring-4 focus:ring-green-200',
-                        'hover:bg-white hover:shadow-md'
+                  {/* Teléfono Ultra Premium */}
+                  <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                    <div className="relative bg-gradient-to-br from-white via-emerald-50/80 to-green-50/60 p-6 rounded-2xl border border-white/20 backdrop-blur-xl shadow-xl">
+                      <label className="flex items-center text-base font-black text-slate-800 mb-4">
+                        <div className="bg-gradient-to-br from-emerald-500 to-green-700 p-3 rounded-xl mr-4 shadow-lg shadow-emerald-500/30">
+                          <Phone size={18} className="text-white" />
+                        </div>
+                        <span className="bg-gradient-to-r from-emerald-700 to-green-700 bg-clip-text text-transparent">
+                          Teléfono (WhatsApp) *
+                        </span>
+                      </label>
+                      <input
+                        type="tel"
+                        value={customerData.phone}
+                        onChange={(e) => setCustomerData(prev => ({ ...prev, phone: e.target.value }))}
+                        className={cn(
+                          'w-full px-6 py-4 rounded-xl border-2 text-lg font-semibold shadow-inner transition-all duration-300',
+                          'bg-white/90 backdrop-blur-sm placeholder:text-slate-400 text-slate-800',
+                          'focus:bg-white focus:shadow-2xl focus:scale-[1.02] transform',
+                          validationErrors.phone 
+                            ? 'border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-200/50 shadow-red-200/50' 
+                            : 'border-emerald-300 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-200/50 shadow-emerald-200/30',
+                          'hover:shadow-lg hover:border-emerald-400'
+                        )}
+                        placeholder="Ej: +52 55 1234 5678"
+                      />
+                      {validationErrors.phone && (
+                        <p className="text-red-600 text-sm mt-3 font-semibold flex items-center bg-red-50 p-2 rounded-lg border border-red-200">
+                          <X size={16} className="mr-2" />
+                          {validationErrors.phone}
+                        </p>
                       )}
-                      placeholder="Ej: 55 1234 5678"
-                    />
-                    {validationErrors.phone && (
-                      <p className="text-red-600 text-sm mt-2 font-medium flex items-center">
-                        <X size={14} className="mr-1" />
-                        {validationErrors.phone}
-                      </p>
-                    )}
+                    </div>
                   </div>
 
-                  {/* Email */}
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
-                    <label className="flex items-center text-sm font-bold text-purple-800 mb-3">
-                      <div className="bg-purple-500 p-2 rounded-lg mr-3">
-                        <Mail size={16} className="text-white" />
-                      </div>
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      value={customerData.email}
-                      onChange={(e) => setCustomerData(prev => ({ ...prev, email: e.target.value }))}
-                      className={cn(
-                        'w-full px-4 py-4 rounded-xl border-2 text-base font-medium shadow-sm',
-                        'bg-white/80 backdrop-blur-sm transition-all duration-200',
-                        validationErrors.email 
-                          ? 'border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-200' 
-                          : 'border-purple-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-200',
-                        'hover:bg-white hover:shadow-md'
+                  {/* Email Ultra Premium */}
+                  <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                    <div className="relative bg-gradient-to-br from-white via-purple-50/80 to-pink-50/60 p-6 rounded-2xl border border-white/20 backdrop-blur-xl shadow-xl">
+                      <label className="flex items-center text-base font-black text-slate-800 mb-4">
+                        <div className="bg-gradient-to-br from-purple-500 to-pink-700 p-3 rounded-xl mr-4 shadow-lg shadow-purple-500/30">
+                          <Mail size={18} className="text-white" />
+                        </div>
+                        <span className="bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent">
+                          Correo Electrónico *
+                        </span>
+                      </label>
+                      <input
+                        type="email"
+                        value={customerData.email}
+                        onChange={(e) => setCustomerData(prev => ({ ...prev, email: e.target.value }))}
+                        className={cn(
+                          'w-full px-6 py-4 rounded-xl border-2 text-lg font-semibold shadow-inner transition-all duration-300',
+                          'bg-white/90 backdrop-blur-sm placeholder:text-slate-400 text-slate-800',
+                          'focus:bg-white focus:shadow-2xl focus:scale-[1.02] transform',
+                          validationErrors.email 
+                            ? 'border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-200/50 shadow-red-200/50' 
+                            : 'border-purple-300 focus:border-purple-600 focus:ring-4 focus:ring-purple-200/50 shadow-purple-200/30',
+                          'hover:shadow-lg hover:border-purple-400'
+                        )}
+                        placeholder="tu@email.com"
+                      />
+                      {validationErrors.email && (
+                        <p className="text-red-600 text-sm mt-3 font-semibold flex items-center bg-red-50 p-2 rounded-lg border border-red-200">
+                          <X size={16} className="mr-2" />
+                          {validationErrors.email}
+                        </p>
                       )}
-                      placeholder="tu@email.com"
-                    />
-                    {validationErrors.email && (
-                      <p className="text-red-600 text-sm mt-2 font-medium flex items-center">
-                        <X size={14} className="mr-1" />
-                        {validationErrors.email}
-                      </p>
-                    )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -694,10 +743,21 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
           </div>
 
           {/* Footer */}
-          <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
+          <div className="sticky bottom-0 bg-gradient-to-r from-slate-800 via-gray-800 to-slate-900 backdrop-blur-xl border-t border-white/10 px-6 sm:px-8 py-5 sm:py-6">
             <div className="flex justify-between items-center">
-              <div className="text-xs sm:text-sm text-gray-600">
-                Paso {currentStep} de {steps.length}
+              <div className="flex items-center space-x-3">
+                <div className="text-sm sm:text-base text-slate-300 font-medium">
+                  Paso {currentStep} de {steps.length}
+                </div>
+                <div className="w-16 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all duration-500 shadow-lg shadow-emerald-500/50" 
+                    style={{ width: `${(currentStep / steps.length) * 100}%` }}
+                  />
+                </div>
+                <span className="text-sm text-slate-400 font-medium">
+                  {Math.round((currentStep / steps.length) * 100)}%
+                </span>
               </div>
               
               <div className="flex space-x-3">
@@ -706,13 +766,19 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                     onClick={handleNext}
                     disabled={isProcessing}
                     className={cn(
-                      'px-4 sm:px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg',
-                      'transition-colors flex items-center space-x-2 text-sm sm:text-base',
-                      'disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]' // Touch target mínimo
+                      'relative group px-8 sm:px-10 py-4 rounded-2xl font-black text-base sm:text-lg transition-all duration-300 shadow-2xl min-h-[56px]',
+                      'bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 text-white',
+                      'hover:from-blue-500 hover:via-purple-500 hover:to-blue-600 hover:shadow-blue-500/30 hover:scale-105',
+                      'focus:ring-4 focus:ring-blue-200/50 focus:outline-none active:scale-95',
+                      'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'
                     )}
                   >
-                    <span>Continuar</span>
-                    <ArrowRight size={16} />
+                    {/* Glow effect */}
+                    <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-300" />
+                    <span className="relative flex items-center space-x-3">
+                      <span>Continuar</span>
+                      <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                    </span>
                   </button>
                 )}
                 
@@ -721,22 +787,28 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                     onClick={handleFinish}
                     disabled={isProcessing}
                     className={cn(
-                      'px-6 sm:px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg',
-                      'transition-colors flex items-center space-x-2 text-base sm:text-lg',
-                      'disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]'
+                      'relative group px-10 sm:px-12 py-4 rounded-2xl font-black text-base sm:text-lg transition-all duration-300 shadow-2xl min-h-[56px]',
+                      'bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-700 text-white',
+                      'hover:from-emerald-500 hover:via-green-500 hover:to-emerald-600 hover:shadow-emerald-500/30 hover:scale-105',
+                      'focus:ring-4 focus:ring-emerald-200/50 focus:outline-none active:scale-95',
+                      'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'
                     )}
                   >
-                    {isProcessing ? (
-                      <>
-                        <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-                        <span>Procesando...</span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle size={20} />
-                        <span>Confirmar Compra</span>
-                      </>
-                    )}
+                    {/* Glow effect */}
+                    <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600 to-green-600 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-300" />
+                    <span className="relative flex items-center space-x-3">
+                      {isProcessing ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Procesando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle size={20} className="group-hover:rotate-12 transition-transform" />
+                          <span>Confirmar Compra</span>
+                        </>
+                      )}
+                    </span>
                   </button>
                 )}
               </div>
