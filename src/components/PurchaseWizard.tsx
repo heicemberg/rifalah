@@ -212,98 +212,62 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-red-400/20 via-transparent to-transparent rounded-full blur-2xl" />
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-yellow-300/5 via-transparent to-yellow-300/5 rounded-full blur-3xl" />
           
-          {/* Header Mexicano Premium para Rifas */}
-          <div className="sticky top-0 z-10 bg-gradient-to-r from-green-700 via-white to-red-700 backdrop-blur-xl border-b-4 border-yellow-400 px-4 sm:px-6 py-4 sm:py-5">
-            {/* Patrón azteca de fondo */}
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2240%22%20viewBox%3D%220%200%2060%2040%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22%23fbbf24%22%20fill-opacity%3D%220.1%22%3E%3Cpath%20d%3D%22M30%200l10%2020-10%2020-10-20z%20M0%2020l10-20v40l-10-20z%20M50%2020l10-20v40l-10-20z%22/%3E%3C/g%3E%3C/svg%3E')] opacity-30"></div>
-            
-            <div className="relative z-10">
-              {/* Título principal mexicano */}
-              <div className="text-center mb-4">
-                <h2 className="text-2xl sm:text-4xl font-black text-green-800 drop-shadow-lg mb-2 flex items-center justify-center gap-2">
-                  🎯 ¡PARTICIPA EN LA RIFA!
-                </h2>
-                <div className="bg-yellow-100 border-2 border-yellow-400 rounded-xl px-4 py-2 inline-block">
-                  <p className="text-red-700 font-bold text-base sm:text-lg flex items-center gap-2">
-                    📋 Paso {currentStep}: {steps[currentStep - 1].title}
-                  </p>
-                  <p className="text-sm text-green-700 font-medium">
-                    {steps[currentStep - 1].description}
+          {/* Header Mexicano Compacto */}
+          <div className="shrink-0 bg-gradient-to-r from-green-700 via-white to-red-700 border-b-2 border-yellow-400 px-3 py-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {currentStep > 1 && (
+                  <button
+                    onClick={handleBack}
+                    className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg transition-all shadow-md border border-yellow-400"
+                    disabled={isProcessing}
+                  >
+                    <ArrowLeft size={16} />
+                  </button>
+                )}
+                <div className="bg-yellow-100 border border-yellow-400 rounded-lg px-3 py-1">
+                  <p className="text-green-800 font-bold text-sm">
+                    🎯 Paso {currentStep}: {steps[currentStep - 1].title}
                   </p>
                 </div>
               </div>
-
-              {/* Controles de navegación */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  {currentStep > 1 && (
-                    <button
-                      onClick={handleBack}
-                      className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-xl transition-all duration-200 group shadow-lg border-2 border-yellow-400"
-                      disabled={isProcessing}
-                    >
-                      <ArrowLeft size={20} className="group-hover:translate-x-[-2px] transition-transform" />
-                    </button>
-                  )}
-                </div>
-                
-                <button
-                  onClick={onClose}
-                  className="bg-red-600 hover:bg-red-700 text-white p-3 rounded-xl transition-all duration-200 group shadow-lg border-2 border-yellow-400"
-                  disabled={isProcessing}
-                >
-                  <X size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-                </button>
-              </div>
+              
+              <button
+                onClick={onClose}
+                className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition-all shadow-md border border-yellow-400"
+                disabled={isProcessing}
+              >
+                <X size={16} />
+              </button>
             </div>
             
-            {/* Barra de Progreso Mexicana */}
-            <div className="bg-white/90 rounded-xl p-4 border-2 border-yellow-400 shadow-lg">
-              <div className="flex items-center justify-between">
+            {/* Barra de Progreso Compacta */}
+            <div className="bg-white/90 rounded-lg p-2 mt-2 border border-yellow-400">
+              <div className="flex items-center justify-center gap-2">
                 {steps.map((step, index) => (
                   <React.Fragment key={step.number}>
-                    <div className="flex flex-col items-center">
-                      <div className="relative">
-                        <div className={cn(
-                          'w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-sm sm:text-base font-black transition-all duration-500 shadow-xl border-3',
-                          currentStep >= step.number 
-                            ? 'bg-gradient-to-br from-green-500 to-green-700 text-white shadow-green-500/50 border-yellow-400 scale-110' 
-                            : currentStep === step.number
-                            ? 'bg-gradient-to-br from-red-500 to-red-700 text-white shadow-red-500/50 border-yellow-400 animate-pulse scale-105'
-                            : 'bg-gray-200 text-gray-500 border-gray-300'
-                        )}>
-                          {currentStep > step.number ? (
-                            <CheckCircle size={20} className="animate-bounce text-yellow-200" />
-                          ) : (
-                            <span className="font-black">{step.number}</span>
-                          )}
-                        </div>
-                        {/* Efecto de brillo para paso actual */}
-                        {currentStep === step.number && (
-                          <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-red-400 to-yellow-400 opacity-40 animate-ping" />
+                    <div className="flex items-center">
+                      <div className={cn(
+                        'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all',
+                        currentStep >= step.number 
+                          ? 'bg-green-600 text-white' 
+                          : currentStep === step.number
+                          ? 'bg-red-600 text-white'
+                          : 'bg-gray-300 text-gray-600'
+                      )}>
+                        {currentStep > step.number ? (
+                          <CheckCircle size={12} />
+                        ) : (
+                          step.number
                         )}
-                      </div>
-                      <div className="mt-2 text-center">
-                        <div className={cn(
-                          'text-xs sm:text-sm font-bold transition-colors',
-                          currentStep >= step.number ? 'text-green-700' : 'text-gray-500'
-                        )}>
-                          {step.title}
-                        </div>
                       </div>
                     </div>
                     {index < steps.length - 1 && (
-                      <div className="flex-1 px-2 sm:px-4">
+                      <div className="flex-1 h-1 mx-1 rounded-full bg-gray-200 min-w-[20px]">
                         <div className={cn(
-                          'h-3 rounded-full transition-all duration-700 shadow-sm border border-yellow-300',
-                          currentStep > step.number 
-                            ? 'bg-gradient-to-r from-green-500 to-green-600 shadow-green-500/50' 
-                            : 'bg-gray-200'
-                        )}>
-                          {currentStep > step.number && (
-                            <div className="h-full bg-gradient-to-r from-yellow-300/50 to-transparent rounded-full animate-pulse" />
-                          )}
-                        </div>
+                          'h-full rounded-full transition-all',
+                          currentStep > step.number ? 'bg-green-600' : 'bg-gray-200'
+                        )} />
                       </div>
                     )}
                   </React.Fragment>
