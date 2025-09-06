@@ -169,6 +169,16 @@ export default function AdminPanel() {
   };
 
   const cambiarEstado = async (id: string, nuevoEstado: PurchaseStatus) => {
+    console.log(`🎯 ADMIN TICKET ACCEPTANCE STARTED:`, {
+      purchaseId: id,
+      newStatus: nuevoEstado,
+      currentCounters: {
+        real: adminCounters.real.soldCount,
+        display: adminCounters.display.soldCount
+      },
+      timestamp: new Date().toLocaleTimeString()
+    });
+    
     try {
       if (isConnected) {
         console.log(`🔄 ADMIN: Actualizando compra ${id} a estado ${nuevoEstado}...`);
@@ -252,9 +262,15 @@ export default function AdminPanel() {
           }
         }
         
-        // Refrescar datos de tickets para mantener sincronización  
-        console.log(`🔄 ADMIN: Refrescando datos locales...`);
+        // ✅ CRITICAL: Force immediate master counter update
+        console.log(`🔄 ADMIN: Forzando actualización INMEDIATA del master counter...`);
         await refreshData();
+        
+        // Double refresh to ensure sync propagation
+        setTimeout(async () => {
+          console.log(`🔄 ADMIN: Segunda actualización para garantizar sincronización...`);
+          await refreshData();
+        }, 1000);
         
         // ✅ CRITICAL: Force admin stats update after confirmation
         console.log(`📊 ADMIN: Forcing stats recalculation...`);
@@ -270,6 +286,19 @@ export default function AdminPanel() {
             }));
           }
         }, 500); // Give time for DB changes to propagate
+        
+        // ✅ FINAL VERIFICATION LOG
+        setTimeout(() => {
+          console.log(`🎯 ADMIN TICKET ACCEPTANCE COMPLETED:`, {
+            purchaseId: id,
+            newStatus: nuevoEstado,
+            finalCounters: {
+              real: adminCounters.real.soldCount,
+              display: adminCounters.display.soldCount
+            },
+            timestamp: new Date().toLocaleTimeString()
+          });
+        }, 2000);
       } else {
         // Fallback a localStorage
         const comprasActuales = JSON.parse(localStorage.getItem('compras-registradas') || '[]');
@@ -396,7 +425,7 @@ export default function AdminPanel() {
     return coincideFiltro && coincideBusqueda;
   });
 
-  // ✅ DYNAMIC STATS - Auto-refresh when data changes
+  // ✅ HYBRID STATS - Purchase data from compras + Ticket counts from master counter
   const [stats, setStats] = useState({
     total: 0,
     pendientes: 0,
@@ -406,22 +435,36 @@ export default function AdminPanel() {
     boletosVendidos: 0
   });
 
-  // ✅ REAL-TIME STATS CALCULATION
+  // ✅ REAL-TIME STATS CALCULATION using MASTER COUNTER for ticket counts
   useEffect(() => {
     const calculateStats = () => {
-      const newStats = {
+      // Purchase stats from compras (these update when admin refreshes data)
+      const purchaseStats = {
         total: compras.length,
         pendientes: compras.filter(c => c.status === 'pendiente').length,
         confirmadas: compras.filter(c => c.status === 'confirmada').length,
         canceladas: compras.filter(c => c.status === 'cancelada').length,
-        ingresosTotales: compras.reduce((sum, c) => sum + c.total_amount, 0),
-        boletosVendidos: compras.reduce((sum, c) => sum + c.tickets.length, 0)
+        ingresosTotales: compras.reduce((sum, c) => sum + c.total_amount, 0)
       };
       
-      console.log('📊 ADMIN STATS UPDATED:', {
+      // ✅ CRITICAL FIX: Use MASTER COUNTER for tickets sold (real-time from database)
+      const masterCounterTickets = adminCounters.real.soldCount || 0;
+      const displayTickets = adminCounters.display.soldCount || 0;
+      
+      const newStats = {
+        ...purchaseStats,
+        boletosVendidos: masterCounterTickets // ✅ Real-time from database
+      };
+      
+      console.log('📊 ADMIN STATS UPDATED (HYBRID):', {
         total: newStats.total,
         confirmadas: newStats.confirmadas,
-        boletosVendidos: newStats.boletosVendidos
+        boletosVendidos: newStats.boletosVendidos,
+        displayTickets: displayTickets,
+        masterCounterReal: masterCounterTickets,
+        masterCounterDisplay: displayTickets,
+        source: 'purchases + master_counter',
+        timestamp: new Date().toLocaleTimeString()
       });
       
       setStats(newStats);
@@ -433,7 +476,7 @@ export default function AdminPanel() {
     // Listen for global sync events to recalculate
     const handleSyncEvent = (event: Event) => {
       const customEvent = event as CustomEvent;
-      console.log('🔔 ADMIN: Sync event received, recalculating stats...', customEvent.detail);
+      console.log('🔔 ADMIN: Sync event received, recalculating hybrid stats...', customEvent.detail);
       setTimeout(calculateStats, 100); // Small delay to ensure data is updated
     };
 
@@ -448,7 +491,7 @@ export default function AdminPanel() {
         window.removeEventListener('admin-stats-update', handleSyncEvent);
       };
     }
-  }, [compras]); // ✅ Recalculate whenever compras array changes
+  }, [compras, adminCounters.real.soldCount]); // ✅ Depend on both compras AND master counter
 
   if (loading) {
     return (
@@ -518,7 +561,10 @@ export default function AdminPanel() {
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm text-center">
             <div className="text-2xl font-bold text-purple-600">{stats.boletosVendidos}</div>
-            <div className="text-sm text-gray-600">Boletos Vendidos</div>
+            <div className="text-sm text-gray-600">Boletos Vendidos (BD)</div>
+            <div className="text-xs text-purple-500 mt-1">
+              Display: {adminCounters.display.soldCount}
+            </div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm text-center">
             <div className="text-2xl font-bold text-green-600">{formatearPrecio(stats.ingresosTotales)}</div>
