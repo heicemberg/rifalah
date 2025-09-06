@@ -144,6 +144,21 @@ export default function AdminPanel() {
       
       console.log(`📊 ADMIN: Total cargadas: ${totalCount} (${supabaseCount} BD + ${localCount} local)`);
       
+      // ✅ TRIGGER STATS RECALCULATION after data load
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('admin-stats-update', {
+            detail: { 
+              source: 'data-reload',
+              totalCount,
+              supabaseCount,
+              localCount,
+              timestamp: new Date().toISOString()
+            }
+          }));
+        }
+      }, 200); // Give time for state to update
+      
     } catch (error) {
       console.error('❌ ADMIN: Error crítico cargando compras:', error);
       toast.error(`Error crítico al cargar compras: ${error instanceof Error ? error.message : 'Error desconocido'}`);
@@ -240,6 +255,21 @@ export default function AdminPanel() {
         // Refrescar datos de tickets para mantener sincronización  
         console.log(`🔄 ADMIN: Refrescando datos locales...`);
         await refreshData();
+        
+        // ✅ CRITICAL: Force admin stats update after confirmation
+        console.log(`📊 ADMIN: Forcing stats recalculation...`);
+        setTimeout(() => {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('admin-stats-update', {
+              detail: { 
+                source: 'admin-confirmation',
+                purchaseId: id,
+                newStatus: nuevoEstado,
+                timestamp: new Date().toISOString()
+              }
+            }));
+          }
+        }, 500); // Give time for DB changes to propagate
       } else {
         // Fallback a localStorage
         const comprasActuales = JSON.parse(localStorage.getItem('compras-registradas') || '[]');
@@ -366,15 +396,59 @@ export default function AdminPanel() {
     return coincideFiltro && coincideBusqueda;
   });
 
-  // Calcular estadísticas
-  const stats = {
-    total: compras.length,
-    pendientes: compras.filter(c => c.status === 'pendiente').length,
-    confirmadas: compras.filter(c => c.status === 'confirmada').length,
-    canceladas: compras.filter(c => c.status === 'cancelada').length,
-    ingresosTotales: compras.reduce((sum, c) => sum + c.total_amount, 0),
-    boletosVendidos: compras.reduce((sum, c) => sum + c.tickets.length, 0)
-  };
+  // ✅ DYNAMIC STATS - Auto-refresh when data changes
+  const [stats, setStats] = useState({
+    total: 0,
+    pendientes: 0,
+    confirmadas: 0,
+    canceladas: 0,
+    ingresosTotales: 0,
+    boletosVendidos: 0
+  });
+
+  // ✅ REAL-TIME STATS CALCULATION
+  useEffect(() => {
+    const calculateStats = () => {
+      const newStats = {
+        total: compras.length,
+        pendientes: compras.filter(c => c.status === 'pendiente').length,
+        confirmadas: compras.filter(c => c.status === 'confirmada').length,
+        canceladas: compras.filter(c => c.status === 'cancelada').length,
+        ingresosTotales: compras.reduce((sum, c) => sum + c.total_amount, 0),
+        boletosVendidos: compras.reduce((sum, c) => sum + c.tickets.length, 0)
+      };
+      
+      console.log('📊 ADMIN STATS UPDATED:', {
+        total: newStats.total,
+        confirmadas: newStats.confirmadas,
+        boletosVendidos: newStats.boletosVendidos
+      });
+      
+      setStats(newStats);
+    };
+
+    // Initial calculation
+    calculateStats();
+    
+    // Listen for global sync events to recalculate
+    const handleSyncEvent = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('🔔 ADMIN: Sync event received, recalculating stats...', customEvent.detail);
+      setTimeout(calculateStats, 100); // Small delay to ensure data is updated
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('raffle-counters-updated', handleSyncEvent);
+      window.addEventListener('purchase-status-changed', handleSyncEvent);
+      window.addEventListener('admin-stats-update', handleSyncEvent);
+      
+      return () => {
+        window.removeEventListener('raffle-counters-updated', handleSyncEvent);
+        window.removeEventListener('purchase-status-changed', handleSyncEvent);
+        window.removeEventListener('admin-stats-update', handleSyncEvent);
+      };
+    }
+  }, [compras]); // ✅ Recalculate whenever compras array changes
 
   if (loading) {
     return (
