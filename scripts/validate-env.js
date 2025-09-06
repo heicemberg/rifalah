@@ -141,6 +141,13 @@ async function main() {
   // 1. Verificar variables requeridas
   log('\n📋 Verificando variables requeridas...', 'blue');
   
+  // Intentar cargar desde .env.local si no están en process.env
+  const dotenv = require('dotenv');
+  const envPath = path.join(process.cwd(), '.env.local');
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+  }
+  
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const nodeEnv = process.env.NODE_ENV;
