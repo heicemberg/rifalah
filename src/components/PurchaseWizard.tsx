@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { formatPrice, formatTicketNumber } from '../lib/utils';
+import { PAYMENT_METHODS } from '../lib/constants';
+import type { PaymentMethod as PaymentMethodType } from '../lib/types';
 
 interface PurchaseWizardProps {
   isOpen: boolean;
@@ -42,15 +44,6 @@ interface CustomerData {
   state: string;
 }
 
-interface PaymentMethod {
-  id: string;
-  name: string;
-  description: string;
-  icon: React.ComponentType<any>;
-  color: string;
-  instructions: string;
-  popular?: boolean;
-}
 
 const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   isOpen,
@@ -70,42 +63,18 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [copiedField, setCopiedField] = useState<string>('');
+  const [showPaymentDetails, setShowPaymentDetails] = useState<string>('');
+  const [paymentScreenshot, setPaymentScreenshot] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
 
   const totalPrice = selectedTickets.length * 250;
   const steps = [
     { number: 1, title: 'Confirmación', description: 'Verifica tu selección' },
     { number: 2, title: 'Pago', description: 'Elige cómo pagar' },
     { number: 3, title: 'Datos', description: 'Tu información' },
-    { number: 4, title: 'Confirmación', description: 'Finalizar compra' }
+    { number: 4, title: 'Comprobante', description: 'Sube tu captura' }
   ];
 
-  const paymentMethods: PaymentMethod[] = [
-    {
-      id: 'oxxo',
-      name: 'OXXO',
-      description: 'Paga en cualquier tienda OXXO',
-      icon: Building2,
-      color: 'bg-red-600 hover:bg-red-700',
-      instructions: 'Recibe un código para pagar en cualquier OXXO',
-      popular: true
-    },
-    {
-      id: 'transfer',
-      name: 'Transferencia',
-      description: 'Banco, SPEI o aplicación móvil',
-      icon: Smartphone,
-      color: 'bg-blue-600 hover:bg-blue-700',
-      instructions: 'Transfiere desde tu banco o app móvil'
-    },
-    {
-      id: 'card',
-      name: 'Tarjeta',
-      description: 'Débito o crédito',
-      icon: CreditCard,
-      color: 'bg-emerald-600 hover:bg-emerald-700',
-      instructions: 'Pago seguro con tu tarjeta'
-    }
-  ];
 
   const mexicanStates = [
     'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche',
@@ -151,8 +120,43 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
       }
     }
 
+    if (step === 4) {
+      if (!paymentScreenshot) {
+        errors.screenshot = 'Sube una captura de pantalla de tu comprobante de pago';
+      }
+    }
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validar que sea una imagen
+      if (!file.type.startsWith('image/')) {
+        setValidationErrors({ screenshot: 'Por favor selecciona una imagen (JPG, PNG, etc.)' });
+        return;
+      }
+      
+      // Validar tamaño (máximo 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setValidationErrors({ screenshot: 'La imagen es muy grande. Máximo 10MB.' });
+        return;
+      }
+      
+      setPaymentScreenshot(file);
+      
+      // Crear preview
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      // Limpiar errores
+      setValidationErrors({});
+    }
   };
 
   const handleNext = () => {
@@ -170,8 +174,9 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   };
 
   const handleFinish = async () => {
-    if (validateStep(3)) {
+    if (validateStep(4)) {
       try {
+        // Aquí podrías incluir el paymentScreenshot en los datos enviados
         await onConfirmPurchase(customerData, selectedPaymentMethod);
       } catch (error) {
         console.error('Error en compra:', error);
@@ -312,52 +317,97 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                   </p>
                 </div>
 
-                <div className="space-y-3">
-                  {paymentMethods.map((method) => {
-                    const Icon = method.icon;
-                    return (
+                <div className="space-y-4">
+                  {PAYMENT_METHODS.map((method) => (
+                    <div key={method.id} className="space-y-2">
                       <button
-                        key={method.id}
-                        onClick={() => setSelectedPaymentMethod(method.id)}
+                        onClick={() => {
+                          setSelectedPaymentMethod(method.id);
+                          setShowPaymentDetails(showPaymentDetails === method.id ? '' : method.id);
+                        }}
                         className={cn(
-                          'w-full p-3 sm:p-4 rounded-xl border-2 text-left transition-all',
-                          'hover:shadow-md active:scale-98 min-h-[60px]', // Optimizado para touch
+                          'w-full p-4 sm:p-6 rounded-xl border-2 text-left transition-all',
+                          'hover:shadow-lg active:scale-98 min-h-[80px]',
                           selectedPaymentMethod === method.id
                             ? 'border-blue-500 bg-blue-50'
                             : 'border-gray-200 hover:border-gray-300'
                         )}
                       >
-                        <div className="flex items-center space-x-3 sm:space-x-4">
-                          <div className={cn(
-                            'p-2 sm:p-3 rounded-xl text-white flex-shrink-0',
-                            method.color
-                          )}>
-                            <Icon size={20} className="sm:w-6 sm:h-6" />
+                        <div className="flex items-center space-x-4 sm:space-x-6">
+                          <div className="flex-shrink-0">
+                            <img
+                              src={method.icon}
+                              alt={method.name}
+                              className="w-12 h-12 sm:w-16 sm:h-16 object-contain"
+                            />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <span className="font-bold text-gray-800 text-sm sm:text-base">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <span className="font-bold text-gray-800 text-base sm:text-lg">
                                 {method.name}
                               </span>
-                              {method.popular && (
-                                <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-                                  Popular
+                              {method.enabled && (
+                                <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                                  Disponible
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs sm:text-sm text-gray-600 leading-tight">
-                              {method.description}
+                            <p className="text-sm sm:text-base text-gray-600 leading-tight">
+                              Cuenta: {method.account}
                             </p>
                           </div>
-                          <div className="flex-shrink-0">
+                          <div className="flex-shrink-0 flex items-center space-x-2">
                             {selectedPaymentMethod === method.id && (
                               <CheckCircle size={20} className="text-blue-500 sm:w-6 sm:h-6" />
                             )}
+                            <ArrowRight 
+                              size={16} 
+                              className={cn(
+                                'text-gray-400 transition-transform',
+                                showPaymentDetails === method.id ? 'rotate-90' : ''
+                              )} 
+                            />
                           </div>
                         </div>
                       </button>
-                    );
-                  })}
+
+                      {/* Datos desplegables del método de pago */}
+                      {showPaymentDetails === method.id && (
+                        <div className="bg-gray-50 rounded-lg p-4 sm:p-6 border border-gray-200">
+                          <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                            <FileText size={16} />
+                            Información para transferir
+                          </h4>
+                          <div className="space-y-3 text-sm">
+                            {method.accountDetails?.split('\n').map((line, index) => (
+                              <div key={index} className="flex items-center justify-between bg-white p-3 rounded border">
+                                <span className="text-gray-700 font-mono">{line}</span>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(line.split(': ')[1] || line);
+                                    setCopiedField(`${method.id}-${index}`);
+                                    setTimeout(() => setCopiedField(''), 2000);
+                                  }}
+                                  className="ml-2 p-1 rounded hover:bg-gray-100 transition-colors"
+                                >
+                                  {copiedField === `${method.id}-${index}` ? (
+                                    <Check size={14} className="text-green-600" />
+                                  ) : (
+                                    <Copy size={14} className="text-gray-500" />
+                                  )}
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <p className="text-xs text-yellow-800">
+                              💡 <strong>Importante:</strong> Envía tu comprobante de pago por WhatsApp después de transferir.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
 
                 {validationErrors.payment && (
@@ -381,10 +431,13 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                   </p>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <Users size={16} className="inline mr-1" />
+                <div className="space-y-6">
+                  {/* Nombre completo */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200">
+                    <label className="flex items-center text-sm font-bold text-blue-800 mb-3">
+                      <div className="bg-blue-500 p-2 rounded-lg mr-3">
+                        <Users size={16} className="text-white" />
+                      </div>
                       Nombre completo *
                     </label>
                     <input
@@ -392,20 +445,29 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                       value={customerData.name}
                       onChange={(e) => setCustomerData(prev => ({ ...prev, name: e.target.value }))}
                       className={cn(
-                        'w-full px-4 py-3 rounded-lg border text-base',
-                        validationErrors.name ? 'border-red-300' : 'border-gray-300',
-                        'focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
+                        'w-full px-4 py-4 rounded-xl border-2 text-base font-medium shadow-sm',
+                        'bg-white/80 backdrop-blur-sm transition-all duration-200',
+                        validationErrors.name 
+                          ? 'border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-200' 
+                          : 'border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-200',
+                        'hover:bg-white hover:shadow-md'
                       )}
                       placeholder="Ej: Juan Pérez García"
                     />
                     {validationErrors.name && (
-                      <p className="text-red-600 text-sm mt-1">{validationErrors.name}</p>
+                      <p className="text-red-600 text-sm mt-2 font-medium flex items-center">
+                        <X size={14} className="mr-1" />
+                        {validationErrors.name}
+                      </p>
                     )}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <Phone size={16} className="inline mr-1" />
+                  {/* Teléfono */}
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200">
+                    <label className="flex items-center text-sm font-bold text-green-800 mb-3">
+                      <div className="bg-green-500 p-2 rounded-lg mr-3">
+                        <Phone size={16} className="text-white" />
+                      </div>
                       Teléfono *
                     </label>
                     <input
@@ -413,20 +475,29 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                       value={customerData.phone}
                       onChange={(e) => setCustomerData(prev => ({ ...prev, phone: e.target.value }))}
                       className={cn(
-                        'w-full px-4 py-3 rounded-lg border text-base',
-                        validationErrors.phone ? 'border-red-300' : 'border-gray-300',
-                        'focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
+                        'w-full px-4 py-4 rounded-xl border-2 text-base font-medium shadow-sm',
+                        'bg-white/80 backdrop-blur-sm transition-all duration-200',
+                        validationErrors.phone 
+                          ? 'border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-200' 
+                          : 'border-green-200 focus:border-green-500 focus:ring-4 focus:ring-green-200',
+                        'hover:bg-white hover:shadow-md'
                       )}
                       placeholder="Ej: 55 1234 5678"
                     />
                     {validationErrors.phone && (
-                      <p className="text-red-600 text-sm mt-1">{validationErrors.phone}</p>
+                      <p className="text-red-600 text-sm mt-2 font-medium flex items-center">
+                        <X size={14} className="mr-1" />
+                        {validationErrors.phone}
+                      </p>
                     )}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <Mail size={16} className="inline mr-1" />
+                  {/* Email */}
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
+                    <label className="flex items-center text-sm font-bold text-purple-800 mb-3">
+                      <div className="bg-purple-500 p-2 rounded-lg mr-3">
+                        <Mail size={16} className="text-white" />
+                      </div>
                       Email *
                     </label>
                     <input
@@ -434,14 +505,20 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                       value={customerData.email}
                       onChange={(e) => setCustomerData(prev => ({ ...prev, email: e.target.value }))}
                       className={cn(
-                        'w-full px-4 py-3 rounded-lg border text-base',
-                        validationErrors.email ? 'border-red-300' : 'border-gray-300',
-                        'focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
+                        'w-full px-4 py-4 rounded-xl border-2 text-base font-medium shadow-sm',
+                        'bg-white/80 backdrop-blur-sm transition-all duration-200',
+                        validationErrors.email 
+                          ? 'border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-200' 
+                          : 'border-purple-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-200',
+                        'hover:bg-white hover:shadow-md'
                       )}
                       placeholder="tu@email.com"
                     />
                     {validationErrors.email && (
-                      <p className="text-red-600 text-sm mt-1">{validationErrors.email}</p>
+                      <p className="text-red-600 text-sm mt-2 font-medium flex items-center">
+                        <X size={14} className="mr-1" />
+                        {validationErrors.email}
+                      </p>
                     )}
                   </div>
 
@@ -486,48 +563,130 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
               </div>
             )}
 
-            {/* Paso 4: Confirmación Final */}
+            {/* Paso 4: Subir Comprobante */}
             {currentStep === 4 && (
               <div className="space-y-6">
                 <div className="text-center mb-6">
-                  <div className="text-3xl mb-2">✅</div>
+                  <div className="text-3xl mb-2">📸</div>
                   <h3 className="text-xl font-bold text-gray-800 mb-2">
-                    Resumen de tu compra
+                    Subir comprobante de pago
                   </h3>
                   <p className="text-gray-600">
-                    Revisa que todo esté correcto
+                    Toma una foto o captura de pantalla de tu transferencia
                   </p>
                 </div>
 
+                {/* Área de subida de archivo */}
+                <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-6 rounded-xl border-2 border-dashed border-orange-300">
+                  <div className="text-center">
+                    <div className="mb-4">
+                      <div className="bg-orange-500 p-4 rounded-full inline-block mb-4">
+                        <Download size={32} className="text-white" />
+                      </div>
+                      <h4 className="text-lg font-bold text-orange-800 mb-2">
+                        Selecciona tu comprobante
+                      </h4>
+                      <p className="text-orange-700 text-sm mb-4">
+                        JPG, PNG o cualquier imagen (máximo 10MB)
+                      </p>
+                    </div>
+
+                    <input
+                      type="file"
+                      id="screenshot-upload"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    
+                    <label
+                      htmlFor="screenshot-upload"
+                      className="cursor-pointer inline-flex items-center gap-3 bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-xl font-bold transition-colors shadow-lg hover:shadow-xl"
+                    >
+                      <Download size={20} />
+                      Seleccionar archivo
+                    </label>
+                  </div>
+
+                  {/* Preview de la imagen */}
+                  {previewUrl && (
+                    <div className="mt-6 bg-white p-4 rounded-lg border-2 border-orange-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-orange-800 font-bold flex items-center gap-2">
+                          <CheckCircle size={16} className="text-green-600" />
+                          Comprobante cargado
+                        </span>
+                        <button
+                          onClick={() => {
+                            setPaymentScreenshot(null);
+                            setPreviewUrl('');
+                            setValidationErrors({});
+                          }}
+                          className="text-red-600 hover:text-red-800 transition-colors"
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
+                      <img
+                        src={previewUrl}
+                        alt="Comprobante de pago"
+                        className="w-full max-w-md mx-auto rounded-lg shadow-md border border-gray-200"
+                      />
+                      <p className="text-sm text-gray-600 text-center mt-3">
+                        Archivo: {paymentScreenshot?.name}
+                      </p>
+                    </div>
+                  )}
+
+                  {validationErrors.screenshot && (
+                    <div className="mt-4 text-red-600 text-sm font-medium flex items-center justify-center gap-2">
+                      <X size={16} />
+                      {validationErrors.screenshot}
+                    </div>
+                  )}
+                </div>
+
+                {/* Resumen de la compra */}
                 <div className="bg-gray-50 rounded-xl p-6 space-y-4">
-                  <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-                    <span className="font-medium">Números seleccionados:</span>
-                    <span className="font-bold">{selectedTickets.length}</span>
-                  </div>
+                  <h4 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <CheckCircle size={20} className="text-green-600" />
+                    Resumen de tu compra
+                  </h4>
                   
-                  <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-                    <span className="font-medium">Método de pago:</span>
-                    <span className="font-bold">
-                      {paymentMethods.find(m => m.id === selectedPaymentMethod)?.name}
-                    </span>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="bg-white p-3 rounded-lg">
+                      <span className="text-gray-600">Números:</span>
+                      <div className="font-bold text-lg">{selectedTickets.length}</div>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg">
+                      <span className="text-gray-600">Total:</span>
+                      <div className="font-bold text-lg text-green-600">{formatPrice(totalPrice)}</div>
+                    </div>
                   </div>
-                  
-                  <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-                    <span className="font-medium">Comprador:</span>
-                    <span className="font-bold">{customerData.name}</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center text-xl font-bold text-green-600">
-                    <span>Total a pagar:</span>
-                    <span>{formatPrice(totalPrice)}</span>
+
+                  <div className="bg-white p-4 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-gray-600">Método de pago:</span>
+                      <span className="font-bold">
+                        {PAYMENT_METHODS.find((m: PaymentMethodType) => m.id === selectedPaymentMethod)?.name}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Comprador:</span>
+                      <span className="font-bold">{customerData.name}</span>
+                    </div>
                   </div>
                 </div>
 
+                {/* Instrucciones finales */}
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                  <p className="text-sm text-blue-800">
-                    <FileText size={16} className="inline mr-2" />
-                    Al confirmar tu compra, recibirás las instrucciones de pago por email y 
-                    tus números quedarán reservados por 30 minutos.
+                  <p className="text-sm text-blue-800 flex items-start gap-2">
+                    <FileText size={16} className="mt-0.5 flex-shrink-0" />
+                    <span>
+                      Al finalizar tu compra, recibirás un email de confirmación y tus números 
+                      quedarán reservados. Un administrador revisará tu comprobante y confirmará 
+                      tu pago en las próximas 24 horas.
+                    </span>
                   </p>
                 </div>
               </div>
