@@ -215,7 +215,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
           {/* Header Mexicano Premium para Rifas */}
           <div className="sticky top-0 z-10 bg-gradient-to-r from-green-700 via-white to-red-700 backdrop-blur-xl border-b-4 border-yellow-400 px-4 sm:px-6 py-4 sm:py-5">
             {/* Patrón azteca de fondo */}
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width="60" height="40" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="%23fbbf24" fill-opacity="0.1"%3E%3Cpath d="M30 0l10 20-10 20-10-20z M0 20l10-20v40l-10-20z M50 20l10-20v40l-10-20z"/%3E%3C/g%3E%3C/svg%3E')] opacity-30"></div>
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2240%22%20viewBox%3D%220%200%2060%2040%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22%23fbbf24%22%20fill-opacity%3D%220.1%22%3E%3Cpath%20d%3D%22M30%200l10%2020-10%2020-10-20z%20M0%2020l10-20v40l-10-20z%20M50%2020l10-20v40l-10-20z%22/%3E%3C/g%3E%3C/svg%3E')] opacity-30"></div>
             
             <div className="relative z-10">
               {/* Título principal mexicano */}
