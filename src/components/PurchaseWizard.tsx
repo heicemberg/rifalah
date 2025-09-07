@@ -284,31 +284,31 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
           {/* Premium Content Container - With proper scroll */}
           <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
             <div className="p-4 sm:p-6 space-y-6">
-              {/* Step 1: Premium Confirmation */}
+              {/* Step 1: Compact Confirmation */}
               {currentStep === 1 && (
-                <div className="space-y-8 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
-                  <div className="text-center space-y-4">
-                    <div className="relative w-20 h-20 mx-auto">
-                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-3xl shadow-2xl shadow-emerald-500/30 animate-pulse" />
-                      <div className="relative w-full h-full bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-3xl flex items-center justify-center">
-                        <CheckCircle size={36} className="text-white drop-shadow-lg" />
+                <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+                  <div className="text-center space-y-3">
+                    <div className="relative w-16 h-16 mx-auto">
+                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl shadow-xl shadow-emerald-500/25 animate-pulse" />
+                      <div className="relative w-full h-full bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center">
+                        <CheckCircle size={28} className="text-white drop-shadow-lg" />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <h3 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                    <div className="space-y-1">
+                      <h3 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
                         Confirma tu selección
                       </h3>
-                      <p className="text-slate-600 text-lg font-medium">
+                      <p className="text-slate-600 text-base font-medium">
                         Has seleccionado {selectedTickets.length} número{selectedTickets.length !== 1 ? 's' : ''}
                       </p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="group relative bg-gradient-to-br from-slate-50 to-slate-100/80 backdrop-blur-sm rounded-2xl p-8 text-center ring-1 ring-slate-200/50 hover:ring-slate-300/60 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="group relative bg-gradient-to-br from-slate-50 to-slate-100/80 backdrop-blur-sm rounded-2xl p-6 text-center ring-1 ring-slate-200/50 hover:ring-slate-300/60 hover:shadow-lg transition-all duration-300">
                       <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       <div className="relative">
-                        <div className="text-4xl font-black bg-gradient-to-br from-slate-800 to-slate-600 bg-clip-text text-transparent mb-3">
+                        <div className="text-3xl font-black bg-gradient-to-br from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2">
                           {selectedTickets.length}
                         </div>
                         <div className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
@@ -316,10 +316,10 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                         </div>
                       </div>
                     </div>
-                    <div className="group relative bg-gradient-to-br from-emerald-50 to-emerald-100/80 backdrop-blur-sm rounded-2xl p-8 text-center ring-1 ring-emerald-200/50 hover:ring-emerald-300/60 hover:shadow-xl hover:shadow-emerald-200/50 transition-all duration-300">
+                    <div className="group relative bg-gradient-to-br from-emerald-50 to-emerald-100/80 backdrop-blur-sm rounded-2xl p-6 text-center ring-1 ring-emerald-200/50 hover:ring-emerald-300/60 hover:shadow-lg transition-all duration-300">
                       <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       <div className="relative">
-                        <div className="text-4xl font-black bg-gradient-to-br from-emerald-700 to-emerald-600 bg-clip-text text-transparent mb-3">
+                        <div className="text-3xl font-black bg-gradient-to-br from-emerald-700 to-emerald-600 bg-clip-text text-transparent mb-2">
                           {formatPrice(totalPrice)}
                         </div>
                         <div className="text-sm font-semibold text-emerald-700 uppercase tracking-wider">
@@ -329,7 +329,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                     </div>
                   </div>
                   
-                  <div className="relative bg-gradient-to-br from-slate-50 to-slate-100/50 backdrop-blur-sm rounded-2xl p-6 ring-1 ring-slate-200/50">
+                  <div className="relative bg-gradient-to-br from-slate-50 to-slate-100/50 backdrop-blur-sm rounded-2xl p-4 ring-1 ring-slate-200/50">
                     <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent rounded-2xl" />
                     <div className="relative">
                       <h4 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wider flex items-center gap-2">
@@ -377,52 +377,76 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {/* Premium Payment Methods Grid - 2x2 Large Logos */}
+                  <div className="grid grid-cols-2 gap-4">
                     {mainPaymentMethods.map((method, index) => (
-                      <div key={method.id} className="space-y-4" style={{ animationDelay: `${index * 100}ms` }}>
+                      <div key={method.id} className="space-y-3" style={{ animationDelay: `${index * 100}ms` }}>
                         <button
                           onClick={() => {
                             setSelectedPaymentMethod(method.id);
                             setShowPaymentDetails(showPaymentDetails === method.id ? '' : method.id);
                           }}
                           className={cn(
-                            'group w-full p-6 rounded-2xl border-2 text-center transition-all duration-300 min-h-[140px] flex flex-col items-center justify-center relative backdrop-blur-sm',
-                            'hover:shadow-2xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-4',
+                            'group w-full px-4 py-6 sm:px-6 sm:py-8 rounded-3xl border-2 text-center transition-all duration-300 relative backdrop-blur-sm overflow-hidden',
+                            'hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-4 min-h-[120px] sm:min-h-[140px]',
                             selectedPaymentMethod === method.id
-                              ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100/80 shadow-xl shadow-blue-500/20 ring-4 ring-blue-200/50'
-                              : 'border-slate-200/60 bg-gradient-to-br from-white to-slate-50/80 hover:border-slate-300 hover:shadow-slate-200/50 ring-1 ring-slate-200/30 hover:ring-slate-300/50 focus:ring-blue-200/50'
+                              ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100/90 ring-4 ring-blue-200/60 shadow-2xl shadow-blue-500/25'
+                              : 'border-slate-200/60 bg-gradient-to-br from-white via-white to-slate-50/40 hover:border-blue-300/70 hover:shadow-blue-100/30 ring-1 ring-slate-200/30'
                           )}
                         >
+                          {/* Selection Indicator */}
                           {selectedPaymentMethod === method.id && (
-                            <div className="absolute -top-3 -right-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-2xl p-2 shadow-lg shadow-blue-500/30 animate-in zoom-in-50 duration-300">
-                              <CheckCircle size={18} />
+                            <div className="absolute -top-2 -right-2 z-10">
+                              <div className="relative">
+                                <div className="absolute inset-0 bg-blue-500 rounded-full blur animate-pulse" />
+                                <div className="relative w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/40">
+                                  <CheckCircle size={16} className="text-white" />
+                                </div>
+                              </div>
                             </div>
                           )}
 
-                          <div className="flex flex-col items-center space-y-4">
-                            <div className="relative">
-                              <div className="absolute inset-0 bg-gradient-to-br from-white to-slate-100 rounded-2xl shadow-inner" />
-                              <div className="relative bg-gradient-to-br from-white to-slate-50 p-4 rounded-2xl shadow-lg ring-1 ring-slate-200/50 group-hover:shadow-xl transition-shadow duration-300">
+                          {/* Conversion-Focused Layout */}
+                          <div className="flex flex-col items-center justify-center space-y-3 h-full">
+                            {/* Large Logo Container */}
+                            <div className="relative flex-1 flex items-center justify-center w-full">
+                              <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-slate-100/60 rounded-2xl shadow-inner" />
+                              <div className="relative bg-gradient-to-br from-white to-slate-50/80 px-4 py-6 sm:px-6 sm:py-8 rounded-2xl shadow-xl ring-1 ring-slate-200/50 group-hover:shadow-2xl transition-all duration-300 w-full h-full flex items-center justify-center">
                                 <img
                                   src={method.icon}
                                   alt={method.name}
-                                  className="w-14 h-14 object-contain filter group-hover:scale-110 transition-transform duration-200"
+                                  className="max-w-full max-h-[60px] sm:max-h-[80px] object-contain filter group-hover:scale-105 transition-transform duration-300"
                                 />
                               </div>
                             </div>
                             
-                            <div className="text-center space-y-2">
-                              <div className="font-bold text-slate-900 text-base group-hover:text-blue-700 transition-colors duration-200">
+                            {/* Payment Method Info - More Descriptive */}
+                            <div className="text-center space-y-2 flex-shrink-0">
+                              <div className="font-black text-slate-900 text-sm sm:text-base group-hover:text-blue-700 transition-colors duration-200">
                                 {method.name}
                               </div>
                               {method.enabled && (
-                                <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 text-xs px-3 py-1.5 rounded-full font-bold shadow-sm ring-1 ring-emerald-200/50">
-                                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                                  Disponible
-                                </span>
+                                <div className="space-y-1">
+                                  <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 text-xs px-2 py-1 rounded-full font-bold shadow-sm ring-1 ring-emerald-200/50">
+                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                    Disponible 24/7
+                                  </span>
+                                  {method.id === 'binance' && (
+                                    <div className="text-xs text-slate-600 font-medium">Criptomonedas</div>
+                                  )}
+                                  {method.id === 'oxxo' && (
+                                    <div className="text-xs text-slate-600 font-medium">Efectivo</div>
+                                  )}
+                                  {(method.id === 'bancoppel' || method.id === 'bancoazteca') && (
+                                    <div className="text-xs text-slate-600 font-medium">Transferencia</div>
+                                  )}
+                                </div>
                               )}
                             </div>
                           </div>
+
+                          {/* Hover Effect Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-blue-500/0 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl pointer-events-none" />
                         </button>
 
                         {/* Premium Payment Details */}

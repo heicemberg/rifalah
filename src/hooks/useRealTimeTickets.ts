@@ -7,7 +7,7 @@
 import { useMasterCounters } from './useMasterCounters';
 
 // Precios en pesos mexicanos
-export const PRECIO_POR_BOLETO_MXN = 199;
+export const PRECIO_POR_BOLETO_MXN = 250;
 
 /**
  * Hook que proporciona funciones de formateo y estadísticas en tiempo real

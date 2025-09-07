@@ -124,7 +124,7 @@ export const useTicketGridCounters = () => {
 export const usePricingCounters = () => {
   const counters = useCounters();
   
-  const PRECIO_POR_TICKET = 199;
+  const PRECIO_POR_TICKET = 250;
   
   const calculatePrice = (quantity: number) => quantity * PRECIO_POR_TICKET;
   const formatPrice = (amount: number) => `$${amount.toLocaleString('es-MX')} MXN`;

@@ -125,7 +125,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
   const { isConnected } = masterCounters;
   
   // Pricing constants and functions (self-contained)
-  const PRECIO_POR_BOLETO_MXN = 199;
+  const PRECIO_POR_BOLETO_MXN = 250;
   const formatMexicanNumber = (num: number): string => num.toLocaleString('es-MX');
   const formatPriceMXN = (amount: number): string => `$${formatMexicanNumber(amount)} MXN`;
   const calculatePriceMXN = (quantity: number): number => quantity * PRECIO_POR_BOLETO_MXN;
