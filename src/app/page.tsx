@@ -46,7 +46,7 @@ export default function NewRaffePage() {
       maximumFractionDigits: 0
     }).format(price)
   }
-  const PRECIO_POR_BOLETO_MXN = 199 // Match useRealTimeTickets pricing
+  const PRECIO_POR_BOLETO_MXN = 250 // Match PurchaseWizard pricing
   
   // ✅ CRITICAL: Listen for admin confirmations to update counters immediately
   useEffect(() => {
@@ -771,9 +771,57 @@ export default function NewRaffePage() {
         onClose={() => setShowPurchaseModal(false)}
         selectedTickets={selectedTickets}
         onConfirmPurchase={async (customerData, paymentMethod) => {
-          console.log('🎯 Compra confirmada:', { customerData, paymentMethod });
-          // Aquí iría la lógica de procesamiento de compra
-          setShowPurchaseModal(false);
+          console.log('🎯 Iniciando procesamiento de compra:', { customerData, paymentMethod, selectedTickets });
+          
+          try {
+            // Import the Supabase functions dynamically
+            const { guardarCompra, obtenerMetadata } = await import('@/lib/supabase');
+            
+            // Get device metadata
+            const metadata = obtenerMetadata();
+            
+            // Prepare purchase data
+            const datosCompra = {
+              nombre: customerData.name.split(' ')[0] || '',
+              apellidos: customerData.name.split(' ').slice(1).join(' ') || '',
+              telefono: customerData.phone,
+              email: customerData.email,
+              estado: customerData.state,
+              ciudad: customerData.city,
+              cantidad_boletos: selectedTickets.length,
+              numeros_boletos: selectedTickets,
+              precio_unitario: 250, // Match the price from formatPriceMXN
+              precio_total: selectedTickets.length * 250,
+              metodo_pago: paymentMethod,
+              navegador: metadata.navegador,
+              dispositivo: metadata.dispositivo,
+              ip_address: metadata.ip_address,
+              user_agent: metadata.user_agent
+            };
+            
+            console.log('💾 Guardando compra en base de datos...', datosCompra);
+            
+            // Save to database
+            const result = await guardarCompra(datosCompra);
+            
+            console.log('✅ Compra guardada exitosamente:', result);
+            
+            // Clear selected tickets after successful purchase
+            useRaffleStore.getState().clearSelection();
+            
+            // Close modal
+            setShowPurchaseModal(false);
+            
+            // Show success notification
+            alert('¡Compra realizada exitosamente! Recibirás confirmación por WhatsApp en las próximas 24 horas.');
+            
+          } catch (error) {
+            console.error('❌ Error al procesar la compra:', error);
+            
+            // Show user-friendly error message
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido al procesar la compra';
+            alert(`Error al procesar la compra: ${errorMessage}. Por favor intenta de nuevo.`);
+          }
         }}
         isProcessing={false}
       />
