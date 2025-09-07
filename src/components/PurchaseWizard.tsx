@@ -207,16 +207,16 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
       />
       
       {/* Modal Container - Premium Glass Morphism - Optimized Size */}
-      <div className="flex items-start justify-center min-h-screen p-2 sm:p-4">
+      <div className="flex items-center justify-center min-h-screen p-3 sm:p-6">
         <div 
-          className="relative w-full max-w-lg sm:max-w-xl md:max-w-2xl transform animate-in fade-in-50 slide-in-from-bottom-4 duration-300 ease-out"
-          style={{ maxHeight: '95vh' }}
+          className="relative w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl transform animate-in fade-in-50 slide-in-from-bottom-4 duration-300 ease-out"
+          style={{ maxHeight: '85vh' }}
         >
-          <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl ring-1 ring-slate-200/50 border border-white/20 overflow-hidden flex flex-col max-h-[95vh]">
+          <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl ring-1 ring-slate-200/50 border border-white/20 overflow-hidden flex flex-col h-[85vh] max-h-[85vh]">
           
-          {/* Premium Glass Header */}
-          <div className="shrink-0 bg-gradient-to-r from-slate-50/90 to-white/90 backdrop-blur-sm border-b border-slate-200/60 px-6 py-5">
-            <div className="flex items-center justify-between mb-6">
+          {/* Premium Glass Header - Compact */}
+          <div className="shrink-0 bg-gradient-to-r from-slate-50/90 to-white/90 backdrop-blur-sm border-b border-slate-200/60 px-6 py-4">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
                 {currentStep > 1 && (
                   <button
@@ -281,9 +281,9 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
             </div>
           </div>
 
-          {/* Premium Content Container */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-6 lg:p-8 space-y-8">
+          {/* Premium Content Container - With proper scroll */}
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+            <div className="p-4 sm:p-6 space-y-6">
               {/* Step 1: Premium Confirmation */}
               {currentStep === 1 && (
                 <div className="space-y-8 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
@@ -890,11 +890,10 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
               )}
             </div>
           </div>
-          </div>
 
-          {/* Premium Footer */}
-          <div className="border-t border-slate-200/60 bg-gradient-to-r from-white to-slate-50/80 backdrop-blur-sm px-6 py-5">
-            <div className="flex justify-between items-center">
+          {/* Premium Footer - Always Visible & Compact */}
+          <div className="shrink-0 border-t border-slate-200/60 bg-gradient-to-r from-white to-slate-50/80 backdrop-blur-sm px-4 sm:px-6 py-3 shadow-lg">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-4 text-sm">
                 <span className="font-bold text-slate-700">Paso {currentStep} de {steps.length}</span>
                 <div className="relative w-16 bg-slate-200 rounded-full h-3 overflow-hidden shadow-inner">
@@ -906,22 +905,23 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                 <span className="text-slate-500 font-medium">{Math.round((currentStep / steps.length) * 100)}%</span>
               </div>
               
-              <div className="flex gap-4">
+              <div className="flex gap-3 sm:gap-4 w-full sm:w-auto justify-center sm:justify-end">
                 {currentStep < 4 && (
                   <button
                     onClick={handleNext}
                     disabled={isProcessing}
                     className={cn(
-                      'group px-8 py-3 rounded-2xl font-bold text-sm transition-all duration-300',
+                      'group px-6 sm:px-8 py-2.5 sm:py-3 rounded-2xl font-bold text-sm transition-all duration-300',
                       'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white',
                       'hover:shadow-xl hover:shadow-blue-500/25 hover:scale-105 active:scale-95',
                       'focus:outline-none focus:ring-4 focus:ring-blue-200/50',
                       'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
-                      'flex items-center gap-3 ring-2 ring-blue-500/20'
+                      'flex items-center gap-2 sm:gap-3 ring-2 ring-blue-500/20',
+                      'flex-1 sm:flex-initial justify-center'
                     )}
                   >
                     <span>Continuar</span>
-                    <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform duration-200" />
+                    <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform duration-200" />
                   </button>
                 )}
                 
@@ -930,22 +930,23 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                     onClick={handleFinish}
                     disabled={isProcessing}
                     className={cn(
-                      'group px-8 py-3 rounded-2xl font-bold text-sm transition-all duration-300',
+                      'group px-6 sm:px-8 py-2.5 sm:py-3 rounded-2xl font-bold text-sm transition-all duration-300',
                       'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white',
                       'hover:shadow-xl hover:shadow-emerald-500/25 hover:scale-105 active:scale-95',
                       'focus:outline-none focus:ring-4 focus:ring-emerald-200/50',
                       'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
-                      'flex items-center gap-3 ring-2 ring-emerald-500/20'
+                      'flex items-center gap-2 sm:gap-3 ring-2 ring-emerald-500/20',
+                      'flex-1 sm:flex-initial justify-center'
                     )}
                   >
                     {isProcessing ? (
                       <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         <span>Procesando...</span>
                       </>
                     ) : (
                       <>
-                        <CheckCircle size={18} className="group-hover:scale-110 transition-transform duration-200" />
+                        <CheckCircle size={16} className="group-hover:scale-110 transition-transform duration-200" />
                         <span>Confirmar Compra</span>
                       </>
                     )}
@@ -953,6 +954,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                 )}
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>

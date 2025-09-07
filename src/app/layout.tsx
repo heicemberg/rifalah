@@ -59,7 +59,7 @@ export const metadata: Metadata = {
     default: 'Rifa Chevrolet Silverado Z71 2024 - ¡Gana tu Camioneta Nueva!',
     template: '%s | Rifa Silverado Z71 2024'
   },
-  description: 'Participa en la rifa de una Chevrolet Silverado Z71 2024 completamente nueva. Boletos desde $50 MXN. Sorteo legal y transparente el 31 de Diciembre 2024. ¡Compra ya!',
+  description: 'Participa en la rifa de una Chevrolet Silverado Z71 2024 completamente nueva. Boletos desde $250 MXN. Sorteo legal y transparente el 31 de Diciembre 2024. ¡Compra ya!',
   
   // Keywords específicas para México
   keywords: [
@@ -113,7 +113,7 @@ export const metadata: Metadata = {
     locale: 'es_MX',
     url: 'https://rifa-silverado.mx',
     title: 'Rifa Chevrolet Silverado Z71 2024 - ¡Gana tu Camioneta Nueva!',
-    description: 'Participa en la rifa más grande de México. Chevrolet Silverado Z71 2024 nueva, valor $890,000 MXN. Boletos desde $50. Sorteo 31 Dic 2024.',
+    description: 'Participa en la rifa más grande de México. Chevrolet Silverado Z71 2024 nueva, valor $890,000 MXN. Boletos desde $250 MXN. Sorteo 31 Dic 2024.',
     siteName: 'Rifa Silverado Z71 2024',
     images: [
       {
@@ -139,7 +139,7 @@ export const metadata: Metadata = {
     site: '@RifasSilverado',
     creator: '@RifasMexico',
     title: 'Rifa Chevrolet Silverado Z71 2024 - ¡Gana tu Camioneta Nueva!',
-    description: 'Participa en la rifa más grande de México. Chevrolet Silverado Z71 2024 nueva, valor $890,000 MXN. Boletos desde $50.',
+    description: 'Participa en la rifa más grande de México. Chevrolet Silverado Z71 2024 nueva, valor $890,000 MXN. Boletos desde $250 MXN.',
     images: {
       url: 'https://rifa-silverado.mx/twitter-image.jpg',
       alt: 'Chevrolet Silverado Z71 2024 - Premio de la Rifa',
@@ -292,7 +292,7 @@ const structuredData = {
           name: '¿Cuánto cuesta un boleto?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Cada boleto cuesta $50 MXN. Tenemos descuentos por volumen: 5 boletos por $225 (10% OFF), 10 boletos por $400 (20% OFF), etc.'
+            text: 'Cada boleto cuesta $250 MXN. Tenemos descuentos por volumen: 5 boletos por $1,125 (10% OFF), 10 boletos por $2,000 (20% OFF), etc.'
           }
         },
         {

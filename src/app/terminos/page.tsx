@@ -98,7 +98,7 @@ export default function TerminosPage() {
               <p><strong>3.2 Mecánica del Sorteo</strong></p>
               <ul className="list-disc list-inside ml-4 space-y-2">
                 <li>Total de boletos: 10,000 (numerados del 0001 al 10000)</li>
-                <li>Precio por boleto: $10 USD (equivalente en MXN al tipo de cambio vigente)</li>
+                <li>Precio por boleto: $250 MXN (pesos mexicanos)</li>
                 <li>Descuentos por volumen aplicables según tabla de precios</li>
                 <li>Asignación de números al confirmar la compra por el administrador</li>
                 <li>Un participante puede adquirir múltiples boletos</li>

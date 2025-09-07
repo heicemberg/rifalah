@@ -17,8 +17,8 @@ import type {
 /** Total de tickets disponibles */
 export const TOTAL_TICKETS = 10000;
 
-/** Precio por ticket en dólares estadounidenses */
-export const TICKET_PRICE = 10;
+/** Precio por ticket en pesos mexicanos */
+export const TICKET_PRICE = 250;
 
 /** Tiempo de reserva en minutos */
 export const RESERVATION_TIME = 30;
@@ -33,37 +33,37 @@ export const RESERVATION_TIME_MS = RESERVATION_TIME * 60 * 1000;
 export const QUICK_SELECT_OPTIONS: QuickSelectOption[] = [
   {
     tickets: 1,
-    price: 10,
+    price: 250,
     discount: 0,
     popular: false
   },
   {
     tickets: 5,
-    price: 45,
+    price: 1125,
     discount: 10,
     popular: false
   },
   {
     tickets: 10,
-    price: 80,
+    price: 2000,
     discount: 20,
     popular: true
   },
   {
     tickets: 25,
-    price: 187,
+    price: 4687,
     discount: 25,
     popular: false
   },
   {
     tickets: 50,
-    price: 350,
+    price: 8750,
     discount: 30,
     popular: false
   },
   {
     tickets: 100,
-    price: 650,
+    price: 16250,
     discount: 35,
     popular: false
   }

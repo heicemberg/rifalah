@@ -65,7 +65,7 @@ export default function AdminPanel() {
           id: compra.id || `local-${Date.now()}`,
           customer_id: compra.customer_id || 'local',
           total_amount: compra.precio_total || 0,
-          unit_price: compra.precio_unitario || 199,
+          unit_price: compra.precio_unitario || 250,
           discount_applied: compra.descuento_aplicado || 0,
           payment_method: compra.metodo_pago || 'Desconocido',
           payment_reference: compra.referencia_pago || `RF-${Date.now()}`,
