@@ -22,11 +22,14 @@ import {
   Upload,
   Copy,
   Check,
-  Camera
+  Camera,
+  Zap,
+  TrendingUp,
+  Gift
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { formatPrice, formatTicketNumber } from '../lib/utils';
-import { PAYMENT_METHODS } from '../lib/constants';
+import { PAYMENT_METHODS, QUICK_SELECT_OPTIONS } from '../lib/constants';
 import type { PaymentMethod as PaymentMethodType } from '../lib/types';
 
 interface PurchaseWizardProps {
@@ -34,6 +37,7 @@ interface PurchaseWizardProps {
   onClose: () => void;
   selectedTickets: number[];
   onConfirmPurchase: (customerData: CustomerData, paymentMethod: string) => Promise<void>;
+  onQuickSelect: (count: number) => void;
   isProcessing: boolean;
 }
 
@@ -51,9 +55,13 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   onClose,
   selectedTickets,
   onConfirmPurchase,
+  onQuickSelect,
   isProcessing
 }) => {
-  const [currentStep, setCurrentStep] = useState(1);
+  // Calculate if tickets are selected first
+  const hasTicketsSelected = selectedTickets.length > 0;
+  
+  const [currentStep, setCurrentStep] = useState(hasTicketsSelected ? 1 : 0);
   const [customerData, setCustomerData] = useState<CustomerData>({
     name: '',
     email: '',
@@ -69,7 +77,14 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string>('');
 
   const totalPrice = selectedTickets.length * 250;
-  const steps = [
+  
+  const steps = hasTicketsSelected ? [
+    { number: 1, title: 'Confirmación', description: 'Verifica tu selección' },
+    { number: 2, title: 'Pago', description: 'Elige cómo pagar' },
+    { number: 3, title: 'Datos', description: 'Tu información' },
+    { number: 4, title: 'Comprobante', description: 'Sube tu captura' }
+  ] : [
+    { number: 0, title: 'Selección', description: 'Elige tus números' },
     { number: 1, title: 'Confirmación', description: 'Verifica tu selección' },
     { number: 2, title: 'Pago', description: 'Elige cómo pagar' },
     { number: 3, title: 'Datos', description: 'Tu información' },
@@ -94,11 +109,11 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   // Reset wizard when opening
   useEffect(() => {
     if (isOpen) {
-      setCurrentStep(1);
+      setCurrentStep(hasTicketsSelected ? 1 : 0);
       setValidationErrors({});
       setSelectedPaymentMethod('');
     }
-  }, [isOpen]);
+  }, [isOpen, hasTicketsSelected]);
 
   const validateStep = (step: number): boolean => {
     const errors: Record<string, string> = {};
@@ -166,7 +181,8 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   };
 
   const handleNext = () => {
-    if (validateStep(currentStep)) {
+    // Step 0 doesn't need validation
+    if (currentStep === 0 || validateStep(currentStep)) {
       if (currentStep < 4) {
         setCurrentStep(currentStep + 1);
       }
@@ -174,7 +190,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   };
 
   const handleBack = () => {
-    if (currentStep > 1) {
+    if (currentStep > (hasTicketsSelected ? 1 : 0)) {
       setCurrentStep(currentStep - 1);
     }
   };
@@ -194,6 +210,11 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
     navigator.clipboard.writeText(text);
     setCopiedField(field);
     setTimeout(() => setCopiedField(''), 2000);
+  };
+
+  const handleQuickSelect = (ticketCount: number) => {
+    onQuickSelect(ticketCount);
+    setCurrentStep(1);
   };
 
   if (!isOpen) return null;
@@ -218,7 +239,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
           <div className="shrink-0 bg-gradient-to-r from-slate-50/90 to-white/90 backdrop-blur-sm border-b border-slate-200/60 px-6 py-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
-                {currentStep > 1 && (
+                {currentStep > (hasTicketsSelected ? 1 : 0) && (
                   <button
                     onClick={handleBack}
                     className="group relative bg-gradient-to-br from-slate-100 to-slate-50 hover:from-slate-200 hover:to-slate-100 text-slate-700 p-2.5 rounded-xl transition-all duration-300 ease-out ring-1 ring-slate-200/50 hover:ring-slate-300/50 hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
@@ -229,10 +250,10 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                 )}
                 <div className="space-y-1">
                   <h2 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-                    {steps[currentStep - 1].title}
+                    {steps[hasTicketsSelected ? currentStep - 1 : currentStep].title}
                   </h2>
                   <p className="text-sm text-slate-600 font-medium">
-                    {steps[currentStep - 1].description}
+                    {steps[hasTicketsSelected ? currentStep - 1 : currentStep].description}
                   </p>
                 </div>
               </div>
@@ -284,22 +305,178 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
           {/* Premium Content Container - With proper scroll */}
           <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
             <div className="p-4 sm:p-6 space-y-6">
+              {/* Step 0: Quick Buy Cards */}
+              {currentStep === 0 && (
+                <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+                  <div className="text-center space-y-4">
+                    <div className="relative w-20 h-20 mx-auto">
+                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-3xl shadow-2xl shadow-emerald-500/30 animate-pulse" />
+                      <div className="relative w-full h-full bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-3xl flex items-center justify-center">
+                        <Zap size={36} className="text-white drop-shadow-lg" />
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <h3 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                        Compra Rápida
+                      </h3>
+                      <p className="text-slate-600 text-lg font-medium">
+                        Elige cuántos números quieres y te los asignamos al instante
+                      </p>
+                      <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-100 to-emerald-200 px-4 py-2 rounded-2xl ring-1 ring-emerald-200/50 shadow-sm">
+                        <TrendingUp size={16} className="text-emerald-600" />
+                        <span className="text-emerald-800 font-bold text-sm">
+                          ¡Mayores descuentos por volumen!
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Buy Cards Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {QUICK_SELECT_OPTIONS.map((option, index) => (
+                      <button
+                        key={option.tickets}
+                        onClick={() => handleQuickSelect(option.tickets)}
+                        className={cn(
+                          'group relative bg-gradient-to-br from-white via-white to-slate-50/80 rounded-3xl p-6 text-center transition-all duration-500',
+                          'hover:shadow-2xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 ring-1 ring-slate-200/50',
+                          'hover:from-blue-50 hover:via-blue-50 hover:to-blue-100/80 hover:ring-blue-300/60 hover:shadow-blue-100/50',
+                          option.popular 
+                            ? 'border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-emerald-50 to-emerald-100/80 ring-emerald-300/60 shadow-xl shadow-emerald-500/20'
+                            : 'border-2 border-transparent hover:border-blue-200/60'
+                        )}
+                        style={{ animationDelay: `${index * 100}ms` }}
+                      >
+                        {/* Popular Badge */}
+                        {option.popular && (
+                          <div className="absolute -top-3 -right-3 z-10">
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-emerald-500 rounded-full blur animate-pulse" />
+                              <div className="relative bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg shadow-emerald-500/40 flex items-center gap-1">
+                                <Gift size={12} />
+                                MÁS POPULAR
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Hover Effect Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-blue-500/0 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl pointer-events-none" />
+                        
+                        <div className="relative space-y-4">
+                          {/* Ticket Count */}
+                          <div className="space-y-2">
+                            <div className={cn(
+                              'text-4xl font-black transition-colors duration-300',
+                              option.popular
+                                ? 'bg-gradient-to-br from-emerald-700 to-emerald-600 bg-clip-text text-transparent'
+                                : 'bg-gradient-to-br from-slate-800 to-slate-600 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:to-blue-600'
+                            )}>
+                              {option.tickets}
+                            </div>
+                            <div className={cn(
+                              'text-sm font-bold uppercase tracking-wider transition-colors duration-300',
+                              option.popular 
+                                ? 'text-emerald-700'
+                                : 'text-slate-600 group-hover:text-blue-700'
+                            )}>
+                              {option.tickets === 1 ? 'Número' : 'Números'}
+                            </div>
+                          </div>
+
+                          {/* Price */}
+                          <div className="space-y-1">
+                            <div className={cn(
+                              'text-2xl font-black transition-colors duration-300',
+                              option.popular
+                                ? 'text-emerald-700'
+                                : 'text-slate-900 group-hover:text-blue-700'
+                            )}>
+                              {formatPrice(option.price)}
+                            </div>
+                            {option.discount > 0 && (
+                              <div className="flex items-center justify-center gap-2">
+                                <span className="text-slate-400 line-through text-sm font-medium">
+                                  {formatPrice(option.tickets * 250)}
+                                </span>
+                                <span className={cn(
+                                  'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold shadow-sm',
+                                  option.popular
+                                    ? 'bg-emerald-200 text-emerald-800 ring-1 ring-emerald-300/50'
+                                    : 'bg-red-100 text-red-800 ring-1 ring-red-200/50'
+                                )}>
+                                  <TrendingUp size={10} />
+                                  -{option.discount}%
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Call to Action */}
+                          <div className={cn(
+                            'text-xs font-bold uppercase tracking-wider transition-colors duration-300',
+                            option.popular 
+                              ? 'text-emerald-600'
+                              : 'text-slate-500 group-hover:text-blue-600'
+                          )}>
+                            ¡Seleccionar ahora!
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Quick Benefits */}
+                  <div className="relative bg-gradient-to-r from-blue-50 to-blue-100/80 backdrop-blur-sm border border-blue-200/60 rounded-2xl p-6 ring-1 ring-blue-200/30 shadow-lg">
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/30 to-transparent rounded-2xl" />
+                    <div className="relative">
+                      <h4 className="font-bold text-blue-900 mb-4 flex items-center gap-3 text-lg">
+                        <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg shadow-blue-500/25">
+                          <Zap size={18} className="text-white" />
+                        </div>
+                        <span className="bg-gradient-to-r from-blue-900 to-blue-700 bg-clip-text text-transparent">
+                          ¿Por qué elegir Compra Rápida?
+                        </span>
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <div className="flex items-center gap-3">
+                          <CheckCircle size={16} className="text-blue-600 flex-shrink-0" />
+                          <span className="text-blue-800 font-medium">Números asignados al instante</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <CheckCircle size={16} className="text-blue-600 flex-shrink-0" />
+                          <span className="text-blue-800 font-medium">Descuentos automáticos por volumen</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <CheckCircle size={16} className="text-blue-600 flex-shrink-0" />
+                          <span className="text-blue-800 font-medium">Proceso más rápido</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <CheckCircle size={16} className="text-blue-600 flex-shrink-0" />
+                          <span className="text-blue-800 font-medium">Misma probabilidad de ganar</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Step 1: Compact Confirmation */}
               {currentStep === 1 && (
                 <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
-                  <div className="text-center space-y-3">
-                    <div className="relative w-16 h-16 mx-auto">
-                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl shadow-xl shadow-emerald-500/25 animate-pulse" />
-                      <div className="relative w-full h-full bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center">
-                        <CheckCircle size={28} className="text-white drop-shadow-lg" />
+                  <div className="text-center space-y-2">
+                    <div className="relative w-12 h-12 mx-auto">
+                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl shadow-lg shadow-emerald-500/20 animate-pulse" />
+                      <div className="relative w-full h-full bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                        <CheckCircle size={20} className="text-white drop-shadow-lg" />
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <h3 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                      <h3 className="text-lg font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
                         Confirma tu selección
                       </h3>
-                      <p className="text-slate-600 text-base font-medium">
-                        Has seleccionado {selectedTickets.length} número{selectedTickets.length !== 1 ? 's' : ''}
+                      <p className="text-slate-600 text-sm font-medium">
+                        {selectedTickets.length} número{selectedTickets.length !== 1 ? 's' : ''} seleccionado{selectedTickets.length !== 1 ? 's' : ''}
                       </p>
                     </div>
                   </div>
@@ -919,18 +1096,18 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
           <div className="shrink-0 border-t border-slate-200/60 bg-gradient-to-r from-white to-slate-50/80 backdrop-blur-sm px-4 sm:px-6 py-3 shadow-lg">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-4 text-sm">
-                <span className="font-bold text-slate-700">Paso {currentStep} de {steps.length}</span>
+                <span className="font-bold text-slate-700">Paso {hasTicketsSelected ? currentStep : currentStep + 1} de {steps.length}</span>
                 <div className="relative w-16 bg-slate-200 rounded-full h-3 overflow-hidden shadow-inner">
                   <div 
                     className="h-full bg-gradient-to-r from-blue-600 to-blue-500 rounded-full transition-all duration-500 ease-out shadow-sm" 
-                    style={{ width: `${(currentStep / steps.length) * 100}%` }}
+                    style={{ width: `${((hasTicketsSelected ? currentStep : currentStep + 1) / steps.length) * 100}%` }}
                   />
                 </div>
-                <span className="text-slate-500 font-medium">{Math.round((currentStep / steps.length) * 100)}%</span>
+                <span className="text-slate-500 font-medium">{Math.round(((hasTicketsSelected ? currentStep : currentStep + 1) / steps.length) * 100)}%</span>
               </div>
               
               <div className="flex gap-3 sm:gap-4 w-full sm:w-auto justify-center sm:justify-end">
-                {currentStep < 4 && (
+                {currentStep < 4 && currentStep !== 0 && (
                   <button
                     onClick={handleNext}
                     disabled={isProcessing}

@@ -73,8 +73,8 @@ export default function NewRaffePage() {
     }
   }, []);
   
-  // Acceder al store para obtener los tickets seleccionados
-  const { selectedTickets } = useRaffleStore()
+  // Acceder al store para obtener los tickets seleccionados y la acción de selección rápida
+  const { selectedTickets, quickSelect } = useRaffleStore()
 
   // ✅ USAR DATOS DEL MASTER COUNTER - MATEMÁTICAMENTE GARANTIZADOS
   const soldCount = masterCounters.soldTickets
@@ -770,6 +770,7 @@ export default function NewRaffePage() {
         isOpen={showPurchaseModal}
         onClose={() => setShowPurchaseModal(false)}
         selectedTickets={selectedTickets}
+        onQuickSelect={(count) => quickSelect(count)}
         onConfirmPurchase={async (customerData, paymentMethod) => {
           console.log('🎯 Iniciando procesamiento de compra:', { customerData, paymentMethod, selectedTickets });
           
