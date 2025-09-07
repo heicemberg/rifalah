@@ -793,10 +793,10 @@ export default function NewRaffePage() {
               precio_unitario: 250, // Match the price from formatPriceMXN
               precio_total: selectedTickets.length * 250,
               metodo_pago: paymentMethod,
-              navegador: metadata.navegador,
-              dispositivo: metadata.dispositivo,
-              ip_address: metadata.ip_address,
-              user_agent: metadata.user_agent
+              navegador: metadata.navegador || '',
+              dispositivo: metadata.dispositivo || '',
+              ip_address: metadata.ip_address || '127.0.0.1',
+              user_agent: metadata.user_agent || ''
             };
             
             console.log('💾 Guardando compra en base de datos...', datosCompra);

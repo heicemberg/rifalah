@@ -332,6 +332,7 @@ export function obtenerMetadata() {
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     idioma: navigator.language,
     pantalla: `${screen.width}x${screen.height}`,
+    ip_address: '127.0.0.1' // Default fallback for client-side
   };
 }
 
