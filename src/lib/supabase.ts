@@ -439,7 +439,7 @@ export async function actualizarEstadoCompra(
     if (estado === 'confirmada') {
       const cantidadBoletos = Math.round(updatedPurchase.total_amount / updatedPurchase.unit_price);
       
-      // Solo asignar si no tiene tickets ya
+      // Si no tiene tickets, asignar nuevos
       if (!purchaseData.tickets || purchaseData.tickets.length === 0) {
         try {
           tickets = await asignarNumerosDisponibles(
@@ -460,8 +460,43 @@ export async function actualizarEstadoCompra(
           throw new Error(`No se pudo confirmar: ${ticketError instanceof Error ? ticketError.message : 'Error al asignar tickets'}`);
         }
       } else {
-        console.log(`ℹ️ La compra ya tiene ${purchaseData.tickets.length} tickets asignados`);
-        tickets = purchaseData.tickets;
+        // ✅ FIX: Si YA tiene tickets, marcarlos como VENDIDOS
+        console.log(`🎫 La compra ya tiene ${purchaseData.tickets.length} tickets, marcándolos como VENDIDOS...`);
+        
+        const ticketNumbers = purchaseData.tickets.map((t: any) => t.number);
+        
+        const { data: ticketsVendidos, error: markSoldError } = await supabase
+          .from('tickets')
+          .update({
+            status: 'vendido',
+            customer_id: updatedPurchase.customer_id,
+            purchase_id: purchaseId,
+            sold_at: new Date().toISOString()
+          })
+          .in('number', ticketNumbers)
+          .select();
+
+        if (markSoldError) {
+          console.error('❌ Error al marcar tickets como vendidos:', markSoldError);
+          throw new Error(`Error al confirmar tickets: ${markSoldError.message}`);
+        }
+
+        console.log(`✅ ${ticketsVendidos?.length || 0} tickets marcados como VENDIDOS`);
+        tickets = ticketsVendidos || [];
+        
+        // ✅ CRITICAL: Trigger evento de sincronización
+        if (typeof window !== 'undefined') {
+          console.log(`🔔 SUPABASE: Disparando evento post-confirmación de tickets existentes...`);
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('raffle-counters-updated', {
+              detail: { 
+                source: 'existing-tickets-confirmed',
+                confirmedTickets: ticketsVendidos?.length || 0,
+                timestamp: new Date().toISOString()
+              }
+            }));
+          }, 100);
+        }
       }
     }
 
@@ -625,7 +660,7 @@ export async function inicializarTickets(): Promise<boolean> {
 }
 
 /**
- * Obtener estadísticas de tickets en tiempo real
+ * Obtener estadísticas de tickets en tiempo real - OPTIMIZED WITH DIRECT COUNTS
  */
 export async function obtenerEstadisticasTickets(): Promise<{
   total: number;
@@ -634,23 +669,43 @@ export async function obtenerEstadisticasTickets(): Promise<{
   reservados: number;
 } | null> {
   try {
-    const { data: stats, error } = await supabase
-      .from('tickets')
-      .select('status')
-      .then(({ data, error }) => {
-        if (error) return { data: null, error };
-        
-        const counts = {
-          total: data?.length || 0,
-          disponibles: data?.filter(t => t.status === 'disponible').length || 0,
-          vendidos: data?.filter(t => t.status === 'vendido').length || 0,
-          reservados: data?.filter(t => t.status === 'reservado').length || 0
-        };
-        
-        return { data: counts, error: null };
-      });
+    console.log('📊 SUPABASE: Fetching ticket statistics using optimized counts...');
+    
+    // Get counts for each status using direct count queries (avoids 1000 record limit)
+    const [
+      { count: totalCount, error: totalError },
+      { count: disponiblesCount, error: disponiblesError },
+      { count: vendidosCount, error: vendidosError },
+      { count: reservadosCount, error: reservadosError }
+    ] = await Promise.all([
+      supabase.from('tickets').select('*', { count: 'exact', head: true }),
+      supabase.from('tickets').select('*', { count: 'exact', head: true }).eq('status', 'disponible'),
+      supabase.from('tickets').select('*', { count: 'exact', head: true }).eq('status', 'vendido'),
+      supabase.from('tickets').select('*', { count: 'exact', head: true }).eq('status', 'reservado')
+    ]);
 
-    if (error) throw error;
+    // Check for errors
+    if (totalError || disponiblesError || vendidosError || reservadosError) {
+      const firstError = totalError || disponiblesError || vendidosError || reservadosError;
+      console.error('❌ Error fetching ticket counts:', firstError);
+      throw firstError;
+    }
+
+    const stats = {
+      total: totalCount || 0,
+      disponibles: disponiblesCount || 0,
+      vendidos: vendidosCount || 0,
+      reservados: reservadosCount || 0
+    };
+
+    console.log('✅ SUPABASE: Ticket statistics calculated (optimized):', stats);
+    
+    // Validation check
+    const sumCheck = stats.disponibles + stats.vendidos + stats.reservados;
+    if (sumCheck !== stats.total) {
+      console.warn(`⚠️ SUPABASE: Statistics sum mismatch. Total: ${stats.total}, Sum: ${sumCheck}`);
+    }
+
     return stats;
   } catch (error) {
     console.error('❌ Error al obtener estadísticas:', error);

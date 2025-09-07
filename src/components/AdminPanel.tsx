@@ -435,7 +435,9 @@ export default function AdminPanel() {
     boletosVendidos: 0
   });
 
-  // ✅ REAL-TIME STATS CALCULATION using MASTER COUNTER for ticket counts
+  // ✅ CRITICAL FIX APPLIED: Admin counter now uses DISPLAY logic (FOMO + real) 
+  // This ensures when admin accepts tickets, the counter increases visibly
+  // matching what users see on the main page (1422 -> 1472 for 50 tickets)
   useEffect(() => {
     const calculateStats = () => {
       // Purchase stats from compras (these update when admin refreshes data)
@@ -447,23 +449,23 @@ export default function AdminPanel() {
         ingresosTotales: compras.reduce((sum, c) => sum + c.total_amount, 0)
       };
       
-      // ✅ CRITICAL FIX: Use MASTER COUNTER for tickets sold (real-time from database)
-      const masterCounterTickets = adminCounters.real.soldCount || 0;
+      // ✅ CRITICAL FIX: Use DISPLAY COUNTER (FOMO + real) to match main page logic
+      const realCounterTickets = adminCounters.real.soldCount || 0;
       const displayTickets = adminCounters.display.soldCount || 0;
       
       const newStats = {
         ...purchaseStats,
-        boletosVendidos: masterCounterTickets // ✅ Real-time from database
+        boletosVendidos: displayTickets // ✅ FIXED: Use display counter (FOMO + real) to match main page
       };
       
-      console.log('📊 ADMIN STATS UPDATED (HYBRID):', {
+      console.log('📊 ADMIN STATS UPDATED (FIXED - USING DISPLAY COUNTER):', {
         total: newStats.total,
         confirmadas: newStats.confirmadas,
         boletosVendidos: newStats.boletosVendidos,
+        realTickets: realCounterTickets,
         displayTickets: displayTickets,
-        masterCounterReal: masterCounterTickets,
-        masterCounterDisplay: displayTickets,
-        source: 'purchases + master_counter',
+        fomoEffect: displayTickets - realCounterTickets,
+        source: 'purchases + display_counter (FOMO + real)',
         timestamp: new Date().toLocaleTimeString()
       });
       
@@ -491,7 +493,7 @@ export default function AdminPanel() {
         window.removeEventListener('admin-stats-update', handleSyncEvent);
       };
     }
-  }, [compras, adminCounters.real.soldCount]); // ✅ Depend on both compras AND master counter
+  }, [compras, adminCounters.display.soldCount]); // ✅ FIXED: Depend on display counter (FOMO + real)
 
   if (loading) {
     return (
@@ -561,9 +563,9 @@ export default function AdminPanel() {
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm text-center">
             <div className="text-2xl font-bold text-purple-600">{stats.boletosVendidos}</div>
-            <div className="text-sm text-gray-600">Boletos Vendidos (BD)</div>
+            <div className="text-sm text-gray-600">Boletos Mostrados (FOMO+Real)</div>
             <div className="text-xs text-purple-500 mt-1">
-              Display: {adminCounters.display.soldCount}
+              Real BD: {adminCounters.real.soldCount} | FOMO: +{adminCounters.display.soldCount - adminCounters.real.soldCount}
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm text-center">
