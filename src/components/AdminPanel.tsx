@@ -4,6 +4,22 @@ import React, { useState, useEffect } from 'react';
 import { obtenerCompras, actualizarEstadoCompra, type CompraConDetalles, type PurchaseStatus } from '../lib/supabase';
 import { useAdminDisplayCounters } from '../hooks/useCounters';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  CheckCircle2, 
+  XCircle, 
+  RefreshCw, 
+  Eye, 
+  ChevronDown, 
+  CheckSquare,
+  Square,
+  Zap,
+  Users,
+  Clock,
+  DollarSign,
+  Filter,
+  Search
+} from 'lucide-react';
 
 // ============================================================================
 // TIPOS LOCALES
@@ -20,6 +36,9 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<'todas' | PurchaseStatus>('todas');
   const [busqueda, setBusqueda] = useState('');
+  const [selectedCompras, setSelectedCompras] = useState<Set<string>>(new Set());
+  const [processingBatch, setProcessingBatch] = useState(false);
+  const [expandedCompra, setExpandedCompra] = useState<string | null>(null);
   
   // Hook unificado para administración (reemplaza useSupabaseSync + useAdminCounters)
   const adminCounters = useAdminDisplayCounters();
@@ -405,6 +424,123 @@ export default function AdminPanel() {
     });
   };
 
+  // ============================================================================
+  // FUNCIONES DE BATCH PARA ACCIONES MASIVAS
+  // ============================================================================
+
+  const toggleCompraSelection = (compraId: string) => {
+    setSelectedCompras(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(compraId)) {
+        newSet.delete(compraId);
+      } else {
+        newSet.add(compraId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllPendientes = () => {
+    const pendientes = comprasFiltradas
+      .filter(compra => compra.status === 'pendiente')
+      .map(compra => compra.id!)
+      .filter(id => id);
+    
+    setSelectedCompras(new Set(pendientes));
+    toast.success(`${pendientes.length} compras pendientes seleccionadas`);
+  };
+
+  const clearSelection = () => {
+    setSelectedCompras(new Set());
+  };
+
+  const processBatchApproval = async () => {
+    if (selectedCompras.size === 0) {
+      toast.error('Selecciona al menos una compra');
+      return;
+    }
+
+    setProcessingBatch(true);
+    const successCount = { value: 0 };
+    const errorCount = { value: 0 };
+    
+    try {
+      const selectedIds = Array.from(selectedCompras);
+      toast.loading(`Procesando ${selectedIds.length} compras...`, { id: 'batch-processing' });
+
+      // Procesar en paralelo para mayor velocidad
+      await Promise.allSettled(
+        selectedIds.map(async (compraId) => {
+          try {
+            await cambiarEstado(compraId, 'confirmada');
+            successCount.value++;
+          } catch (error) {
+            console.error(`Error procesando compra ${compraId}:`, error);
+            errorCount.value++;
+          }
+        })
+      );
+
+      // Limpiar selección y actualizar
+      setSelectedCompras(new Set());
+      await cargarCompras();
+
+      toast.dismiss('batch-processing');
+      
+      if (errorCount.value === 0) {
+        toast.success(`🎉 ${successCount.value} compras confirmadas exitosamente`);
+      } else {
+        toast.success(`✅ ${successCount.value} confirmadas, ❌ ${errorCount.value} errores`);
+      }
+
+    } catch (error) {
+      console.error('Error en batch approval:', error);
+      toast.dismiss('batch-processing');
+      toast.error('Error procesando compras en lote');
+    } finally {
+      setProcessingBatch(false);
+    }
+  };
+
+  const processBatchReject = async () => {
+    if (selectedCompras.size === 0) {
+      toast.error('Selecciona al menos una compra');
+      return;
+    }
+
+    setProcessingBatch(true);
+    const successCount = { value: 0 };
+    
+    try {
+      const selectedIds = Array.from(selectedCompras);
+      toast.loading(`Cancelando ${selectedIds.length} compras...`, { id: 'batch-reject' });
+
+      await Promise.allSettled(
+        selectedIds.map(async (compraId) => {
+          try {
+            await cambiarEstado(compraId, 'cancelada');
+            successCount.value++;
+          } catch (error) {
+            console.error(`Error cancelando compra ${compraId}:`, error);
+          }
+        })
+      );
+
+      setSelectedCompras(new Set());
+      await cargarCompras();
+      
+      toast.dismiss('batch-reject');
+      toast.success(`${successCount.value} compras canceladas`);
+
+    } catch (error) {
+      console.error('Error en batch reject:', error);
+      toast.dismiss('batch-reject');
+      toast.error('Error cancelando compras');
+    } finally {
+      setProcessingBatch(false);
+    }
+  };
+
   const formatearPrecio = (precio: number) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
@@ -507,273 +643,396 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 p-4">
+      <div className="max-w-7xl mx-auto space-y-6">
         
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                🎯 Panel de Administración - Rifa Silverado Z71
+        {/* Header con estado mejorado */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200/60"
+        >
+          <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-800 via-purple-700 to-blue-900 bg-clip-text text-transparent">
+                ⚡ Panel Admin Ultra - Rifa Silverado Z71
               </h1>
-              <p className="text-gray-600">
-                Gestiona todas las compras de boletos de la rifa
-              </p>
-              <div className={`text-sm mt-2 px-3 py-1 rounded-full inline-flex items-center gap-2 ${
+              <p className="text-slate-600 text-lg">Gestión masiva de compras en tiempo real</p>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <div className={`px-4 py-2 rounded-full text-sm font-medium ${
                 isConnected 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-yellow-100 text-yellow-800'
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
+                  : 'bg-orange-100 text-orange-800 border border-orange-200'
               }`}>
-                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                {isConnected 
-                  ? `✅ Conectado a Supabase • ${visualPercentage}% mostrado` 
-                  : '⚠️ Modo offline • Usando localStorage'
-                }
+                {isConnected ? '🟢 Supabase Conectado' : '🟡 Modo Offline'}
               </div>
-            </div>
-            {compras.length === 0 && (
-              <button
-                onClick={agregarDatosPrueba}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm"
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={cargarCompras}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-blue-500/25"
               >
-                📝 Agregar Datos de Prueba
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Estadísticas */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-lg shadow-sm text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
-            <div className="text-sm text-gray-600">Total Compras</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm text-center">
-            <div className="text-2xl font-bold text-yellow-600">{stats.pendientes}</div>
-            <div className="text-sm text-gray-600">Pendientes</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.confirmadas}</div>
-            <div className="text-sm text-gray-600">Confirmadas</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm text-center">
-            <div className="text-2xl font-bold text-red-600">{stats.canceladas}</div>
-            <div className="text-sm text-gray-600">Canceladas</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm text-center">
-            <div className="text-2xl font-bold text-purple-600">{stats.boletosVendidos}</div>
-            <div className="text-sm text-gray-600">Boletos Mostrados (FOMO+Real)</div>
-            <div className="text-xs text-purple-500 mt-1">
-              Real BD: {adminCounters.real.soldCount} | FOMO: +{adminCounters.display.soldCount - adminCounters.real.soldCount}
+                <RefreshCw size={16} />
+                Actualizar
+              </motion.button>
             </div>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm text-center">
-            <div className="text-2xl font-bold text-green-600">{formatearPrecio(stats.ingresosTotales)}</div>
-            <div className="text-sm text-gray-600">Ingresos</div>
-          </div>
-        </div>
+        </motion.div>
 
-        {/* Filtros y búsqueda */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Filtros */}
-            <div className="flex gap-2">
+        {/* Estadísticas mejoradas con animaciones */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"
+        >
+          {[
+            { icon: Users, label: 'Total', value: stats.total, color: 'blue', bgColor: 'bg-blue-50' },
+            { icon: Clock, label: 'Pendientes', value: stats.pendientes, color: 'orange', bgColor: 'bg-orange-50' },
+            { icon: CheckCircle2, label: 'Confirmadas', value: stats.confirmadas, color: 'emerald', bgColor: 'bg-emerald-50' },
+            { icon: XCircle, label: 'Canceladas', value: stats.canceladas, color: 'red', bgColor: 'bg-red-50' },
+            { icon: DollarSign, label: 'Ingresos', value: formatearPrecio(stats.ingresosTotales), color: 'purple', bgColor: 'bg-purple-50' },
+            { icon: Zap, label: 'Boletos', value: `${stats.boletosVendidos}`, color: 'indigo', bgColor: 'bg-indigo-50' }
+          ].map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 + (index * 0.1) }}
+              className={`${stat.bgColor} rounded-2xl p-4 border border-${stat.color}-200/50 hover:shadow-lg transition-all duration-300 group cursor-default`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm font-medium text-${stat.color}-600 mb-1`}>
+                    {stat.label}
+                  </p>
+                  <p className={`text-2xl font-bold text-${stat.color}-800`}>
+                    {stat.value}
+                  </p>
+                </div>
+                <div className={`p-2 bg-${stat.color}-100 rounded-xl group-hover:scale-110 transition-transform duration-200`}>
+                  <stat.icon className={`w-6 h-6 text-${stat.color}-600`} />
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Barra de acciones masivas */}
+        <AnimatePresence>
+          {selectedCompras.size > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-4 text-white shadow-xl"
+            >
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <CheckSquare className="w-6 h-6" />
+                  <span className="font-semibold text-lg">
+                    {selectedCompras.size} compra{selectedCompras.size > 1 ? 's' : ''} seleccionada{selectedCompras.size > 1 ? 's' : ''}
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={processBatchApproval}
+                    disabled={processingBatch}
+                    className="flex items-center gap-2 px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-all duration-200 disabled:opacity-50 shadow-lg"
+                  >
+                    <Zap size={16} />
+                    {processingBatch ? 'Procesando...' : '✅ Aprobar Todo'}
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={processBatchReject}
+                    disabled={processingBatch}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-all duration-200 disabled:opacity-50"
+                  >
+                    <XCircle size={16} />
+                    ❌ Cancelar
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={clearSelection}
+                    className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium transition-all duration-200"
+                  >
+                    Limpiar
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Controles de filtros y selección */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200/60"
+        >
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Filtros de estado */}
+            <div className="flex flex-wrap gap-2">
               {(['todas', 'pendiente', 'confirmada', 'cancelada'] as const).map((estado) => (
-                <button
+                <motion.button
                   key={estado}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => setFiltro(estado)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
                     filtro === estado
-                      ? 'bg-blue-100 text-blue-800 border-2 border-blue-300'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-blue-600 text-white shadow-lg' 
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
                   {estado.charAt(0).toUpperCase() + estado.slice(1)}
-                </button>
+                  {estado !== 'todas' && (
+                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                      filtro === estado ? 'bg-white/20' : 'bg-slate-200'
+                    }`}>
+                      {estado === 'pendiente' ? stats.pendientes : 
+                       estado === 'confirmada' ? stats.confirmadas : 
+                       estado === 'cancelada' ? stats.canceladas : ''}
+                    </span>
+                  )}
+                </motion.button>
               ))}
             </div>
             
             {/* Búsqueda */}
-            <div className="flex-1">
+            <div className="relative flex-1 min-w-[300px]">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input
                 type="text"
                 placeholder="Buscar por nombre, email o teléfono..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-slate-50 hover:bg-white"
               />
             </div>
             
-            {/* Botón actualizar */}
-            <button
-              onClick={cargarCompras}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              🔄 Actualizar
-            </button>
+            {/* Acciones rápidas */}
+            <div className="flex gap-2">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={selectAllPendientes}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-800 rounded-xl font-medium transition-all duration-200 border border-orange-200"
+              >
+                <CheckSquare size={16} />
+                Seleccionar Pendientes
+              </motion.button>
+              
+              {compras.length === 0 && (
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={agregarDatosPrueba}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-xl font-medium transition-all duration-200 border border-blue-200"
+                >
+                  📝 Datos Prueba
+                </motion.button>
+              )}
+            </div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Tabla de compras */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cliente
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contacto
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Compra
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Boletos
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Pago
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Fecha
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {comprasFiltradas.map((compra) => (
-                  <tr key={compra.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {compra.customer.name}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {compra.customer.city}, {compra.customer.state}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{compra.customer.email}</div>
-                      <div className="text-sm text-gray-500">{compra.customer.phone}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {compra.tickets.length} boleto{compra.tickets.length !== 1 ? 's' : ''}
-                      </div>
-                      <div className="text-sm font-medium text-green-600">
-                        {formatearPrecio(compra.total_amount)}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {formatearPrecio(compra.unit_price)}/boleto
-                      </div>
-                      {compra.discount_applied && compra.discount_applied > 0 && (
-                        <div className="text-xs text-orange-600 font-medium">
-                          🏷️ -{compra.discount_applied}% descuento
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {compra.tickets && compra.tickets.length > 0 ? (
-                        <div>
-                          <div className="text-sm text-gray-900 font-mono max-w-xs">
-                            {compra.tickets.length <= 5 
-                              ? compra.tickets.map(t => String(t.number).padStart(4, '0')).join(', ')
-                              : `${compra.tickets.slice(0, 3).map(t => String(t.number).padStart(4, '0')).join(', ')}... (+${compra.tickets.length - 3} más)`
-                            }
-                          </div>
-                          <div className="text-xs text-green-600 mt-1">
-                            ✅ {compra.tickets.length} números asignados
-                          </div>
-                        </div>
-                      ) : compra.status === 'confirmada' ? (
-                        <div className="text-sm text-red-600">
-                          ❌ Error: Confirmada sin números
-                        </div>
-                      ) : (
-                        <div className="text-sm text-orange-600">
-                          ⏳ Pendiente de asignación
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{compra.payment_method}</div>
-                      {compra.payment_reference && (
-                        <div className="text-xs text-gray-500">{compra.payment_reference}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        compra.status === 'confirmada'
-                          ? 'bg-green-100 text-green-800'
-                          : compra.status === 'pendiente'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {compra.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatearFecha(compra.created_at || '')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      {compra.status === 'pendiente' && (
-                        <button
-                          onClick={() => cambiarEstado(compra.id!, 'confirmada')}
-                          className="text-green-600 hover:text-green-900 font-medium"
-                          title={`Confirmar compra y asignar ${compra.tickets.length === 0 ? Math.round(compra.total_amount / 200) : compra.tickets.length} números disponibles`}
-                        >
-                          ✅ Confirmar & Asignar
-                        </button>
-                      )}
-                      {compra.status === 'confirmada' && compra.tickets.length === 0 && (
-                        <button
-                          onClick={() => cambiarEstado(compra.id!, 'confirmada')}
-                          className="text-orange-600 hover:text-orange-900 font-medium"
-                          title="Reintentar asignación de números"
-                        >
-                          🔄 Reasignar Números
-                        </button>
-                      )}
-                      {compra.status !== 'cancelada' && (
-                        <button
-                          onClick={() => cambiarEstado(compra.id!, 'cancelada')}
-                          className="text-red-600 hover:text-red-900"
-                          title={compra.tickets.length > 0 ? `Cancelar y liberar ${compra.tickets.length} números` : 'Cancelar compra'}
-                        >
-                          ❌ Cancelar
-                        </button>
-                      )}
-                      {compra.payment_proof_url && (
-                        <button
-                          onClick={() => {
-                            window.open(compra.payment_proof_url!, '_blank');
-                          }}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          📷 Ver Captura
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Lista de compras optimizada */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200/60"
+        >
+          <div className="p-6 border-b border-slate-200">
+            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <Users className="w-6 h-6" />
+              Compras Registradas ({comprasFiltradas.length})
+            </h2>
           </div>
-          
+
+          <div className="divide-y divide-slate-200">
+            <AnimatePresence mode="popLayout">
+              {comprasFiltradas.map((compra, index) => (
+                <motion.div
+                  key={compra.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ delay: index * 0.05 }}
+                  className={`p-6 hover:bg-slate-50 transition-all duration-200 ${
+                    selectedCompras.has(compra.id!) ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    {/* Checkbox de selección */}
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => toggleCompraSelection(compra.id!)}
+                      className="flex-shrink-0"
+                    >
+                      {selectedCompras.has(compra.id!) ? 
+                        <CheckSquare className="w-6 h-6 text-blue-600" /> :
+                        <Square className="w-6 h-6 text-slate-400 hover:text-blue-600" />
+                      }
+                    </motion.button>
+
+                    {/* Información principal */}
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-slate-900 truncate">
+                          {compra.customer.name}
+                        </h3>
+                        
+                        <div className="flex items-center gap-3">
+                          {/* Estado */}
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            compra.status === 'pendiente' 
+                              ? 'bg-orange-100 text-orange-800 border border-orange-200' 
+                              : compra.status === 'confirmada'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                              : 'bg-red-100 text-red-800 border border-red-200'
+                          }`}>
+                            {compra.status}
+                          </span>
+
+                          {/* Acciones individuales */}
+                          <div className="flex items-center gap-2">
+                            {compra.status === 'pendiente' && (
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => cambiarEstado(compra.id!, 'confirmada')}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all duration-200 text-sm shadow-lg hover:shadow-emerald-500/25"
+                              >
+                                <CheckCircle2 size={14} />
+                                Aprobar
+                              </motion.button>
+                            )}
+                            
+                            {compra.status !== 'cancelada' && (
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => cambiarEstado(compra.id!, 'cancelada')}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 text-sm"
+                              >
+                                <XCircle size={14} />
+                                Cancelar
+                              </motion.button>
+                            )}
+                            
+                            {compra.payment_proof_url && (
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => window.open(compra.payment_proof_url!, '_blank')}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 text-sm"
+                              >
+                                <Eye size={14} />
+                                Captura
+                              </motion.button>
+                            )}
+
+                            {/* Expandir detalles */}
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => setExpandedCompra(expandedCompra === compra.id ? null : compra.id!)}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium transition-all duration-200 text-sm"
+                            >
+                              <ChevronDown 
+                                className={`w-4 h-4 transition-transform duration-200 ${
+                                  expandedCompra === compra.id ? 'rotate-180' : ''
+                                }`} 
+                              />
+                            </motion.button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Info compacta */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-slate-500">Email:</span>
+                          <span className="ml-2 font-medium text-slate-700 truncate block">{compra.customer.email}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500">Total:</span>
+                          <span className="ml-2 font-bold text-emerald-600">{formatearPrecio(compra.total_amount)}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500">Boletos:</span>
+                          <span className="ml-2 font-medium text-blue-600">{compra.tickets.length || Math.round(compra.total_amount / 250)}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500">Fecha:</span>
+                          <span className="ml-2 font-medium text-slate-600">{formatearFecha(compra.created_at || '')}</span>
+                        </div>
+                      </div>
+
+                      {/* Detalles expandidos */}
+                      <AnimatePresence>
+                        {expandedCompra === compra.id && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200"
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <h4 className="font-semibold text-slate-800 mb-2">Información del Cliente</h4>
+                                <div className="space-y-1">
+                                  <p><span className="text-slate-500">Teléfono:</span> <span className="ml-2">{compra.customer.phone}</span></p>
+                                  <p><span className="text-slate-500">Ciudad:</span> <span className="ml-2">{compra.customer.city}</span></p>
+                                  <p><span className="text-slate-500">Estado:</span> <span className="ml-2">{compra.customer.state}</span></p>
+                                </div>
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-slate-800 mb-2">Detalles de Pago</h4>
+                                <div className="space-y-1">
+                                  <p><span className="text-slate-500">Método:</span> <span className="ml-2">{compra.payment_method}</span></p>
+                                  <p><span className="text-slate-500">Total:</span> <span className="ml-2 font-bold text-emerald-600">{formatearPrecio(compra.total_amount)}</span></p>
+                                  {compra.tickets.length > 0 && (
+                                    <p><span className="text-slate-500">Números:</span> <span className="ml-2 font-mono text-blue-600">{compra.tickets.join(', ')}</span></p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+
           {comprasFiltradas.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No se encontraron compras con los filtros seleccionados.</p>
+            <div className="text-center py-12">
+              <div className="text-slate-400 mb-4">
+                <Users className="w-16 h-16 mx-auto" />
+              </div>
+              <p className="text-slate-600 text-lg">No se encontraron compras</p>
+              <p className="text-slate-500">Ajusta los filtros o agrega datos de prueba</p>
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
     </div>
   );
