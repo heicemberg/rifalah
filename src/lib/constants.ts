@@ -32,8 +32,8 @@ export const RESERVATION_TIME_MS = RESERVATION_TIME * 60 * 1000;
 
 export const QUICK_SELECT_OPTIONS: QuickSelectOption[] = [
   {
-    tickets: 1,
-    price: 250,
+    tickets: 2,
+    price: 500,
     discount: 0,
     popular: false
   },
