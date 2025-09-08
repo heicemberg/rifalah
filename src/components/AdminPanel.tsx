@@ -687,7 +687,7 @@ export default function AdminPanel() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4"
+          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"
         >
           {[
             { icon: Users, label: 'Total', value: stats.total, color: 'blue', bgColor: 'bg-blue-50' },
@@ -695,13 +695,12 @@ export default function AdminPanel() {
             { icon: CheckCircle2, label: 'Confirmadas', value: stats.confirmadas, color: 'emerald', bgColor: 'bg-emerald-50' },
             { icon: XCircle, label: 'Canceladas', value: stats.canceladas, color: 'red', bgColor: 'bg-red-50' },
             { icon: DollarSign, label: 'Ingresos', value: formatearPrecio(stats.ingresosTotales), color: 'purple', bgColor: 'bg-purple-50' },
-            { icon: Zap, label: 'Boletos', value: `${stats.boletosVendidos}`, color: 'indigo', bgColor: 'bg-indigo-50' },
             { 
-              icon: Eye, 
-              label: 'Mostrados', 
-              value: `Real BD: ${adminCounters.real.soldCount} | FOMO: +${adminCounters.fomo.difference}`, 
-              color: 'teal', 
-              bgColor: 'bg-teal-50' 
+              icon: Zap, 
+              label: 'Boletos', 
+              value: `Real: ${adminCounters.real.soldCount} | FOMO: +${adminCounters.fomo.difference} | Total: ${adminCounters.display.soldCount}`, 
+              color: 'indigo', 
+              bgColor: 'bg-indigo-50' 
             }
           ].map((stat, index) => (
             <motion.div
