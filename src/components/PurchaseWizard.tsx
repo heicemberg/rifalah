@@ -188,18 +188,25 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
     }
   }, [isOpen, hasTicketsSelected]);
 
-  // Update step when tickets are selected from external grid (not quick select)
+  // Update step when tickets are selected (from external grid or quick select)
   useEffect(() => {
-    // Only advance if tickets were selected externally and we're on step 0
-    if (isOpen && selectedTickets.length >= MIN_TICKETS_PER_PURCHASE && currentStep === 0 && !isSelectingTickets) {
-      // Small delay to ensure state is fully updated
+    // Advance to step 1 when tickets are selected and we're on step 0
+    if (isOpen && selectedTickets.length >= MIN_TICKETS_PER_PURCHASE && currentStep === 0) {
+      console.log('🎯 WIZARD: Tickets selected, advancing to confirmation step:', {
+        ticketCount: selectedTickets.length,
+        currentStep,
+        isSelectingTickets
+      });
+      
+      // Small delay to ensure UI is smooth
       const timeoutId = setTimeout(() => {
         setCurrentStep(1);
-      }, 100);
+        setIsSelectingTickets(false); // Ensure selection state is cleared
+      }, 200);
       
       return () => clearTimeout(timeoutId);
     }
-  }, [selectedTickets.length, currentStep, isOpen, isSelectingTickets]);
+  }, [selectedTickets.length, currentStep, isOpen]);
 
   // Cleanup preview URL
   useEffect(() => {
@@ -434,16 +441,13 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
       // Call the parent's onQuickSelect function - this updates the store
       onQuickSelect(ticketCount);
       
-      // Wait for store update and advance step manually
+      // Clear errors and let useEffect handle step advancement
+      setValidationErrors({});
+      
+      // Clear selecting state after a short delay
       setTimeout(() => {
         setIsSelectingTickets(false);
-        setValidationErrors({});
-        
-        // Advance to step 1 after tickets are selected
-        if (currentStep === 0) {
-          setCurrentStep(1);
-        }
-      }, 250); // Give time for store to update
+      }, 300);
       
     } catch (error) {
       console.error('Error in quick select:', error);
