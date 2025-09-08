@@ -183,6 +183,13 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
     }
   }, [isOpen, hasTicketsSelected]);
 
+  // Update step when tickets are selected externally (from grid)
+  useEffect(() => {
+    if (isOpen && selectedTickets.length >= MIN_TICKETS_PER_PURCHASE && currentStep === 0) {
+      setCurrentStep(1);
+    }
+  }, [selectedTickets.length, currentStep, isOpen]);
+
   // Cleanup preview URL
   useEffect(() => {
     return () => {
@@ -410,26 +417,21 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
         }
       }
 
-      // Call the parent's onQuickSelect function and wait for it
-      await onQuickSelect(ticketCount);
+      // Call the parent's onQuickSelect function
+      onQuickSelect(ticketCount);
       
-      // Clear errors after successful selection
+      // Clear errors after selection
       setValidationErrors({});
       
-      // Auto-advance to next step only after tickets are actually selected
-      setTimeout(() => {
-        // Double-check that tickets were actually selected before advancing
-        if (selectedTickets.length >= MIN_TICKETS_PER_PURCHASE) {
-          setCurrentStep(1);
-        }
-      }, 100); // Reduced timeout for faster response
+      // Advance to step 1 immediately after quick select
+      setCurrentStep(1);
     } catch (error) {
       console.error('Error in quick select:', error);
       setValidationErrors({
         quickSelect: 'Error al seleccionar boletos. Intenta de nuevo.'
       });
     }
-  }, [isConnected, getRealAvailableTickets, onQuickSelect, selectedTickets.length]);
+  }, [isConnected, getRealAvailableTickets, onQuickSelect]);
 
   // ============================================================================
   // RENDER HELPERS
@@ -443,9 +445,9 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
             <div className={cn(
               'w-8 h-8 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-500 ease-out ring-2',
               currentStep > step.number 
-                ? 'bg-gradient-to-br from-mexican-green to-cactus-green text-white ring-mexican-green/60 shadow-lg shadow-mexican-green/25 scale-110' 
+                ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white ring-emerald-300/40 shadow-lg shadow-emerald-500/20 scale-110' 
                 : currentStep === step.number
-                ? `bg-gradient-to-br from-${step.color}-600 to-${step.color}-700 text-white ring-${step.color}-200/60 shadow-lg shadow-${step.color}-500/25 scale-110 animate-pulse`
+                ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white ring-blue-300/40 shadow-lg shadow-blue-500/20 scale-110 animate-pulse'
                 : 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500 ring-slate-200/50 hover:ring-slate-300/60'
             )}>
               {currentStep > step.number ? (
@@ -459,7 +461,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
             <div className="flex-1 h-2 sm:h-3 mx-1 sm:mx-3 rounded-full bg-gradient-to-r from-slate-100 to-slate-200 shadow-inner overflow-hidden">
               <div className={cn(
                 'h-full rounded-full transition-all duration-700 ease-out',
-                currentStep > step.number ? 'bg-gradient-to-r from-mexican-green to-cactus-green shadow-sm' : 'bg-transparent'
+                currentStep > step.number ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-sm' : 'bg-transparent'
               )} />
             </div>
           )}
@@ -823,11 +825,11 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                       disabled={isProcessing || supabaseLoading}
                       className={cn(
                         'group px-4 sm:px-6 py-2 sm:py-2.5 rounded-2xl font-bold text-sm transition-all duration-300',
-                        'bg-gradient-to-r from-mexican-red to-sunset-orange hover:from-sunset-orange hover:to-mexican-red text-white',
-                        'hover:shadow-xl hover:shadow-mexican-red/25 hover:scale-105 active:scale-95',
-                        'focus:outline-none focus:ring-4 focus:ring-mexican-red/50',
+                        'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white',
+                        'hover:shadow-xl hover:shadow-blue-500/20 hover:scale-105 active:scale-95',
+                        'focus:outline-none focus:ring-4 focus:ring-blue-300/30',
                         'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
-                        'flex items-center gap-2 ring-2 ring-mexican-red/20',
+                        'flex items-center gap-2 ring-1 ring-blue-300/20',
                         'flex-1 sm:flex-initial justify-center'
                       )}
                     >
@@ -851,11 +853,11 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                       disabled={isProcessing}
                       className={cn(
                         'group px-4 sm:px-6 py-2 sm:py-2.5 rounded-2xl font-bold text-sm transition-all duration-300',
-                        'bg-gradient-to-r from-mexican-green to-cactus-green hover:from-cactus-green hover:to-mexican-green text-white',
-                        'hover:shadow-xl hover:shadow-mexican-green/25 hover:scale-105 active:scale-95',
-                        'focus:outline-none focus:ring-4 focus:ring-mexican-green/50',
+                        'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white',
+                        'hover:shadow-xl hover:shadow-emerald-500/20 hover:scale-105 active:scale-95',
+                        'focus:outline-none focus:ring-4 focus:ring-emerald-300/30',
                         'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
-                        'flex items-center gap-2 ring-2 ring-mexican-green/20',
+                        'flex items-center gap-2 ring-1 ring-emerald-300/20',
                         'flex-1 sm:flex-initial justify-center'
                       )}
                     >
@@ -975,10 +977,10 @@ const QuickSelectionStep: React.FC<QuickSelectionStepProps> = ({ onQuickSelect, 
           onClick={() => onQuickSelect(option.tickets)}
           className={cn(
             'group relative bg-gradient-to-br from-white via-white to-slate-50/80 rounded-3xl p-4 sm:p-6 text-center focus:outline-none focus:ring-4 ring-1 ring-slate-200/50',
-            'hover:from-desert-sand hover:via-desert-sand hover:to-tequila-amber/80 hover:ring-mexican-gold/60 hover:shadow-mexican-gold/50',
+            'hover:from-blue-50 hover:via-blue-50 hover:to-blue-100/80 hover:ring-blue-300/40 hover:shadow-blue-100/30',
             option.popular 
-              ? 'border-2 border-mexican-gold bg-gradient-to-br from-tequila-amber/50 via-tequila-amber/50 to-mexican-gold/80 ring-mexican-gold/60 shadow-xl shadow-mexican-gold/20'
-              : 'border-2 border-transparent hover:border-mexican-red/60'
+              ? 'border-2 border-amber-400 bg-gradient-to-br from-amber-50 via-amber-50 to-amber-100/80 ring-amber-300/50 shadow-xl shadow-amber-400/15'
+              : 'border-2 border-transparent hover:border-blue-300/50'
           )}
           initial={{ opacity: 0, y: 30, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1121,10 +1123,10 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ selectedTickets, to
           </div>
         </div>
       </div>
-      <div className="group relative bg-gradient-to-br from-desert-sand to-tequila-amber/80 backdrop-blur-sm rounded-2xl p-6 text-center ring-1 ring-mexican-gold/50 hover:ring-mexican-gold/60 hover:shadow-lg transition-all duration-300">
+      <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/80 backdrop-blur-sm rounded-2xl p-6 text-center ring-1 ring-blue-200/40 hover:ring-blue-300/50 hover:shadow-lg transition-all duration-300">
         <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <div className="relative">
-          <div className="text-3xl font-black bg-gradient-to-br from-mexican-red to-sunset-orange bg-clip-text text-transparent mb-2">
+          <div className="text-3xl font-black bg-gradient-to-br from-slate-700 to-slate-600 bg-clip-text text-transparent mb-2">
             {formatPrice(totalPrice)}
           </div>
           <div className="text-sm font-semibold text-emerald-700 uppercase tracking-wider">
