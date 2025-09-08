@@ -36,6 +36,7 @@ import { formatPrice, formatTicketNumber } from '../lib/utils';
 import { PAYMENT_METHODS, QUICK_SELECT_OPTIONS, MIN_TICKETS_PER_PURCHASE } from '../lib/constants';
 import type { PaymentMethod as PaymentMethodType } from '../lib/types';
 import { useSupabaseSync } from '../hooks/useSupabaseSync';
+import { useCryptoPrice } from '../hooks/useCryptoPrice';
 
 // ============================================================================
 // INTERFACES AND TYPES
@@ -105,6 +106,9 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   
   // Supabase integration for real-time validation
   const { getRealAvailableTickets, isConnected, loading: supabaseLoading } = useSupabaseSync();
+  
+  // Crypto prices integration for Binance Pay
+  const { convertedAmounts, loading: cryptoLoading, error: cryptoError, lastUpdate } = useCryptoPrice(selectedTickets.length * 250);
 
   // ============================================================================
   // WIZARD CONFIGURATION
@@ -525,6 +529,10 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                     isSelected={false}
                     onSelect={() => setSelectedPaymentMethod(method.id)}
                     animationDelay={0}
+                    selectedTickets={selectedTickets}
+                    convertedAmounts={convertedAmounts}
+                    cryptoLoading={cryptoLoading}
+                    lastUpdate={lastUpdate}
                   />
                 </motion.div>
               ))}
@@ -595,6 +603,10 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                     onSelect={() => {}}
                     expanded={true}
                     animationDelay={0}
+                    selectedTickets={selectedTickets}
+                    convertedAmounts={convertedAmounts}
+                    cryptoLoading={cryptoLoading}
+                    lastUpdate={lastUpdate}
                   />
                 </motion.div>
               )}
@@ -1191,6 +1203,10 @@ interface PaymentMethodCardProps {
   onSelect: () => void;
   expanded?: boolean;
   animationDelay: number;
+  selectedTickets: number[];
+  convertedAmounts: any;
+  cryptoLoading: boolean;
+  lastUpdate: Date | null;
 }
 
 const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({ 
@@ -1198,7 +1214,11 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
   isSelected, 
   onSelect, 
   expanded = false, 
-  animationDelay 
+  animationDelay,
+  selectedTickets,
+  convertedAmounts,
+  cryptoLoading,
+  lastUpdate
 }) => (
   <div className="space-y-3">
     <motion.button
@@ -1251,7 +1271,9 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
               alt={method.name}
               className={cn(
                 'object-contain filter group-hover:scale-105 transition-transform duration-300',
-                expanded ? 'max-w-8 max-h-8' : 'max-w-full max-h-[60px] sm:max-h-[80px]'
+                expanded 
+                  ? (method.id === 'binance' ? 'max-w-12 max-h-12' : 'max-w-8 max-h-8')
+                  : (method.id === 'binance' ? 'max-w-full max-h-[100px] sm:max-h-[120px]' : 'max-w-full max-h-[60px] sm:max-h-[80px]')
               )}
             />
           </div>
@@ -1286,7 +1308,7 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
     </motion.button>
 
     {/* Payment Details */}
-    {isSelected && expanded && method.accountDetails && (
+    {isSelected && expanded && (
       <div className="relative bg-gradient-to-br from-slate-50 to-slate-100/50 backdrop-blur-sm rounded-2xl p-6 ring-1 ring-slate-200/50 animate-in slide-in-from-top-4 fade-in-50 duration-300">
         <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent rounded-2xl" />
         <div className="relative space-y-4">
@@ -1295,20 +1317,177 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
               <FileText size={16} className="text-white" />
             </div>
             <span className="bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-              Datos para {method.name}
+              {method.id === 'binance' ? 'Montos Exactos en Criptomonedas' : `Datos para ${method.name}`}
             </span>
+            {method.id === 'binance' && lastUpdate && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                Actualizado: {lastUpdate.toLocaleTimeString()}
+              </div>
+            )}
           </h4>
-          <div className="space-y-3">
-            {method.accountDetails.split('\n').map((line: string, index: number) => (
-              <div key={index} className="group relative bg-white/80 backdrop-blur-sm p-4 rounded-xl border border-slate-200/60 hover:border-slate-300/60 hover:shadow-lg transition-all duration-200">
+          
+          {/* Binance Crypto Conversions */}
+          {method.id === 'binance' && convertedAmounts && (
+            <div className="space-y-3">
+              <div className="mb-4 p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200">
+                <div className="flex items-center gap-2 text-yellow-800 font-semibold text-sm mb-2">
+                  <Sparkles size={16} />
+                  Total: {selectedTickets.length * 250} MXN = Montos exactos:
+                </div>
+              </div>
+
+              {/* USDT */}
+              <div className="group relative bg-gradient-to-r from-green-50 to-green-100/80 backdrop-blur-sm p-4 rounded-xl border border-green-200/60 hover:border-green-300/60 hover:shadow-lg transition-all duration-200">
                 <div className="absolute inset-0 bg-gradient-to-r from-white/60 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                 <div className="relative flex items-center justify-between">
-                  <span className="text-slate-800 text-sm flex-1 mr-3 font-mono font-medium">{line}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                      ₮
+                    </div>
+                    <div>
+                      <div className="font-bold text-green-800">USDT (Tether)</div>
+                      <div className="text-xs text-green-600">TRC20 Network</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-mono font-bold text-green-800 text-lg">
+                      {cryptoLoading ? '...' : convertedAmounts.USDT.toFixed(2)} USDT
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(convertedAmounts.USDT.toString())}
+                      className="px-3 py-1 mt-1 rounded-lg text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-green-100 to-green-200 text-green-700 hover:from-green-200 hover:to-green-300 ring-green-200/50 hover:shadow-md"
+                    >
+                      <Copy size={10} className="inline mr-1" />
+                      Copiar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* USDC */}
+              <div className="group relative bg-gradient-to-r from-blue-50 to-blue-100/80 backdrop-blur-sm p-4 rounded-xl border border-blue-200/60 hover:border-blue-300/60 hover:shadow-lg transition-all duration-200">
+                <div className="absolute inset-0 bg-gradient-to-r from-white/60 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                <div className="relative flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                      $
+                    </div>
+                    <div>
+                      <div className="font-bold text-blue-800">USDC (USD Coin)</div>
+                      <div className="text-xs text-blue-600">ERC20 Network</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-mono font-bold text-blue-800 text-lg">
+                      {cryptoLoading ? '...' : convertedAmounts.USDC.toFixed(2)} USDC
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(convertedAmounts.USDC.toString())}
+                      className="px-3 py-1 mt-1 rounded-lg text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 hover:from-blue-200 hover:to-blue-300 ring-blue-200/50 hover:shadow-md"
+                    >
+                      <Copy size={10} className="inline mr-1" />
+                      Copiar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* BTC */}
+              <div className="group relative bg-gradient-to-r from-orange-50 to-orange-100/80 backdrop-blur-sm p-4 rounded-xl border border-orange-200/60 hover:border-orange-300/60 hover:shadow-lg transition-all duration-200">
+                <div className="absolute inset-0 bg-gradient-to-r from-white/60 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                <div className="relative flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                      ₿
+                    </div>
+                    <div>
+                      <div className="font-bold text-orange-800">Bitcoin</div>
+                      <div className="text-xs text-orange-600">BTC Network</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-mono font-bold text-orange-800 text-lg">
+                      {cryptoLoading ? '...' : convertedAmounts.BTC.toFixed(8)} BTC
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(convertedAmounts.BTC.toString())}
+                      className="px-3 py-1 mt-1 rounded-lg text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-orange-100 to-orange-200 text-orange-700 hover:from-orange-200 hover:to-orange-300 ring-orange-200/50 hover:shadow-md"
+                    >
+                      <Copy size={10} className="inline mr-1" />
+                      Copiar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* ETH */}
+              <div className="group relative bg-gradient-to-r from-purple-50 to-purple-100/80 backdrop-blur-sm p-4 rounded-xl border border-purple-200/60 hover:border-purple-300/60 hover:shadow-lg transition-all duration-200">
+                <div className="absolute inset-0 bg-gradient-to-r from-white/60 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                <div className="relative flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                      Ξ
+                    </div>
+                    <div>
+                      <div className="font-bold text-purple-800">Ethereum</div>
+                      <div className="text-xs text-purple-600">ERC20 Network</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-mono font-bold text-purple-800 text-lg">
+                      {cryptoLoading ? '...' : convertedAmounts.ETH.toFixed(6)} ETH
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(convertedAmounts.ETH.toString())}
+                      className="px-3 py-1 mt-1 rounded-lg text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-purple-100 to-purple-200 text-purple-700 hover:from-purple-200 hover:to-purple-300 ring-purple-200/50 hover:shadow-md"
+                    >
+                      <Copy size={10} className="inline mr-1" />
+                      Copiar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* SOL */}
+              <div className="group relative bg-gradient-to-r from-violet-50 to-violet-100/80 backdrop-blur-sm p-4 rounded-xl border border-violet-200/60 hover:border-violet-300/60 hover:shadow-lg transition-all duration-200">
+                <div className="absolute inset-0 bg-gradient-to-r from-white/60 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                <div className="relative flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-violet-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                      ◎
+                    </div>
+                    <div>
+                      <div className="font-bold text-violet-800">Solana</div>
+                      <div className="text-xs text-violet-600">SOL Network</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-mono font-bold text-violet-800 text-lg">
+                      {cryptoLoading ? '...' : convertedAmounts.SOL.toFixed(4)} SOL
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(convertedAmounts.SOL.toString())}
+                      className="px-3 py-1 mt-1 rounded-lg text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-violet-100 to-violet-200 text-violet-700 hover:from-violet-200 hover:to-violet-300 ring-violet-200/50 hover:shadow-md"
+                    >
+                      <Copy size={10} className="inline mr-1" />
+                      Copiar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Wallet Address */}
+              <div className="mt-4 p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold text-slate-800 text-sm">Dirección de Wallet:</div>
+                    <div className="text-xs text-slate-600 font-mono mt-1 break-all">
+                      rifadesilverado2024@gmail.com
+                    </div>
+                  </div>
                   <button
-                    onClick={() => {
-                      const textToCopy = line.split(': ')[1] || line;
-                      navigator.clipboard.writeText(textToCopy);
-                    }}
+                    onClick={() => navigator.clipboard.writeText('rifadesilverado2024@gmail.com')}
                     className="px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 hover:from-slate-200 hover:to-slate-300 ring-slate-200/50 hover:shadow-md"
                   >
                     <Copy size={12} className="inline mr-1.5" />
@@ -1316,8 +1495,33 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {/* Regular Payment Method Details */}
+          {method.id !== 'binance' && method.accountDetails && (
+            <div className="space-y-3">
+              {method.accountDetails.split('\n').map((line: string, index: number) => (
+                <div key={index} className="group relative bg-white/80 backdrop-blur-sm p-4 rounded-xl border border-slate-200/60 hover:border-slate-300/60 hover:shadow-lg transition-all duration-200">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/60 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                  <div className="relative flex items-center justify-between">
+                    <span className="text-slate-800 text-sm flex-1 mr-3 font-mono font-medium">{line}</span>
+                    <button
+                      onClick={() => {
+                        const textToCopy = line.split(': ')[1] || line;
+                        navigator.clipboard.writeText(textToCopy);
+                      }}
+                      className="px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 hover:from-slate-200 hover:to-slate-300 ring-slate-200/50 hover:shadow-md"
+                    >
+                      <Copy size={12} className="inline mr-1.5" />
+                      Copiar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
           <div className="relative bg-gradient-to-r from-blue-50 to-blue-100/80 backdrop-blur-sm p-4 rounded-2xl border border-blue-200/60 ring-1 ring-blue-200/30">
             <div className="absolute inset-0 bg-gradient-to-r from-white/30 to-transparent rounded-2xl" />
             <p className="relative text-blue-800 text-sm font-medium flex items-start gap-3">
@@ -1325,7 +1529,10 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                 <FileText size={12} className="text-white" />
               </div>
               <span className="leading-relaxed">
-                Realiza tu transferencia y sube el comprobante en el siguiente paso
+                {method.id === 'binance' 
+                  ? 'Envía el monto EXACTO en cualquier criptomoneda y sube el comprobante'
+                  : 'Realiza tu transferencia y sube el comprobante en el siguiente paso'
+                }
               </span>
             </p>
           </div>
