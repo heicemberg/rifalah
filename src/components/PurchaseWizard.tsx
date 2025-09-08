@@ -116,35 +116,35 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
         title: 'Selección',
         description: 'Elige tus números',
         icon: <Zap size={16} />,
-        color: 'emerald'
+        color: 'mexican-gold'
       },
       {
         number: 1,
         title: 'Confirmación',
         description: 'Verifica tu selección',
         icon: <CheckCircle size={16} />,
-        color: 'blue'
+        color: 'mexican-red'
       },
       {
         number: 2,
         title: 'Pago',
         description: 'Método de pago',
         icon: <CreditCard size={16} />,
-        color: 'purple'
+        color: 'mexican-green'
       },
       {
         number: 3,
         title: 'Datos',
         description: 'Tu información',
         icon: <Users size={16} />,
-        color: 'orange'
+        color: 'sunset-orange'
       },
       {
         number: 4,
         title: 'Comprobante',
         description: 'Sube tu captura',
         icon: <Camera size={16} />,
-        color: 'pink'
+        color: 'tequila-amber'
       }
     ];
 
@@ -349,12 +349,20 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   }, [previewUrl]);
 
   const handleNext = useCallback(async () => {
+    // Extra validation: never allow advancing from step 1 without tickets
+    if (currentStep === 1 && selectedTickets.length < MIN_TICKETS_PER_PURCHASE) {
+      setValidationErrors({
+        tickets: `Debes seleccionar al menos ${MIN_TICKETS_PER_PURCHASE} boletos antes de continuar.`
+      });
+      return;
+    }
+    
     if (await validateStep(currentStep)) {
       if (currentStep < 4) {
         setCurrentStep(currentStep + 1);
       }
     }
-  }, [currentStep, validateStep]);
+  }, [currentStep, validateStep, selectedTickets.length]);
 
   const handleBack = useCallback(() => {
     if (currentStep > (hasTicketsSelected ? 1 : 0)) {
@@ -402,20 +410,26 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
         }
       }
 
-      // Call the parent's onQuickSelect function
-      onQuickSelect(ticketCount);
+      // Call the parent's onQuickSelect function and wait for it
+      await onQuickSelect(ticketCount);
       
-      // Auto-advance to next step after successful selection
+      // Clear errors after successful selection
+      setValidationErrors({});
+      
+      // Auto-advance to next step only after tickets are actually selected
       setTimeout(() => {
-        setCurrentStep(1);
-      }, 300);
+        // Double-check that tickets were actually selected before advancing
+        if (selectedTickets.length >= MIN_TICKETS_PER_PURCHASE) {
+          setCurrentStep(1);
+        }
+      }, 100); // Reduced timeout for faster response
     } catch (error) {
       console.error('Error in quick select:', error);
       setValidationErrors({
         quickSelect: 'Error al seleccionar boletos. Intenta de nuevo.'
       });
     }
-  }, [isConnected, getRealAvailableTickets, onQuickSelect]);
+  }, [isConnected, getRealAvailableTickets, onQuickSelect, selectedTickets.length]);
 
   // ============================================================================
   // RENDER HELPERS
@@ -429,7 +443,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
             <div className={cn(
               'w-8 h-8 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-500 ease-out ring-2',
               currentStep > step.number 
-                ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white ring-emerald-200/60 shadow-lg shadow-emerald-500/25 scale-110' 
+                ? 'bg-gradient-to-br from-mexican-green to-cactus-green text-white ring-mexican-green/60 shadow-lg shadow-mexican-green/25 scale-110' 
                 : currentStep === step.number
                 ? `bg-gradient-to-br from-${step.color}-600 to-${step.color}-700 text-white ring-${step.color}-200/60 shadow-lg shadow-${step.color}-500/25 scale-110 animate-pulse`
                 : 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500 ring-slate-200/50 hover:ring-slate-300/60'
@@ -445,7 +459,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
             <div className="flex-1 h-2 sm:h-3 mx-1 sm:mx-3 rounded-full bg-gradient-to-r from-slate-100 to-slate-200 shadow-inner overflow-hidden">
               <div className={cn(
                 'h-full rounded-full transition-all duration-700 ease-out',
-                currentStep > step.number ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-sm' : 'bg-transparent'
+                currentStep > step.number ? 'bg-gradient-to-r from-mexican-green to-cactus-green shadow-sm' : 'bg-transparent'
               )} />
             </div>
           )}
@@ -466,24 +480,24 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
             <motion.div 
               key="grid"
               className="grid grid-cols-2 gap-4 sm:gap-6"
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
             >
               {mainPaymentMethods.map((method, index) => (
                 <motion.div
                   key={method.id}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ 
-                    duration: 0.5, 
-                    delay: index * 0.1,
+                    duration: 0.25, 
+                    delay: index * 0.05,
                     ease: "easeOut" 
                   }}
                   whileHover={{ 
                     scale: 1.02,
-                    transition: { duration: 0.2 }
+                    transition: { duration: 0.15 }
                   }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -509,9 +523,9 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
               {/* Top row - small unselected methods */}
               <motion.div 
                 className="flex justify-center gap-3"
-                initial={{ y: -20, opacity: 0 }}
+                initial={{ y: -10, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+                transition={{ duration: 0.25, delay: 0.05 }}
               >
                 {unselectedMethods.map((method, index) => (
                   <motion.button
@@ -519,11 +533,11 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                     layoutId={method.id}
                     onClick={() => setSelectedPaymentMethod(method.id)}
                     className="group relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 border-slate-200/60 bg-gradient-to-br from-white to-slate-50/40 hover:border-blue-300/70 hover:shadow-lg overflow-hidden"
-                    initial={{ scale: 0.8, opacity: 0 }}
+                    initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ 
-                      duration: 0.4, 
-                      delay: index * 0.1,
+                      duration: 0.2, 
+                      delay: index * 0.05,
                       ease: "easeOut" 
                     }}
                     whileHover={{ 
@@ -548,11 +562,11 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                 <motion.div
                   key={selectedMethod.id}
                   layoutId={selectedMethod.id}
-                  initial={{ y: 50, opacity: 0, scale: 0.9 }}
+                  initial={{ y: 20, opacity: 0, scale: 0.95 }}
                   animate={{ y: 0, opacity: 1, scale: 1 }}
                   transition={{ 
-                    duration: 0.6, 
-                    delay: 0.2,
+                    duration: 0.3, 
+                    delay: 0.1,
                     ease: "easeOut" 
                   }}
                 >
@@ -655,10 +669,10 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                   {currentStep === 0 && (
                     <motion.div
                       key="step-0"
-                      initial={{ opacity: 0, x: 50 }}
+                      initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -50 }}
-                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
                     >
                       <QuickSelectionStep
                         onQuickSelect={handleQuickSelect}
@@ -671,10 +685,10 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                   {currentStep === 1 && (
                     <motion.div
                       key="step-1"
-                      initial={{ opacity: 0, x: 50 }}
+                      initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -50 }}
-                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
                     >
                       <ConfirmationStep
                         selectedTickets={selectedTickets}
@@ -688,16 +702,16 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                   {currentStep === 2 && (
                     <motion.div
                       key="step-2"
-                      initial={{ opacity: 0, x: 50 }}
+                      initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -50 }}
-                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
                       className="space-y-8"
                     >
                       <motion.div
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
+                        transition={{ duration: 0.25, delay: 0.1 }}
                       >
                         <StepHeader
                           icon={<CreditCard size={28} />}
@@ -708,18 +722,18 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                       </motion.div>
 
                       <motion.div
-                        initial={{ opacity: 0, y: 30 }}
+                        initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
+                        transition={{ duration: 0.3, delay: 0.15 }}
                       >
                         {renderPaymentMethodAnimation()}
                       </motion.div>
 
                       {validationErrors.payment && (
                         <motion.div
-                          initial={{ opacity: 0, scale: 0.9 }}
+                          initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.3 }}
+                          transition={{ duration: 0.2 }}
                         >
                           <ErrorMessage message={validationErrors.payment} />
                         </motion.div>
@@ -731,10 +745,10 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                   {currentStep === 3 && (
                     <motion.div
                       key="step-3"
-                      initial={{ opacity: 0, x: 50 }}
+                      initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -50 }}
-                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
                     >
                       <CustomerDataStep
                         customerData={customerData}
@@ -749,10 +763,10 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                   {currentStep === 4 && (
                     <motion.div
                       key="step-4"
-                      initial={{ opacity: 0, x: 50 }}
+                      initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -50 }}
-                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
                     >
                       <PaymentProofStep
                         selectedPaymentMethod={selectedPaymentMethod}
@@ -809,11 +823,11 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                       disabled={isProcessing || supabaseLoading}
                       className={cn(
                         'group px-4 sm:px-6 py-2 sm:py-2.5 rounded-2xl font-bold text-sm transition-all duration-300',
-                        'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white',
-                        'hover:shadow-xl hover:shadow-blue-500/25 hover:scale-105 active:scale-95',
-                        'focus:outline-none focus:ring-4 focus:ring-blue-200/50',
+                        'bg-gradient-to-r from-mexican-red to-sunset-orange hover:from-sunset-orange hover:to-mexican-red text-white',
+                        'hover:shadow-xl hover:shadow-mexican-red/25 hover:scale-105 active:scale-95',
+                        'focus:outline-none focus:ring-4 focus:ring-mexican-red/50',
                         'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
-                        'flex items-center gap-2 ring-2 ring-blue-500/20',
+                        'flex items-center gap-2 ring-2 ring-mexican-red/20',
                         'flex-1 sm:flex-initial justify-center'
                       )}
                     >
@@ -837,11 +851,11 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                       disabled={isProcessing}
                       className={cn(
                         'group px-4 sm:px-6 py-2 sm:py-2.5 rounded-2xl font-bold text-sm transition-all duration-300',
-                        'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white',
-                        'hover:shadow-xl hover:shadow-emerald-500/25 hover:scale-105 active:scale-95',
-                        'focus:outline-none focus:ring-4 focus:ring-emerald-200/50',
+                        'bg-gradient-to-r from-mexican-green to-cactus-green hover:from-cactus-green hover:to-mexican-green text-white',
+                        'hover:shadow-xl hover:shadow-mexican-green/25 hover:scale-105 active:scale-95',
+                        'focus:outline-none focus:ring-4 focus:ring-mexican-green/50',
                         'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
-                        'flex items-center gap-2 ring-2 ring-emerald-500/20',
+                        'flex items-center gap-2 ring-2 ring-mexican-green/20',
                         'flex-1 sm:flex-initial justify-center'
                       )}
                     >
@@ -961,10 +975,10 @@ const QuickSelectionStep: React.FC<QuickSelectionStepProps> = ({ onQuickSelect, 
           onClick={() => onQuickSelect(option.tickets)}
           className={cn(
             'group relative bg-gradient-to-br from-white via-white to-slate-50/80 rounded-3xl p-4 sm:p-6 text-center focus:outline-none focus:ring-4 ring-1 ring-slate-200/50',
-            'hover:from-blue-50 hover:via-blue-50 hover:to-blue-100/80 hover:ring-blue-300/60 hover:shadow-blue-100/50',
+            'hover:from-desert-sand hover:via-desert-sand hover:to-tequila-amber/80 hover:ring-mexican-gold/60 hover:shadow-mexican-gold/50',
             option.popular 
-              ? 'border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-emerald-50 to-emerald-100/80 ring-emerald-300/60 shadow-xl shadow-emerald-500/20'
-              : 'border-2 border-transparent hover:border-blue-200/60'
+              ? 'border-2 border-mexican-gold bg-gradient-to-br from-tequila-amber/50 via-tequila-amber/50 to-mexican-gold/80 ring-mexican-gold/60 shadow-xl shadow-mexican-gold/20'
+              : 'border-2 border-transparent hover:border-mexican-red/60'
           )}
           initial={{ opacity: 0, y: 30, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -997,7 +1011,7 @@ const QuickSelectionStep: React.FC<QuickSelectionStepProps> = ({ onQuickSelect, 
               <div className={cn(
                 'text-3xl sm:text-4xl font-black transition-colors duration-300',
                 option.popular
-                  ? 'bg-gradient-to-br from-emerald-700 to-emerald-600 bg-clip-text text-transparent'
+                  ? 'bg-gradient-to-br from-mexican-red to-sunset-orange bg-clip-text text-transparent'
                   : 'bg-gradient-to-br from-slate-800 to-slate-600 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:to-blue-600'
               )}>
                 {option.tickets}
@@ -1107,10 +1121,10 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ selectedTickets, to
           </div>
         </div>
       </div>
-      <div className="group relative bg-gradient-to-br from-emerald-50 to-emerald-100/80 backdrop-blur-sm rounded-2xl p-6 text-center ring-1 ring-emerald-200/50 hover:ring-emerald-300/60 hover:shadow-lg transition-all duration-300">
+      <div className="group relative bg-gradient-to-br from-desert-sand to-tequila-amber/80 backdrop-blur-sm rounded-2xl p-6 text-center ring-1 ring-mexican-gold/50 hover:ring-mexican-gold/60 hover:shadow-lg transition-all duration-300">
         <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <div className="relative">
-          <div className="text-3xl font-black bg-gradient-to-br from-emerald-700 to-emerald-600 bg-clip-text text-transparent mb-2">
+          <div className="text-3xl font-black bg-gradient-to-br from-mexican-red to-sunset-orange bg-clip-text text-transparent mb-2">
             {formatPrice(totalPrice)}
           </div>
           <div className="text-sm font-semibold text-emerald-700 uppercase tracking-wider">
@@ -1623,7 +1637,7 @@ const PaymentProofStep: React.FC<PaymentProofStepProps> = ({
       <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent rounded-2xl" />
       <div className="relative">
         <h4 className="font-bold text-slate-900 mb-6 flex items-center gap-3 text-lg">
-          <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg shadow-emerald-500/25">
+          <div className="p-2 bg-gradient-to-br from-mexican-green to-cactus-green rounded-xl shadow-lg shadow-mexican-green/25">
             <CheckCircle size={18} className="text-white" />
           </div>
           <span className="bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
@@ -1645,7 +1659,7 @@ const PaymentProofStep: React.FC<PaymentProofStepProps> = ({
             <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative">
               <div className="text-sm text-emerald-700 font-semibold mb-2">Total</div>
-              <div className="text-2xl font-black bg-gradient-to-br from-emerald-700 to-emerald-600 bg-clip-text text-transparent">
+              <div className="text-2xl font-black bg-gradient-to-br from-mexican-red to-sunset-orange bg-clip-text text-transparent">
                 {formatPrice(totalPrice)}
               </div>
             </div>
