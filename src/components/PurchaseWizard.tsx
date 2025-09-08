@@ -101,6 +101,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   const [copiedField, setCopiedField] = useState<string>('');
   const [paymentScreenshot, setPaymentScreenshot] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [isSelectingTickets, setIsSelectingTickets] = useState(false);
   
   // Supabase integration for real-time validation
   const { getRealAvailableTickets, isConnected, loading: supabaseLoading } = useSupabaseSync();
@@ -183,12 +184,20 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
     }
   }, [isOpen, hasTicketsSelected]);
 
-  // Update step when tickets are selected externally (from grid)
+  // Update step when tickets are selected externally (from grid) or after quick select
   useEffect(() => {
     if (isOpen && selectedTickets.length >= MIN_TICKETS_PER_PURCHASE && currentStep === 0) {
       setCurrentStep(1);
+      setIsSelectingTickets(false);
+    } else if (isSelectingTickets && selectedTickets.length < MIN_TICKETS_PER_PURCHASE) {
+      // Still waiting for tickets to be selected
+      return;
+    } else if (isSelectingTickets && selectedTickets.length >= MIN_TICKETS_PER_PURCHASE) {
+      // Tickets have been selected, advance to step 1
+      setCurrentStep(1);
+      setIsSelectingTickets(false);
     }
-  }, [selectedTickets.length, currentStep, isOpen]);
+  }, [selectedTickets.length, currentStep, isOpen, isSelectingTickets]);
 
   // Cleanup preview URL
   useEffect(() => {
@@ -396,12 +405,14 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   const handleQuickSelect = useCallback(async (ticketCount: number) => {
     // Clear any previous errors
     setValidationErrors({});
+    setIsSelectingTickets(true);
     
     // Validate minimum tickets
     if (ticketCount < MIN_TICKETS_PER_PURCHASE) {
       setValidationErrors({
         quickSelect: `Mínimo ${MIN_TICKETS_PER_PURCHASE} boletos requeridos para participar en el sorteo`
       });
+      setIsSelectingTickets(false);
       return;
     }
 
@@ -413,6 +424,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
           setValidationErrors({
             quickSelect: `Solo quedan ${availableTickets.length} boletos disponibles`
           });
+          setIsSelectingTickets(false);
           return;
         }
       }
@@ -423,13 +435,13 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
       // Clear errors after selection
       setValidationErrors({});
       
-      // Advance to step 1 immediately after quick select
-      setCurrentStep(1);
+      // Don't advance immediately - let useEffect handle it after tickets update
     } catch (error) {
       console.error('Error in quick select:', error);
       setValidationErrors({
         quickSelect: 'Error al seleccionar boletos. Intenta de nuevo.'
       });
+      setIsSelectingTickets(false);
     }
   }, [isConnected, getRealAvailableTickets, onQuickSelect]);
 
@@ -679,6 +691,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                       <QuickSelectionStep
                         onQuickSelect={handleQuickSelect}
                         validationError={validationErrors.quickSelect}
+                        isSelectingTickets={isSelectingTickets}
                       />
                     </motion.div>
                   )}
@@ -937,9 +950,10 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({ message }) => (
 interface QuickSelectionStepProps {
   onQuickSelect: (count: number) => void;
   validationError?: string;
+  isSelectingTickets?: boolean;
 }
 
-const QuickSelectionStep: React.FC<QuickSelectionStepProps> = ({ onQuickSelect, validationError }) => (
+const QuickSelectionStep: React.FC<QuickSelectionStepProps> = ({ onQuickSelect, validationError, isSelectingTickets }) => (
   <div className="space-y-6">
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -975,9 +989,11 @@ const QuickSelectionStep: React.FC<QuickSelectionStepProps> = ({ onQuickSelect, 
         <motion.button
           key={option.tickets}
           onClick={() => onQuickSelect(option.tickets)}
+          disabled={isSelectingTickets}
           className={cn(
             'group relative bg-gradient-to-br from-white via-white to-slate-50/80 rounded-3xl p-4 sm:p-6 text-center focus:outline-none focus:ring-4 ring-1 ring-slate-200/50',
             'hover:from-blue-50 hover:via-blue-50 hover:to-blue-100/80 hover:ring-blue-300/40 hover:shadow-blue-100/30',
+            'disabled:opacity-50 disabled:cursor-wait',
             option.popular 
               ? 'border-2 border-amber-400 bg-gradient-to-br from-amber-50 via-amber-50 to-amber-100/80 ring-amber-300/50 shadow-xl shadow-amber-400/15'
               : 'border-2 border-transparent hover:border-blue-300/50'
