@@ -190,16 +190,21 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
 
   // Update step when tickets are selected (from external grid or quick select)
   useEffect(() => {
+    console.log('🔄 WIZARD: useEffect triggered - selectedTickets change:', {
+      isOpen,
+      selectedTicketsLength: selectedTickets.length,
+      minRequired: MIN_TICKETS_PER_PURCHASE,
+      currentStep,
+      shouldAdvance: isOpen && selectedTickets.length >= MIN_TICKETS_PER_PURCHASE && currentStep === 0
+    });
+    
     // Advance to step 1 when tickets are selected and we're on step 0
     if (isOpen && selectedTickets.length >= MIN_TICKETS_PER_PURCHASE && currentStep === 0) {
-      console.log('🎯 WIZARD: Tickets selected, advancing to confirmation step:', {
-        ticketCount: selectedTickets.length,
-        currentStep,
-        isSelectingTickets
-      });
+      console.log('🎯 WIZARD: Conditions met, advancing to confirmation step in 200ms');
       
       // Small delay to ensure UI is smooth
       const timeoutId = setTimeout(() => {
+        console.log('🚀 WIZARD: Actually advancing to step 1 now');
         setCurrentStep(1);
         setIsSelectingTickets(false); // Ensure selection state is cleared
       }, 200);
@@ -439,15 +444,30 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
       }
 
       // Call the parent's onQuickSelect function - this updates the store
+      console.log('🎯 WIZARD: Calling onQuickSelect with count:', ticketCount);
+      console.log('🎯 WIZARD: Current selectedTickets before call:', selectedTickets.length);
+      
       onQuickSelect(ticketCount);
       
       // Clear errors and let useEffect handle step advancement
       setValidationErrors({});
       
-      // Clear selecting state after a short delay
+      // Monitor selectedTickets change
+      const checkInterval = setInterval(() => {
+        console.log('🔄 WIZARD: Checking selectedTickets after onQuickSelect:', selectedTickets.length);
+        if (selectedTickets.length >= ticketCount) {
+          console.log('✅ WIZARD: Store updated successfully, clearing interval');
+          clearInterval(checkInterval);
+          setIsSelectingTickets(false);
+        }
+      }, 100);
+      
+      // Fallback timeout to prevent infinite checking
       setTimeout(() => {
+        clearInterval(checkInterval);
         setIsSelectingTickets(false);
-      }, 300);
+        console.log('⏱️ WIZARD: Timeout reached, clearing selection state');
+      }, 2000);
       
     } catch (error) {
       console.error('Error in quick select:', error);
