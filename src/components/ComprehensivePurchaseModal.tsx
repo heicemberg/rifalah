@@ -828,7 +828,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                     tickets === amount
                       ? 'border-emerald-500 bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-800 shadow-xl scale-105 ring-2 ring-emerald-300/50'
                       : 'border-gray-300/60 bg-gradient-to-br from-white to-gray-50 text-gray-700 hover:border-emerald-400 hover:bg-gradient-to-br hover:from-emerald-50 hover:to-emerald-100 hover:text-emerald-700 hover:shadow-emerald-200/50'
-                  }`} disabled={selectedTickets.length > 0}
+                  }`} disabled={false}
                 >
                   <div className="text-lg sm:text-xl font-black mb-0.5 sm:mb-1">{amount}</div>
                   <div className="text-xs sm:text-sm text-gray-500 font-medium">boleto{amount !== 1 ? 's' : ''}</div>
@@ -845,7 +845,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                 placeholder="Cantidad personalizada"
                 value={customTickets}
                 onChange={(e) => handleCustomTickets(e.target.value)}
-                disabled={selectedTickets.length > 0}
+                disabled={false}
                 className="w-full p-3 sm:p-4 border-2 border-gray-300/60 rounded-xl sm:rounded-2xl font-medium text-center focus:border-emerald-500 focus:outline-none bg-gradient-to-br from-white to-gray-50 text-gray-900 placeholder-gray-400 transition-all duration-300 hover:shadow-md focus:shadow-lg backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 min="2"
                 max="10000"

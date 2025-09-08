@@ -262,23 +262,84 @@ export const useRaffleStore = create<RaffleStore>()(
         
         quickSelect: (count: number) => {
           set(state => {
-            const { availableTickets } = get();
+            const { availableTickets, soldTickets, reservedTickets } = get();
             
+            // Validation: Check if we have enough available tickets
             if (availableTickets.length < count) {
+              console.warn(`❌ Quick select failed: Not enough tickets available. Requested: ${count}, Available: ${availableTickets.length}`);
               return {
                 ...state,
                 errors: [...state.errors, `Solo hay ${availableTickets.length} tickets disponibles`]
               };
             }
             
-            // Seleccionar tickets aleatorios disponibles
-            const shuffled = [...availableTickets].sort(() => Math.random() - 0.5);
+            // Additional validation: Ensure availableTickets array is valid
+            if (!Array.isArray(availableTickets) || availableTickets.length === 0) {
+              console.error('❌ Available tickets array is invalid or empty', { availableTickets, soldTickets: soldTickets.length, reservedTickets: reservedTickets.length });
+              return {
+                ...state,
+                errors: [...state.errors, `Error: No hay tickets disponibles para seleccionar`]
+              };
+            }
+            
+            // Proper Fisher-Yates shuffle algorithm to prevent duplicates
+            const shuffled = [...availableTickets];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            
+            // Select the first 'count' tickets and sort them for display
             const selected = shuffled.slice(0, count).sort((a, b) => a - b);
+            
+            // Final validation: Ensure we have exactly 'count' unique tickets
+            const uniqueSelected = [...new Set(selected)];
+            if (uniqueSelected.length !== count || selected.length !== count) {
+              console.error('❌ Quick select failed to generate correct number of unique tickets', { 
+                requested: count, 
+                generated: selected.length,
+                unique: uniqueSelected.length,
+                available: availableTickets.length,
+                selected
+              });
+              return {
+                ...state,
+                errors: [...state.errors, `Error al seleccionar tickets únicos. Intenta de nuevo.`]
+              };
+            }
+            
+            // Double-check that none of the selected tickets are in sold/reserved lists
+            const conflictingTickets = selected.filter(ticket => 
+              soldTickets.includes(ticket) || reservedTickets.includes(ticket)
+            );
+            
+            if (conflictingTickets.length > 0) {
+              console.error('❌ Quick select generated conflicting tickets', { 
+                conflicting: conflictingTickets, 
+                sold: soldTickets.length, 
+                reserved: reservedTickets.length 
+              });
+              return {
+                ...state,
+                errors: [...state.errors, `Algunos tickets seleccionados ya no están disponibles. Intenta de nuevo.`]
+              };
+            }
+            
+            console.log('✅ Quick select successful:', { 
+              requested: count, 
+              generated: selected.length, 
+              tickets: selected,
+              availableTotal: availableTickets.length 
+            });
             
             return {
               ...state,
               selectedTickets: selected,
-              errors: state.errors.filter(error => !error.includes('tickets disponibles'))
+              errors: state.errors.filter(error => 
+                !error.includes('tickets disponibles') && 
+                !error.includes('Error al seleccionar') &&
+                !error.includes('ya no están disponibles')
+              )
             };
           });
         },

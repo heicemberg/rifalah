@@ -428,20 +428,16 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
       }
 
       // Call the parent's onQuickSelect function - this updates the store
-      console.log('🎯 Before onQuickSelect - selectedTickets:', selectedTickets.length);
       onQuickSelect(ticketCount);
-      console.log('🎯 After onQuickSelect - selectedTickets:', selectedTickets.length);
       
       // Wait for store update and advance step manually
       setTimeout(() => {
-        console.log('🎯 In timeout - selectedTickets:', selectedTickets.length);
         setIsSelectingTickets(false);
         setValidationErrors({});
         
         // Advance to step 1 after tickets are selected
         if (currentStep === 0) {
           setCurrentStep(1);
-          console.log('🎯 Advanced to step 1');
         }
       }, 250); // Give time for store to update
       
