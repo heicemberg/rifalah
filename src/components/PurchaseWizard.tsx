@@ -184,10 +184,10 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
     }
   }, [isOpen, hasTicketsSelected]);
 
-  // Update step when tickets are selected (from grid or quick select)
+  // Update step when tickets are selected from external grid (not quick select)
   useEffect(() => {
-    // Only advance if tickets were selected and we're on step 0
-    if (isOpen && selectedTickets.length >= MIN_TICKETS_PER_PURCHASE && currentStep === 0) {
+    // Only advance if tickets were selected externally and we're on step 0
+    if (isOpen && selectedTickets.length >= MIN_TICKETS_PER_PURCHASE && currentStep === 0 && !isSelectingTickets) {
       // Small delay to ensure state is fully updated
       const timeoutId = setTimeout(() => {
         setCurrentStep(1);
@@ -195,7 +195,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
       
       return () => clearTimeout(timeoutId);
     }
-  }, [selectedTickets.length, currentStep, isOpen]);
+  }, [selectedTickets.length, currentStep, isOpen, isSelectingTickets]);
 
   // Cleanup preview URL
   useEffect(() => {
@@ -427,14 +427,23 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
         }
       }
 
-      // Call the parent's onQuickSelect function - this should update selectedTickets
+      // Call the parent's onQuickSelect function - this updates the store
+      console.log('🎯 Before onQuickSelect - selectedTickets:', selectedTickets.length);
       onQuickSelect(ticketCount);
+      console.log('🎯 After onQuickSelect - selectedTickets:', selectedTickets.length);
       
-      // Clear errors after selection
-      setValidationErrors({});
-      setIsSelectingTickets(false);
-      
-      // Don't advance step here - let the useEffect handle it when selectedTickets updates
+      // Wait for store update and advance step manually
+      setTimeout(() => {
+        console.log('🎯 In timeout - selectedTickets:', selectedTickets.length);
+        setIsSelectingTickets(false);
+        setValidationErrors({});
+        
+        // Advance to step 1 after tickets are selected
+        if (currentStep === 0) {
+          setCurrentStep(1);
+          console.log('🎯 Advanced to step 1');
+        }
+      }, 250); // Give time for store to update
       
     } catch (error) {
       console.error('Error in quick select:', error);
@@ -443,7 +452,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
       });
       setIsSelectingTickets(false);
     }
-  }, [isConnected, getRealAvailableTickets, onQuickSelect]);
+  }, [isConnected, getRealAvailableTickets, onQuickSelect, currentStep]);
 
   // ============================================================================
   // RENDER HELPERS
