@@ -168,7 +168,14 @@ export const useRaffleStore = create<RaffleStore>()(
         // COMPUTED VALUES (getters)
         // ========================================================================
         
-        availableTickets: [],
+        get availableTickets() {
+          const { soldTickets, reservedTickets } = get();
+          const allTickets = Array.from({ length: TOTAL_TICKETS }, (_, i) => i + 1);
+          return allTickets.filter(ticketNum => 
+            !soldTickets.includes(ticketNum) && 
+            !reservedTickets.includes(ticketNum)
+          );
+        },
         
         // Acciones para sincronización con Supabase (SIMPLIFICADAS)
         setSoldTicketsFromDB: (tickets: number[]) => {

@@ -184,13 +184,18 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
     }
   }, [isOpen, hasTicketsSelected]);
 
-  // Update step when tickets are selected externally (from grid only)
+  // Update step when tickets are selected (from grid or quick select)
   useEffect(() => {
-    // Only advance if tickets were selected from grid and we're not in selection process
-    if (isOpen && selectedTickets.length >= MIN_TICKETS_PER_PURCHASE && currentStep === 0 && !isSelectingTickets) {
-      setCurrentStep(1);
+    // Only advance if tickets were selected and we're on step 0
+    if (isOpen && selectedTickets.length >= MIN_TICKETS_PER_PURCHASE && currentStep === 0) {
+      // Small delay to ensure state is fully updated
+      const timeoutId = setTimeout(() => {
+        setCurrentStep(1);
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [selectedTickets.length, currentStep, isOpen, isSelectingTickets]);
+  }, [selectedTickets.length, currentStep, isOpen]);
 
   // Cleanup preview URL
   useEffect(() => {
@@ -427,12 +432,9 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
       
       // Clear errors after selection
       setValidationErrors({});
+      setIsSelectingTickets(false);
       
-      // Advance to step 1 after a short delay to allow parent state to update
-      setTimeout(() => {
-        setCurrentStep(1);
-        setIsSelectingTickets(false);
-      }, 200);
+      // Don't advance step here - let the useEffect handle it when selectedTickets updates
       
     } catch (error) {
       console.error('Error in quick select:', error);
