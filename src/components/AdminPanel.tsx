@@ -38,16 +38,30 @@ export default function AdminPanel() {
   const [busqueda, setBusqueda] = useState('');
   const [selectedCompras, setSelectedCompras] = useState<Set<string>>(new Set());
   const [processingBatch, setProcessingBatch] = useState(false);
+  const [processingIndividual, setProcessingIndividual] = useState<Set<string>>(new Set());
   const [expandedCompra, setExpandedCompra] = useState<string | null>(null);
   
   // Hook unificado para administración (reemplaza useSupabaseSync + useAdminCounters)
   const adminCounters = useAdminDisplayCounters();
   const { isConnected, visualPercentage, refreshData } = adminCounters;
 
-  // Cargar compras al montar el componente
+  // Cargar compras al montar el componente y cuando cambian los contadores
   useEffect(() => {
     cargarCompras();
   }, []);
+  
+  // Auto-refresh cuando los contadores reales cambian (indica nueva confirmación)
+  useEffect(() => {
+    const lastSoldCount = localStorage.getItem('admin-last-sold-count');
+    const currentSoldCount = adminCounters.real.soldCount;
+    
+    if (lastSoldCount && parseInt(lastSoldCount) !== currentSoldCount) {
+      console.log('🔄 ADMIN: Detectado cambio en tickets vendidos, recargando compras...');
+      cargarCompras();
+    }
+    
+    localStorage.setItem('admin-last-sold-count', currentSoldCount.toString());
+  }, [adminCounters.real.soldCount]);
 
   const cargarCompras = async () => {
     console.log('📊 ADMIN: Cargando compras...');
@@ -188,6 +202,12 @@ export default function AdminPanel() {
   };
 
   const cambiarEstado = async (id: string, nuevoEstado: PurchaseStatus) => {
+    // PREVENIR DOBLE CLIC: Verificar si ya está procesándose
+    if (processingIndividual.has(id)) {
+      console.log(`⚠️ ADMIN: Compra ${id} ya está siendo procesada, ignorando...`);
+      return;
+    }
+    
     console.log(`🎯 ADMIN TICKET ACCEPTANCE STARTED:`, {
       purchaseId: id,
       newStatus: nuevoEstado,
@@ -198,10 +218,18 @@ export default function AdminPanel() {
       timestamp: new Date().toLocaleTimeString()
     });
     
+    // Marcar como procesándose
+    setProcessingIndividual(prev => new Set([...prev, id]));
+    
     try {
       if (isConnected) {
         console.log(`🔄 ADMIN: Actualizando compra ${id} a estado ${nuevoEstado}...`);
         
+        // PREVENIR DOBLE CONFIRMACIÓN: Actualizar estado local INMEDIATAMENTE
+        setCompras(prev => prev.map(compra => 
+          compra.id === id ? { ...compra, status: nuevoEstado } : compra
+        ));
+
         // Actualizar en Supabase
         await actualizarEstadoCompra(id, nuevoEstado);
         toast.success(`Estado actualizado a: ${nuevoEstado}`);
@@ -336,6 +364,18 @@ export default function AdminPanel() {
     } catch (error) {
       console.error('Error al actualizar estado:', error);
       toast.error('Error al actualizar el estado');
+      
+      // Revertir cambio local si falla la BD
+      setCompras(prev => prev.map(compra => 
+        compra.id === id ? { ...compra, status: 'pendiente' } : compra
+      ));
+    } finally {
+      // Limpiar estado de procesamiento
+      setProcessingIndividual(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
     }
   };
 
@@ -466,6 +506,12 @@ export default function AdminPanel() {
     
     try {
       const selectedIds = Array.from(selectedCompras);
+      
+      // PREVENIR DOBLE CONFIRMACIÓN: Actualizar estado local INMEDIATAMENTE
+      setCompras(prev => prev.map(compra => 
+        selectedIds.includes(compra.id) ? { ...compra, status: 'confirmada' } : compra
+      ));
+      
       toast.loading(`Procesando ${selectedIds.length} compras...`, { id: 'batch-processing' });
 
       // Procesar en paralelo para mayor velocidad
@@ -922,10 +968,11 @@ export default function AdminPanel() {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => cambiarEstado(compra.id!, 'confirmada')}
-                                className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all duration-200 text-sm shadow-lg hover:shadow-emerald-500/25"
+                                disabled={processingIndividual.has(compra.id!)}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all duration-200 text-sm shadow-lg hover:shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <CheckCircle2 size={14} />
-                                Aprobar
+                                {processingIndividual.has(compra.id!) ? 'Procesando...' : 'Aprobar'}
                               </motion.button>
                             )}
                             
