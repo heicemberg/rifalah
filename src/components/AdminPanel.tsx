@@ -697,10 +697,10 @@ export default function AdminPanel() {
             { icon: DollarSign, label: 'Ingresos', value: formatearPrecio(stats.ingresosTotales), color: 'purple', bgColor: 'bg-purple-50' },
             { 
               icon: Eye, 
-              label: 'Tickets FOMO', 
-              value: `${adminCounters.display.soldCount} (Real: ${adminCounters.real.soldCount} + FOMO: ${adminCounters.fomo.difference})`, 
-              color: 'teal', 
-              bgColor: 'bg-teal-50' 
+              label: 'Tickets Mostrados', 
+              value: `🎯 ${adminCounters.display.soldCount.toLocaleString()} | Real: ${adminCounters.real.soldCount} | FOMO: +${adminCounters.fomo.difference}`, 
+              color: 'gray', 
+              bgColor: 'bg-gray-50' 
             }
           ].map((stat, index) => (
             <motion.div
