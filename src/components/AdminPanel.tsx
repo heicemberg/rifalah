@@ -696,11 +696,11 @@ export default function AdminPanel() {
             { icon: XCircle, label: 'Canceladas', value: stats.canceladas, color: 'red', bgColor: 'bg-red-50' },
             { icon: DollarSign, label: 'Ingresos', value: formatearPrecio(stats.ingresosTotales), color: 'purple', bgColor: 'bg-purple-50' },
             { 
-              icon: Zap, 
-              label: 'Boletos', 
-              value: `Real: ${adminCounters.real.soldCount} | FOMO: +${adminCounters.fomo.difference} | Total: ${adminCounters.display.soldCount}`, 
-              color: 'indigo', 
-              bgColor: 'bg-indigo-50' 
+              icon: Eye, 
+              label: 'Tickets FOMO', 
+              value: `${adminCounters.display.soldCount} (Real: ${adminCounters.real.soldCount} + FOMO: ${adminCounters.fomo.difference})`, 
+              color: 'teal', 
+              bgColor: 'bg-teal-50' 
             }
           ].map((stat, index) => (
             <motion.div
