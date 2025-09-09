@@ -5,7 +5,6 @@ import Image from 'next/image'
 import { useRaffleStore } from '@/stores/raffle-store'
 import { useBasicCounters } from '@/hooks/useMasterCounters'
 import { useMathValidator } from '@/hooks/useMathValidator'
-import { useSupabaseSync } from '@/hooks/useSupabaseSync'
 import SupabaseInitializer from '@/components/SupabaseInitializer'
 import { 
   ArrowRight, 
@@ -38,7 +37,57 @@ export default function NewRaffePage() {
   const { validateNow } = useMathValidator(process.env.NODE_ENV === 'development')
   
   // 🔄 SINCRONIZACIÓN CON SUPABASE - CRÍTICO PARA QUICKSELECT
-  const { isConnected, loading: supabaseLoading } = useSupabaseSync()
+  const { setSoldTicketsFromDB, setReservedTicketsFromDB } = useRaffleStore()
+  
+  useEffect(() => {
+    const syncStoreWithSupabase = async () => {
+      try {
+        console.log('🔄 PAGE: Iniciando sincronización store con Supabase...');
+        
+        // Import Supabase dinamically
+        const { supabase } = await import('@/lib/supabase');
+        
+        // Cargar tickets vendidos y reservados
+        const { data: ticketsData, error } = await supabase
+          .from('tickets')
+          .select('number, status')
+          .in('status', ['vendido', 'reservado']);
+          
+        if (error) {
+          console.error('❌ PAGE: Error cargando tickets:', error);
+          return;
+        }
+        
+        if (ticketsData) {
+          const soldNumbers = ticketsData
+            .filter(t => t.status === 'vendido')
+            .map(t => t.number);
+          
+          const reservedNumbers = ticketsData
+            .filter(t => t.status === 'reservado')  
+            .map(t => t.number);
+          
+          console.log('✅ PAGE: Datos cargados desde Supabase:', {
+            soldCount: soldNumbers.length,
+            reservedCount: reservedNumbers.length,
+            totalTicketsFromDB: ticketsData.length,
+            firstFewSold: soldNumbers.slice(0, 5)
+          });
+          
+          // Actualizar store con datos reales
+          setSoldTicketsFromDB(soldNumbers);
+          setReservedTicketsFromDB(reservedNumbers);
+          
+          console.log('🎯 PAGE: Store sincronizado con datos reales de Supabase');
+        }
+        
+      } catch (error) {
+        console.error('❌ PAGE: Error sincronizando store:', error);
+      }
+    };
+    
+    syncStoreWithSupabase();
+  }, [])
   
   // Formateo mexicano
   const formatMexicanNumber = (num: number): string => num.toLocaleString('es-MX')
