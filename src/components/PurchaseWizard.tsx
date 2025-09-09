@@ -29,7 +29,9 @@ import {
   TrendingUp,
   Gift,
   AlertCircle,
-  Sparkles
+  Sparkles,
+  RefreshCw,
+  WifiOff
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { formatPrice, formatTicketNumber } from '../lib/utils';
@@ -114,7 +116,15 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   
   // Crypto prices integration for Binance Pay - memoized for performance
   const totalPrice = useMemo(() => selectedTickets.length * 250, [selectedTickets.length]);
-  const { convertedAmounts, loading: cryptoLoading, error: cryptoError, lastUpdate } = useCryptoPrice(totalPrice);
+  const { 
+    convertedAmounts, 
+    loading: cryptoLoading, 
+    error: cryptoError, 
+    lastUpdate, 
+    refresh: refreshCrypto, 
+    isOnline, 
+    retryCount 
+  } = useCryptoPrice(totalPrice);
 
   // ============================================================================
   // WIZARD CONFIGURATION
@@ -1372,25 +1382,80 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
           {method.id === 'binance' && (
             <div className="space-y-3">
               {cryptoError && (
-                <div className="mb-4 p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-xl border border-red-200">
-                  <div className="flex items-center gap-2 text-red-800 font-semibold text-sm mb-2">
+                <div className="mb-4 p-4 bg-gradient-to-r from-amber-50 to-amber-100 rounded-xl border border-amber-200">
+                  <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm mb-2">
                     <AlertCircle size={16} />
-                    Error al cargar precios de criptomonedas
+                    {!isOnline ? 'Conexión limitada' : 'Precios aproximados'}
                   </div>
-                  <div className="text-xs text-red-600">
-                    No se pudieron obtener los precios actuales. Intenta más tarde.
+                  <div className="text-xs text-amber-700 mb-3">
+                    {cryptoError.includes('cached') ? 'Usando precios guardados' : 
+                     cryptoError.includes('approximate') ? 'Usando precios aproximados' :
+                     cryptoError.includes('Offline') ? 'Sin conexión - precios estimados' :
+                     'Los precios mostrados son aproximados'}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={refreshCrypto}
+                      disabled={cryptoLoading}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-amber-100 to-amber-200 text-amber-700 hover:from-amber-200 hover:to-amber-300 ring-amber-200/50 hover:shadow-md disabled:opacity-50"
+                    >
+                      {cryptoLoading ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-amber-600 border-t-transparent rounded-full animate-spin inline mr-1" />
+                          Actualizando...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw size={10} className="inline mr-1" />
+                          Actualizar precios
+                        </>
+                      )}
+                    </button>
+                    {retryCount > 0 && (
+                      <span className="text-xs text-amber-600">
+                        Intento {retryCount}/3
+                      </span>
+                    )}
+                    {!isOnline && (
+                      <span className="text-xs text-amber-600 flex items-center gap-1">
+                        <WifiOff size={10} />
+                        Sin conexión
+                      </span>
+                    )}
                   </div>
                 </div>
               )}
               
-              {!cryptoError && convertedAmounts && (
+              {convertedAmounts && (
                 <>
-                  <div className="mb-4 p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200">
-                    <div className="flex items-center gap-2 text-yellow-800 font-semibold text-sm mb-2">
-                      <Sparkles size={16} />
-                      Total: {formatPrice(totalPrice)} = Montos exactos:
+                  {!cryptoError ? (
+                    <div className="mb-4 p-4 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2 text-emerald-800 font-semibold text-sm">
+                          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                          Total: {formatPrice(totalPrice)} = Montos exactos:
+                        </div>
+                        {lastUpdate && (
+                          <div className="text-xs text-emerald-600">
+                            Actualizado: {lastUpdate.toLocaleTimeString()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-xs text-emerald-700">
+                        Precios actualizados en tiempo real
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="mb-4 p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200">
+                      <div className="flex items-center gap-2 text-yellow-800 font-semibold text-sm mb-2">
+                        <Sparkles size={16} />
+                        Total: {formatPrice(totalPrice)} = Montos aproximados:
+                      </div>
+                      <div className="text-xs text-yellow-700">
+                        {cryptoError.includes('cached') ? 'Usando precios guardados' : 'Precios aproximados - verifica antes de enviar'}
+                      </div>
+                    </div>
+                  )}
 
               {/* USDT */}
               <div className="group relative bg-gradient-to-r from-green-50 to-green-100/80 backdrop-blur-sm p-4 rounded-xl border border-green-200/60 hover:border-green-300/60 hover:shadow-lg transition-all duration-200">
