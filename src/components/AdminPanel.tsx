@@ -227,7 +227,7 @@ export default function AdminPanel() {
         
         // PREVENIR DOBLE CONFIRMACIÓN: Actualizar estado local INMEDIATAMENTE
         setCompras(prev => prev.map(compra => 
-          compra.id === id ? { ...compra, status: nuevoEstado } : compra
+          (compra.id && compra.id === id) ? { ...compra, status: nuevoEstado } : compra
         ));
 
         // Actualizar en Supabase
@@ -367,7 +367,7 @@ export default function AdminPanel() {
       
       // Revertir cambio local si falla la BD
       setCompras(prev => prev.map(compra => 
-        compra.id === id ? { ...compra, status: 'pendiente' } : compra
+        (compra.id && compra.id === id) ? { ...compra, status: 'pendiente' } : compra
       ));
     } finally {
       // Limpiar estado de procesamiento
@@ -509,7 +509,7 @@ export default function AdminPanel() {
       
       // PREVENIR DOBLE CONFIRMACIÓN: Actualizar estado local INMEDIATAMENTE
       setCompras(prev => prev.map(compra => 
-        selectedIds.includes(compra.id) ? { ...compra, status: 'confirmada' } : compra
+        (compra.id && selectedIds.includes(compra.id)) ? { ...compra, status: 'confirmada' } : compra
       ));
       
       toast.loading(`Procesando ${selectedIds.length} compras...`, { id: 'batch-processing' });
