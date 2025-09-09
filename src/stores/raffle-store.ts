@@ -171,10 +171,24 @@ export const useRaffleStore = create<RaffleStore>()(
         get availableTickets() {
           const { soldTickets, reservedTickets } = get();
           const allTickets = Array.from({ length: TOTAL_TICKETS }, (_, i) => i + 1);
-          return allTickets.filter(ticketNum => 
+          const available = allTickets.filter(ticketNum => 
             !soldTickets.includes(ticketNum) && 
             !reservedTickets.includes(ticketNum)
           );
+          
+          // DEBUG: Solo logear si hay cambios significativos
+          if (available.length < 8000) {
+            console.log('🎯 STORE availableTickets getter:', {
+              totalTickets: TOTAL_TICKETS,
+              soldCount: soldTickets.length,
+              reservedCount: reservedTickets.length,
+              availableCount: available.length,
+              firstFewAvailable: available.slice(0, 5),
+              firstFewSold: soldTickets.slice(0, 5)
+            });
+          }
+          
+          return available;
         },
         
         // Acciones para sincronización con Supabase (SIMPLIFICADAS)
@@ -261,8 +275,19 @@ export const useRaffleStore = create<RaffleStore>()(
         },
         
         quickSelect: (count: number) => {
+          console.log('🎯 STORE: quickSelect called with count:', count);
           set(state => {
-            const { availableTickets, soldTickets, reservedTickets } = get();
+            // Get current local state for fallback
+            const { availableTickets: localAvailable, soldTickets, reservedTickets } = get();
+            console.log('🎯 STORE: Current state in quickSelect:', { 
+              localAvailableTicketsCount: localAvailable.length, 
+              soldCount: soldTickets.length, 
+              reservedCount: reservedTickets.length,
+              currentSelectedCount: state.selectedTickets.length
+            });
+            
+            // Use local available tickets (they should be synchronized by useSupabaseSync)
+            const availableTickets = localAvailable;
             
             // Validation: Check if we have enough available tickets
             if (availableTickets.length < count) {

@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRaffleStore } from '@/stores/raffle-store'
 import { useBasicCounters } from '@/hooks/useMasterCounters'
 import { useMathValidator } from '@/hooks/useMathValidator'
+import { useSupabaseSync } from '@/hooks/useSupabaseSync'
 import SupabaseInitializer from '@/components/SupabaseInitializer'
 import { 
   ArrowRight, 
@@ -35,6 +36,9 @@ export default function NewRaffePage() {
   
   // 🧮 VALIDADOR MATEMÁTICO CONTINUO
   const { validateNow } = useMathValidator(process.env.NODE_ENV === 'development')
+  
+  // 🔄 SINCRONIZACIÓN CON SUPABASE - CRÍTICO PARA QUICKSELECT
+  const { isConnected, loading: supabaseLoading } = useSupabaseSync()
   
   // Formateo mexicano
   const formatMexicanNumber = (num: number): string => num.toLocaleString('es-MX')
