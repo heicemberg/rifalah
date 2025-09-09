@@ -67,11 +67,26 @@ export default function NewRaffePage() {
             .filter(t => t.status === 'reservado')  
             .map(t => t.number);
           
-          console.log('✅ PAGE: Datos cargados desde Supabase:', {
+          // DIAGNOSTIC: Verificar matemáticas exactas
+          const totalFromDB = ticketsData.length;
+          const calculated = soldNumbers.length + reservedNumbers.length;
+          const shouldBeAvailable = 10000 - soldNumbers.length - reservedNumbers.length;
+          
+          console.log('✅ PAGE: DIAGNOSTIC - Análisis matemático completo:', {
+            totalTickets: 10000,
             soldCount: soldNumbers.length,
             reservedCount: reservedNumbers.length,
-            totalTicketsFromDB: ticketsData.length,
-            firstFewSold: soldNumbers.slice(0, 5)
+            totalFromDB: totalFromDB,
+            calculatedTotal: calculated,
+            shouldBeAvailable: shouldBeAvailable,
+            mathCheck: `${soldNumbers.length} + ${reservedNumbers.length} + ${shouldBeAvailable} = ${soldNumbers.length + reservedNumbers.length + shouldBeAvailable}`,
+            isCorrect: (soldNumbers.length + reservedNumbers.length + shouldBeAvailable) === 10000,
+            allStatusesInDB: [...new Set(ticketsData.map(t => t.status))],
+            statusBreakdown: {
+              vendido: ticketsData.filter(t => t.status === 'vendido').length,
+              reservado: ticketsData.filter(t => t.status === 'reservado').length,
+              otherStatuses: ticketsData.filter(t => !['vendido', 'reservado'].includes(t.status)).length
+            }
           });
           
           // Actualizar store con datos reales

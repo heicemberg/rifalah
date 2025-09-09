@@ -176,15 +176,23 @@ export const useRaffleStore = create<RaffleStore>()(
             !reservedTickets.includes(ticketNum)
           );
           
-          // DEBUG: Solo logear si hay cambios significativos
-          if (available.length < 8000) {
-            console.log('🎯 STORE availableTickets getter:', {
+          // DEBUG: Verificar matemáticas exactas
+          const totalCalculated = soldTickets.length + reservedTickets.length + available.length;
+          const mathIsCorrect = totalCalculated === TOTAL_TICKETS;
+          
+          if (available.length < 9000 || !mathIsCorrect) {
+            console.log('🎯 STORE availableTickets getter - DIAGNOSTIC:', {
               totalTickets: TOTAL_TICKETS,
               soldCount: soldTickets.length,
               reservedCount: reservedTickets.length,
               availableCount: available.length,
+              calculatedTotal: totalCalculated,
+              mathCheck: `${soldTickets.length} + ${reservedTickets.length} + ${available.length} = ${totalCalculated}`,
+              isCorrect: mathIsCorrect,
+              missing: mathIsCorrect ? 0 : (TOTAL_TICKETS - totalCalculated),
               firstFewAvailable: available.slice(0, 5),
-              firstFewSold: soldTickets.slice(0, 5)
+              firstFewSold: soldTickets.slice(0, 5),
+              firstFewReserved: reservedTickets.slice(0, 5)
             });
           }
           
