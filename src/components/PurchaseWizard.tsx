@@ -87,8 +87,13 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   // STATE MANAGEMENT
   // ============================================================================
   
+  // Calculate if tickets are selected (this will update reactively)
   const hasTicketsSelected = selectedTickets.length >= MIN_TICKETS_PER_PURCHASE;
-  const [currentStep, setCurrentStep] = useState(hasTicketsSelected ? 1 : 0);
+  
+  // Initialize step based on tickets - but always allow starting from 0 for quick select
+  const [currentStep, setCurrentStep] = useState(() => {
+    return hasTicketsSelected ? 1 : 0;
+  });
   const [customerData, setCustomerData] = useState<CustomerData>({
     name: '',
     email: '',
@@ -179,14 +184,24 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   // Reset wizard when opening
   useEffect(() => {
     if (isOpen) {
-      setCurrentStep(hasTicketsSelected ? 1 : 0);
+      // Always start at step 0 if no tickets, or step 1 if tickets exist
+      const initialStep = selectedTickets.length >= MIN_TICKETS_PER_PURCHASE ? 1 : 0;
+      setCurrentStep(initialStep);
       setValidationErrors({});
       setSelectedPaymentMethod('');
       setCopiedField('');
       setPaymentScreenshot(null);
       setPreviewUrl('');
+      setIsSelectingTickets(false); // Reset selecting state
+      
+      console.log('🔄 WIZARD RESET:', {
+        isOpen,
+        selectedTickets: selectedTickets.length,
+        initialStep,
+        hasTicketsSelected: selectedTickets.length >= MIN_TICKETS_PER_PURCHASE
+      });
     }
-  }, [isOpen, hasTicketsSelected]);
+  }, [isOpen, selectedTickets.length]);
 
   // Update step when tickets are selected (from external grid or quick select)
   useEffect(() => {
@@ -195,23 +210,32 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
       selectedTicketsLength: selectedTickets.length,
       minRequired: MIN_TICKETS_PER_PURCHASE,
       currentStep,
+      isSelectingTickets,
       shouldAdvance: isOpen && selectedTickets.length >= MIN_TICKETS_PER_PURCHASE && currentStep === 0
     });
     
+    // Don't proceed if modal is not open
+    if (!isOpen) return;
+    
+    // Always clear isSelectingTickets when selectedTickets changes (means store updated)
+    if (isSelectingTickets && selectedTickets.length >= MIN_TICKETS_PER_PURCHASE) {
+      console.log('✅ WIZARD: Store updated with tickets, clearing isSelectingTickets');
+      setIsSelectingTickets(false);
+    }
+    
     // Advance to step 1 when tickets are selected and we're on step 0
-    if (isOpen && selectedTickets.length >= MIN_TICKETS_PER_PURCHASE && currentStep === 0) {
+    if (selectedTickets.length >= MIN_TICKETS_PER_PURCHASE && currentStep === 0) {
       console.log('🎯 WIZARD: Conditions met, advancing to confirmation step in 200ms');
       
       // Small delay to ensure UI is smooth
       const timeoutId = setTimeout(() => {
         console.log('🚀 WIZARD: Actually advancing to step 1 now');
         setCurrentStep(1);
-        setIsSelectingTickets(false); // Ensure selection state is cleared
       }, 200);
       
       return () => clearTimeout(timeoutId);
     }
-  }, [selectedTickets.length, currentStep, isOpen]);
+  }, [selectedTickets.length, currentStep, isOpen, isSelectingTickets]);
 
   // Cleanup preview URL
   useEffect(() => {
@@ -395,10 +419,12 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   }, [currentStep, validateStep, selectedTickets.length]);
 
   const handleBack = useCallback(() => {
-    if (currentStep > (hasTicketsSelected ? 1 : 0)) {
+    // Calculate minimum step dynamically
+    const minStep = selectedTickets.length >= MIN_TICKETS_PER_PURCHASE ? 1 : 0;
+    if (currentStep > minStep) {
       setCurrentStep(currentStep - 1);
     }
-  }, [currentStep, hasTicketsSelected]);
+  }, [currentStep, selectedTickets.length]);
 
   const handleFinish = useCallback(async () => {
     if (await validateStep(4)) {
@@ -449,25 +475,14 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
       
       onQuickSelect(ticketCount);
       
-      // Clear errors and let useEffect handle step advancement
+      // Clear errors - useEffect will handle step advancement and clearing isSelectingTickets
       setValidationErrors({});
       
-      // Monitor selectedTickets change
-      const checkInterval = setInterval(() => {
-        console.log('🔄 WIZARD: Checking selectedTickets after onQuickSelect:', selectedTickets.length);
-        if (selectedTickets.length >= ticketCount) {
-          console.log('✅ WIZARD: Store updated successfully, clearing interval');
-          clearInterval(checkInterval);
-          setIsSelectingTickets(false);
-        }
-      }, 100);
-      
-      // Fallback timeout to prevent infinite checking
+      // Set a fallback timeout to clear selecting state in case useEffect doesn't fire
       setTimeout(() => {
-        clearInterval(checkInterval);
         setIsSelectingTickets(false);
-        console.log('⏱️ WIZARD: Timeout reached, clearing selection state');
-      }, 2000);
+        console.log('⏱️ WIZARD: Fallback timeout - clearing isSelectingTickets state');
+      }, 1000);
       
     } catch (error) {
       console.error('Error in quick select:', error);
@@ -498,7 +513,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
               {currentStep > step.number ? (
                 <CheckCircle size={14} className="animate-in zoom-in-50 duration-300" />
               ) : (
-                <span>{hasTicketsSelected ? step.number : step.number + 1}</span>
+                <span>{selectedTickets.length >= MIN_TICKETS_PER_PURCHASE ? step.number : step.number + 1}</span>
               )}
             </div>
           </div>
@@ -683,7 +698,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
             <div className="shrink-0 bg-gradient-to-r from-slate-50/90 to-white/90 backdrop-blur-sm border-b border-slate-200/60 px-4 sm:px-6 py-3 sm:py-4">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <div className="flex items-center gap-3 sm:gap-4">
-                  {currentStep > (hasTicketsSelected ? 1 : 0) && (
+                  {currentStep > (selectedTickets.length >= MIN_TICKETS_PER_PURCHASE ? 1 : 0) && (
                     <button
                       onClick={handleBack}
                       className="group relative bg-gradient-to-br from-slate-100 to-slate-50 hover:from-slate-200 hover:to-slate-100 text-slate-700 p-2 sm:p-2.5 rounded-xl transition-all duration-300 ease-out ring-1 ring-slate-200/50 hover:ring-slate-300/50 hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
@@ -694,10 +709,10 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                   )}
                   <div className="space-y-1">
                     <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-                      {wizardSteps[hasTicketsSelected ? currentStep - 1 : currentStep]?.title}
+                      {wizardSteps[selectedTickets.length >= MIN_TICKETS_PER_PURCHASE ? currentStep - 1 : currentStep]?.title}
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-600 font-medium">
-                      {wizardSteps[hasTicketsSelected ? currentStep - 1 : currentStep]?.description}
+                      {wizardSteps[selectedTickets.length >= MIN_TICKETS_PER_PURCHASE ? currentStep - 1 : currentStep]?.description}
                     </p>
                   </div>
                 </div>
@@ -857,18 +872,18 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
               <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4">
                 <div className="flex items-center gap-3 text-xs sm:text-sm">
                   <span className="font-bold text-slate-700">
-                    Paso {hasTicketsSelected ? currentStep : currentStep + 1} de {wizardSteps.length}
+                    Paso {selectedTickets.length >= MIN_TICKETS_PER_PURCHASE ? currentStep : currentStep + 1} de {wizardSteps.length}
                   </span>
                   <div className="relative w-12 sm:w-16 bg-slate-200 rounded-full h-2 sm:h-3 overflow-hidden shadow-inner">
                     <div 
                       className="h-full bg-gradient-to-r from-blue-600 to-blue-500 rounded-full transition-all duration-500 ease-out shadow-sm" 
                       style={{ 
-                        width: `${((hasTicketsSelected ? currentStep : currentStep + 1) / wizardSteps.length) * 100}%` 
+                        width: `${((selectedTickets.length >= MIN_TICKETS_PER_PURCHASE ? currentStep : currentStep + 1) / wizardSteps.length) * 100}%` 
                       }}
                     />
                   </div>
                   <span className="text-slate-500 font-medium">
-                    {Math.round(((hasTicketsSelected ? currentStep : currentStep + 1) / wizardSteps.length) * 100)}%
+                    {Math.round(((selectedTickets.length >= MIN_TICKETS_PER_PURCHASE ? currentStep : currentStep + 1) / wizardSteps.length) * 100)}%
                   </span>
                 </div>
                 

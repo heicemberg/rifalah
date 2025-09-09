@@ -144,11 +144,11 @@ export default function NewRaffePage() {
   // Acceder al store para obtener los tickets seleccionados y la acción de selección rápida
   const { selectedTickets, quickSelect } = useRaffleStore()
 
-  // ✅ USAR DATOS DEL MASTER COUNTER - MATEMÁTICAMENTE GARANTIZADOS
-  const soldCount = masterCounters.soldTickets
-  const availableCount = masterCounters.availableTickets
+  // 🎭 USAR DATOS DE DISPLAY CON FOMO - PARA UI PÚBLICA
+  const soldCount = masterCounters.soldTickets           // Display sold (already with FOMO applied)
+  const availableCount = masterCounters.availableTickets // Display available (already calculated)
   const totalCount = masterCounters.totalTickets
-  const soldPercentage = Math.round(masterCounters.soldPercentage)
+  const soldPercentage = Math.round(masterCounters.soldPercentage) // Display percentage with FOMO
   
   // ✅ LISTENERS PARA ACTUALIZACIONES EN TIEMPO REAL
   useEffect(() => {

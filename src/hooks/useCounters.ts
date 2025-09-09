@@ -18,32 +18,32 @@ export const useCounters = () => {
   const master = useMasterCounters();
   
   return {
-    // === DATOS PARA UI PÚBLICA ===
+    // === DATOS PARA UI PÚBLICA (DISPLAY MODE) ===
     display: {
-      soldCount: master.fomoSoldTickets, // Usar FOMO para display
+      soldCount: master.fomoSoldTickets, // FOMO-enhanced sold count
       soldPercentage: master.fomoPercentage,
-      availableCount: master.availableTickets,
+      availableCount: master.totalTickets - master.fomoSoldTickets - master.reservedTickets, // Calculated for display
       reservedCount: master.reservedTickets,
       totalCount: master.totalTickets,
       
       // Formateo automático
       soldCountFormatted: master.fomoSoldTickets.toLocaleString('es-MX'),
-      availableCountFormatted: master.availableTickets.toLocaleString('es-MX'),
+      availableCountFormatted: (master.totalTickets - master.fomoSoldTickets - master.reservedTickets).toLocaleString('es-MX'),
       
-      // Estados de urgencia
+      // Estados de urgencia basados en display available
       isNearlyFull: master.fomoPercentage > 85,
       isCritical: master.fomoPercentage > 95,
-      urgencyLevel: master.availableTickets > 3000 ? 'low' :
-                   master.availableTickets > 1500 ? 'medium' :
-                   master.availableTickets > 500 ? 'high' : 'critical'
+      urgencyLevel: (master.totalTickets - master.fomoSoldTickets - master.reservedTickets) > 3000 ? 'low' :
+                   (master.totalTickets - master.fomoSoldTickets - master.reservedTickets) > 1500 ? 'medium' :
+                   (master.totalTickets - master.fomoSoldTickets - master.reservedTickets) > 500 ? 'high' : 'critical'
     },
     
-    // === DATOS REALES (ADMIN) ===
+    // === DATOS REALES (BUSINESS LOGIC) ===
     real: {
-      soldCount: master.soldTickets,
-      soldPercentage: master.soldPercentage,
-      availableCount: master.availableTickets,
-      reservedCount: master.reservedTickets
+      soldCount: master.soldTickets,           // Real sold from DB
+      soldPercentage: master.soldPercentage,   // Real percentage
+      availableCount: master.availableTickets, // Real available (total - sold - reserved)
+      reservedCount: master.reservedTickets    // Real reserved
     },
     
     // === ESTADO FOMO ===

@@ -171,49 +171,63 @@ export const useRaffleStore = create<RaffleStore>()(
         get availableTickets() {
           const { soldTickets, reservedTickets } = get();
           const allTickets = Array.from({ length: TOTAL_TICKETS }, (_, i) => i + 1);
+          
+          // 🔢 PURE BUSINESS LOGIC: Only real sold and reserved tickets affect availability
           const available = allTickets.filter(ticketNum => 
             !soldTickets.includes(ticketNum) && 
             !reservedTickets.includes(ticketNum)
           );
           
-          // DEBUG: Verificar matemáticas exactas
-          const totalCalculated = soldTickets.length + reservedTickets.length + available.length;
+          // ✅ REAL MATHEMATICS VERIFICATION: sold + available + reserved = 10,000
+          const realSoldCount = soldTickets.length;
+          const realReservedCount = reservedTickets.length;
+          const realAvailableCount = available.length;
+          const totalCalculated = realSoldCount + realReservedCount + realAvailableCount;
           const mathIsCorrect = totalCalculated === TOTAL_TICKETS;
           
-          if (available.length < 9000 || !mathIsCorrect) {
-            console.log('🎯 STORE availableTickets getter - DIAGNOSTIC:', {
+          if (!mathIsCorrect) {
+            console.error('🚨 STORE MATH ERROR - Real mathematics broken:', {
               totalTickets: TOTAL_TICKETS,
-              soldCount: soldTickets.length,
-              reservedCount: reservedTickets.length,
-              availableCount: available.length,
-              calculatedTotal: totalCalculated,
-              mathCheck: `${soldTickets.length} + ${reservedTickets.length} + ${available.length} = ${totalCalculated}`,
+              realSoldCount,
+              realReservedCount,
+              realAvailableCount,
+              totalCalculated,
+              mathCheck: `${realSoldCount} + ${realReservedCount} + ${realAvailableCount} = ${totalCalculated}`,
               isCorrect: mathIsCorrect,
-              missing: mathIsCorrect ? 0 : (TOTAL_TICKETS - totalCalculated),
-              firstFewAvailable: available.slice(0, 5),
-              firstFewSold: soldTickets.slice(0, 5),
-              firstFewReserved: reservedTickets.slice(0, 5)
+              missing: TOTAL_TICKETS - totalCalculated,
+              note: 'This indicates database synchronization issues'
+            });
+          } else if (available.length < 9000) {
+            // Only log diagnostic if we have unusually few available tickets
+            console.log('🔍 STORE availableTickets - Low availability diagnostic:', {
+              realSoldCount,
+              realReservedCount,
+              realAvailableCount,
+              mathCheck: `${realSoldCount} + ${realReservedCount} + ${realAvailableCount} = ${totalCalculated} ✅`,
+              note: 'Math is correct, low availability is normal'
             });
           }
           
           return available;
         },
         
-        // Acciones para sincronización con Supabase (SIMPLIFICADAS)
+        // 🔄 SUPABASE SYNC: Update real tickets only (no FOMO contamination)
         setSoldTicketsFromDB: (tickets: number[]) => {
+          console.log(`🔄 STORE SYNC: Setting ${tickets.length} real sold tickets from DB`);
           set({ soldTickets: tickets });
-          // NOTA: Master Counter maneja la lógica de disponibles
+          // Available tickets will be recalculated automatically via getter
         },
         
         setReservedTicketsFromDB: (tickets: number[]) => {
+          console.log(`🔄 STORE SYNC: Setting ${tickets.length} real reserved tickets from DB`);
           set({ reservedTickets: tickets });
-          // NOTA: Master Counter maneja la lógica de disponibles
+          // Available tickets will be recalculated automatically via getter
         },
         
-        // Helper DEPRECATED - Master Counter maneja esto ahora
+        // ❌ DEPRECATED - availableTickets getter handles this automatically now
         _updateAvailableTickets: () => {
-          console.warn('⚠️ _updateAvailableTickets está DEPRECATED - usar Master Counter');
-          // No hacer nada, el Master Counter maneja los disponibles
+          console.warn('⚠️ _updateAvailableTickets is DEPRECATED - availableTickets getter handles this automatically');
+          // No-op: The getter recalculates automatically when sold/reserved change
         },
         
         get totalSelected() {
@@ -227,6 +241,7 @@ export const useRaffleStore = create<RaffleStore>()(
         
         get soldPercentage() {
           const { soldTickets } = get();
+          // 🔢 REAL PERCENTAGE: Based only on real sold tickets (no FOMO)
           return Math.round((soldTickets.length / TOTAL_TICKETS) * 100);
         },
         
