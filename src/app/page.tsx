@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRaffleStore } from '@/stores/raffle-store'
 import { useBasicCounters } from '@/hooks/useMasterCounters'
 import { useMathValidator } from '@/hooks/useMathValidator'
+import { useMathIntegrity } from '@/hooks/useMathIntegrity'
 import SupabaseInitializer from '@/components/SupabaseInitializer'
 import { 
   ArrowRight, 
@@ -35,6 +36,9 @@ export default function NewRaffePage() {
   
   // 🧮 VALIDADOR MATEMÁTICO CONTINUO
   const { validateNow } = useMathValidator(process.env.NODE_ENV === 'development')
+  
+  // 🛡️ GUARDIAN MATEMÁTICO - CERO TOLERANCIA A ERRORES DE CÁLCULO
+  const mathIntegrity = useMathIntegrity(true) // Auto-fix enabled
   
   // 🔄 SINCRONIZACIÓN CON SUPABASE - CRÍTICO PARA QUICKSELECT
   const { setSoldTicketsFromDB, setReservedTicketsFromDB } = useRaffleStore()
