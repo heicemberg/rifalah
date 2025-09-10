@@ -11,12 +11,12 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const SUPABASE_CONFIG = {
   PROJECT_REF: 'ugmfmnwbynppdzkhvrih',
-  ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnbWZtbndieW5wcGR6a2h2cmloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4ODE4NzAsImV4cCI6MjA3MTQ1Nzg3MH0.MTNKqQCzmRETjULZ2PRx8mTK3hpR90tn6Pz36h1nMR4',
+  ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
   
   // Connection Strings según documentación oficial Supabase
   URLS: {
     // Direct Connection - IPv6 (default para browsers con soporte IPv6)
-    DIRECT: 'https://ugmfmnwbynppdzkhvrih.supabase.co',
+    DIRECT: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     
     // Supavisor Session Pooler - IPv4 (para serverless/Netlify) - puerto 5432
     POOLER_SESSION: 'https://aws-0-us-east-1.pooler.supabase.com',
