@@ -25,7 +25,6 @@ interface ConvertedAmounts {
 }
 
 const COINGECKO_API = 'https://api.coingecko.com/api/v3/simple/price';
-const MXN_TO_USD_API = 'https://api.exchangerate-api.com/v4/latest/MXN';
 
 export const useCryptoPrice = (mxnAmount: number = 250) => {
   const [cryptoPrices, setCryptoPrices] = useState<CryptoPrices | null>(null);
@@ -39,14 +38,9 @@ export const useCryptoPrice = (mxnAmount: number = 250) => {
       setLoading(true);
       setError(null);
       
-      // Obtener tasa de cambio MXN a USD
-      const mxnResponse = await fetch(MXN_TO_USD_API);
-      const mxnData = await mxnResponse.json();
-      const usdAmount = mxnAmount * mxnData.rates.USD;
-
-      // Obtener precios de criptomonedas
+      // Obtener precios de criptomonedas directamente en MXN (pesos mexicanos)
       const cryptoResponse = await fetch(
-        `${COINGECKO_API}?ids=tether,usd-coin,bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true`,
+        `${COINGECKO_API}?ids=tether,usd-coin,bitcoin,ethereum,solana&vs_currencies=mxn,usd&include_24hr_change=true`,
         {
           headers: {
             'Accept': 'application/json',
@@ -60,43 +54,49 @@ export const useCryptoPrice = (mxnAmount: number = 250) => {
       
       const cryptoData = await cryptoResponse.json();
       
-      // Mapear los datos
+      console.log('🚀 Crypto data received:', cryptoData);
+      
+      // Mapear los datos con precios en MXN
       const prices: CryptoPrices = {
         USDT: {
           symbol: 'USDT',
-          price: cryptoData.tether.usd,
-          change24h: cryptoData.tether.usd_24h_change
+          price: cryptoData.tether.mxn, // Precio en pesos mexicanos
+          change24h: cryptoData.tether.usd_24h_change || 0
         },
         USDC: {
           symbol: 'USDC',
-          price: cryptoData['usd-coin'].usd,
-          change24h: cryptoData['usd-coin'].usd_24h_change
+          price: cryptoData['usd-coin'].mxn, // Precio en pesos mexicanos
+          change24h: cryptoData['usd-coin'].usd_24h_change || 0
         },
         BTC: {
           symbol: 'BTC',
-          price: cryptoData.bitcoin.usd,
-          change24h: cryptoData.bitcoin.usd_24h_change
+          price: cryptoData.bitcoin.mxn, // Precio en pesos mexicanos
+          change24h: cryptoData.bitcoin.usd_24h_change || 0
         },
         ETH: {
           symbol: 'ETH',
-          price: cryptoData.ethereum.usd,
-          change24h: cryptoData.ethereum.usd_24h_change
+          price: cryptoData.ethereum.mxn, // Precio en pesos mexicanos
+          change24h: cryptoData.ethereum.usd_24h_change || 0
         },
         SOL: {
           symbol: 'SOL',
-          price: cryptoData.solana.usd,
-          change24h: cryptoData.solana.usd_24h_change
+          price: cryptoData.solana.mxn, // Precio en pesos mexicanos
+          change24h: cryptoData.solana.usd_24h_change || 0
         }
       };
 
-      // Calcular montos convertidos
+      // Calcular montos convertidos (ahora directo de MXN a crypto)
       const amounts: ConvertedAmounts = {
-        USDT: parseFloat((usdAmount / prices.USDT.price).toFixed(6)),
-        USDC: parseFloat((usdAmount / prices.USDC.price).toFixed(6)),
-        BTC: parseFloat((usdAmount / prices.BTC.price).toFixed(8)),
-        ETH: parseFloat((usdAmount / prices.ETH.price).toFixed(6)),
-        SOL: parseFloat((usdAmount / prices.SOL.price).toFixed(4))
+        USDT: parseFloat((mxnAmount / prices.USDT.price).toFixed(6)),
+        USDC: parseFloat((mxnAmount / prices.USDC.price).toFixed(6)),
+        BTC: parseFloat((mxnAmount / prices.BTC.price).toFixed(8)),
+        ETH: parseFloat((mxnAmount / prices.ETH.price).toFixed(6)),
+        SOL: parseFloat((mxnAmount / prices.SOL.price).toFixed(4))
       };
+      
+      console.log('💰 Converted amounts:', amounts);
+      console.log('💵 MXN amount:', mxnAmount);
+      console.log('📊 Prices in MXN:', prices);
 
       setCryptoPrices(prices);
       setConvertedAmounts(amounts);
