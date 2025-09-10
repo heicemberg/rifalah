@@ -268,7 +268,7 @@ const updateMasterCounters = async (forceUpdate = false) => {
     const { sold: rawSold, reserved: rawReserved } = await fetchRealData();
     
     // 🛡️ APPLY MATHEMATICAL INTEGRITY GUARDIAN
-    const guardianResult = enforceNumberIntegrity(rawSold, rawReserved);
+    const guardianResult = enforceMathematicalIntegrity(rawSold, rawReserved);
     const { sold, reserved, available } = guardianResult;
     
     console.log(`🧮 GUARDIAN RESULT: ${sold} sold + ${reserved} reserved = ${sold + reserved} occupied`);

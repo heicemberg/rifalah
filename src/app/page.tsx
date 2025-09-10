@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useRaffleStore } from '@/stores/raffle-store'
 import { useBasicCounters } from '@/hooks/useMasterCounters'
-import { useMathValidator } from '@/hooks/useMathValidator'
-import { useMathIntegrity } from '@/hooks/useMathIntegrity'
+// import { useMathValidator } from '@/hooks/useMathValidator'
+// import { useMathIntegrity } from '@/hooks/useMathIntegrity'
 import SupabaseInitializer from '@/components/SupabaseInitializer'
 import { 
   ArrowRight, 
@@ -35,10 +35,10 @@ export default function NewRaffePage() {
   const masterCounters = useBasicCounters()
   
   // 🧮 VALIDADOR MATEMÁTICO CONTINUO
-  const { validateNow } = useMathValidator(process.env.NODE_ENV === 'development')
+  // const { validateNow } = useMathValidator(process.env.NODE_ENV === 'development')
   
   // 🛡️ GUARDIAN MATEMÁTICO - CERO TOLERANCIA A ERRORES DE CÁLCULO
-  const mathIntegrity = useMathIntegrity(true) // Auto-fix enabled
+  // const mathIntegrity = useMathIntegrity(true) // Auto-fix enabled
   
   // 🔄 SINCRONIZACIÓN CON SUPABASE - CRÍTICO PARA QUICKSELECT
   const { setSoldTicketsFromDB, setReservedTicketsFromDB } = useRaffleStore()
@@ -163,7 +163,7 @@ export default function NewRaffePage() {
       // Forzar validación matemática cuando admin confirma compras
       if (customEvent.detail?.source === 'admin-confirmation') {
         console.log('👑 MAIN PAGE: Admin confirmation - forcing math validation');
-        validateNow();
+        // validateNow();
       }
     };
 
@@ -178,7 +178,7 @@ export default function NewRaffePage() {
         window.removeEventListener('raffle-counters-updated', handleAdminConfirmation);
       }
     };
-  }, [validateNow]);
+  }, []); // [validateNow] commented out due to hook being disabled
 
   return (
     <main className="bg-black text-white font-sans">
