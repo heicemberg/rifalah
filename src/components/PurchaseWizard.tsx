@@ -116,15 +116,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   
   // Crypto prices integration for Binance Pay - memoized for performance
   const totalPrice = useMemo(() => selectedTickets.length * 250, [selectedTickets.length]);
-  const { 
-    convertedAmounts, 
-    loading: cryptoLoading, 
-    error: cryptoError, 
-    lastUpdate, 
-    refresh: refreshCrypto, 
-    isOnline, 
-    retryCount 
-  } = useCryptoPrice(totalPrice);
+  const { convertedAmounts, loading: cryptoLoading, error: cryptoError, lastUpdate } = useCryptoPrice(totalPrice);
 
   // ============================================================================
   // WIZARD CONFIGURATION
@@ -1385,7 +1377,7 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                 <div className="mb-4 p-4 bg-gradient-to-r from-amber-50 to-amber-100 rounded-xl border border-amber-200">
                   <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm mb-2">
                     <AlertCircle size={16} />
-                    {!isOnline ? 'Conexión limitada' : 'Precios aproximados'}
+                    Error al cargar precios
                   </div>
                   <div className="text-xs text-amber-700 mb-3">
                     {cryptoError.includes('cached') ? 'Usando precios guardados' : 
@@ -1395,7 +1387,7 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={refreshCrypto}
+                      onClick={() => window.location.reload()}
                       disabled={cryptoLoading}
                       className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-amber-100 to-amber-200 text-amber-700 hover:from-amber-200 hover:to-amber-300 ring-amber-200/50 hover:shadow-md disabled:opacity-50"
                     >
@@ -1411,18 +1403,7 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                         </>
                       )}
                     </button>
-                    {retryCount > 0 && (
-                      <span className="text-xs text-amber-600">
-                        Intento {retryCount}/3
-                      </span>
-                    )}
-                    {!isOnline && (
-                      <span className="text-xs text-amber-600 flex items-center gap-1">
-                        <WifiOff size={10} />
-                        Sin conexión
-                      </span>
-                    )}
-                  </div>
+                                                          </div>
                 </div>
               )}
               

@@ -150,6 +150,17 @@ export default function NewRaffePage() {
   const totalCount = masterCounters.totalTickets
   const soldPercentage = Math.round(masterCounters.soldPercentage) // Display percentage with FOMO
   
+  // 🔍 CRITICAL FIX VERIFICATION: Log exact numbers for debugging
+  useEffect(() => {
+    const mathSum = soldCount + availableCount;
+    console.log(`🎯 DISPLAY FIX CHECK: ${soldCount} vendidos + ${availableCount} disponibles = ${mathSum} (should be ${totalCount})`);
+    if (mathSum !== totalCount) {
+      console.error(`🚨 STILL BROKEN: Math doesn't add up! Missing ${totalCount - mathSum} tickets.`);
+    } else {
+      console.log(`✅ FIXED: Display math is now correct!`);
+    }
+  }, [soldCount, availableCount, totalCount]);
+  
   // ✅ LISTENERS PARA ACTUALIZACIONES EN TIEMPO REAL
   useEffect(() => {
     const handleAdminConfirmation = (event: Event) => {
@@ -241,7 +252,7 @@ export default function NewRaffePage() {
 
             {/* Título Principal Impactante */}
             <h1 className="text-5xl lg:text-7xl font-black leading-tight mb-6">
-              <span className="block text-white mb-2">¡ECHA LE SUERTE!</span>
+              <span className="block text-white mb-2">¡ECHA LA SUERTE!</span>
               <span className="block bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 bg-clip-text text-transparent">
                 SILVERADO Z71 2024
               </span>
