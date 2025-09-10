@@ -196,7 +196,10 @@ const updateMasterCounters = async (forceUpdate = false) => {
     // 🎯 FIXED FOMO LOGIC: Calculate FOMO for display only
     const { displaySoldCount, isActive } = calculateFOMO(sold);
     
-    console.log(`📊 REAL CALCULATION: Total(${TOTAL_TICKETS}) - Sold(${sold}) - Reserved(${reserved}) = Available(${available})`);
+    // 🔢 REAL MATHEMATICS: Always maintain sold + available + reserved = 10,000
+    const realAvailable = TOTAL_TICKETS - sold - reserved;
+    
+    console.log(`📊 REAL CALCULATION: Total(${TOTAL_TICKETS}) - Sold(${sold}) - Reserved(${reserved}) = Available(${realAvailable})`);
     console.log(`🎭 FOMO DISPLAY: Real sold(${sold}) + FOMO(1200) = Display sold(${displaySoldCount})`);
     
     // Crear nueva instancia del master counter
@@ -204,50 +207,22 @@ const updateMasterCounters = async (forceUpdate = false) => {
       totalTickets: TOTAL_TICKETS,
       soldTickets: sold,                    // ✅ Real vendidos de BD
       reservedTickets: reserved,            // ✅ Real reservados de BD  
-      availableTickets: available,          // ✅ REAL: Use already calculated available
+      availableTickets: realAvailable,      // ✅ REAL: total - sold - reserved
       
       fomoSoldTickets: displaySoldCount,    // ✅ SUMA: reales + FOMO para display
       fomoIsActive: isActive,
       
       soldPercentage: (sold / TOTAL_TICKETS) * 100,                      // ✅ Real %
       fomoPercentage: (displaySoldCount / TOTAL_TICKETS) * 100,         // ✅ Display %
-      availablePercentage: (available / TOTAL_TICKETS) * 100,           // ✅ Real Available %
+      availablePercentage: (realAvailable / TOTAL_TICKETS) * 100,       // ✅ Real Available %
       
       isConnected: true,
       lastUpdate: new Date(),
       isLoading: false
     };
 
-    console.log(`📊 CONTADOR ACTUALIZADO: Display ${displaySoldCount} (${newData.fomoPercentage.toFixed(1)}%), Real available ${available}`);
-    console.log(`✅ MATH CHECK: ${sold} + ${available} + ${reserved} = ${sold + available + reserved} (should be ${TOTAL_TICKETS})`);
-    
-    // ✅ CRITICAL VALIDATION: All display hooks must also maintain 10,000 total
-    const validateDisplayHooks = () => {
-      // Test useBasicCounters logic
-      const basicDisplaySold = displaySoldCount;
-      const basicDisplayAvailable = TOTAL_TICKETS - basicDisplaySold - reserved;
-      const basicSum = basicDisplaySold + basicDisplayAvailable + reserved;
-      
-      if (basicSum !== TOTAL_TICKETS) {
-        console.error(`🚨 useBasicCounters MATH ERROR: ${basicDisplaySold}S + ${basicDisplayAvailable}A + ${reserved}R = ${basicSum} ≠ ${TOTAL_TICKETS}`);
-        return false;
-      }
-      
-      // Test useDisplayStats logic  
-      const displayStatsSold = displaySoldCount;
-      const displayStatsAvailable = TOTAL_TICKETS - displayStatsSold - reserved;
-      const displayStatsSum = displayStatsSold + displayStatsAvailable + reserved;
-      
-      if (displayStatsSum !== TOTAL_TICKETS) {
-        console.error(`🚨 useDisplayStats MATH ERROR: ${displayStatsSold}S + ${displayStatsAvailable}A + ${reserved}R = ${displayStatsSum} ≠ ${TOTAL_TICKETS}`);
-        return false;
-      }
-      
-      console.log(`✅ ALL DISPLAY HOOKS VALIDATED: Both maintain exact ${TOTAL_TICKETS} total`);
-      return true;
-    };
-    
-    const displayHooksValid = validateDisplayHooks();
+    console.log(`📊 CONTADOR ACTUALIZADO: Display ${displaySoldCount} (${newData.fomoPercentage.toFixed(1)}%), Real available ${realAvailable}`);
+    console.log(`✅ MATH CHECK: ${sold} + ${realAvailable} + ${reserved} = ${sold + realAvailable + reserved} (should be ${TOTAL_TICKETS})`);
 
     masterCounterInstance = newData;
     
@@ -462,23 +437,21 @@ export const useBasicCounters = () => {
   
   // 🎭 DISPLAY MODE: Show FOMO-enhanced counts to create urgency
   const displaySoldTickets = data.fomoSoldTickets;  // Real sold + FOMO (1200)
-  // 🔧 CRITICAL FIX: Properly calculate available tickets by subtracting both sold AND reserved
-  const displayAvailableTickets = TOTAL_TICKETS - displaySoldTickets - data.reservedTickets;
+  const displayAvailableTickets = TOTAL_TICKETS - displaySoldTickets - data.reservedTickets; // Calculate for display
   
-  // ✅ DISPLAY MATH CHECK: Ensure display totals = 10,000 (sold + available + reserved)
+  // ✅ DISPLAY MATH CHECK: Ensure display totals = 10,000
   const displayMathCheck = displaySoldTickets + displayAvailableTickets + data.reservedTickets;
   
+  // 🔍 DEBUG: Always log the calculation to find the 2-ticket discrepancy
+  console.log(`🧮 BASIC COUNTERS CALCULATION:`);
+  console.log(`   Display Sold: ${displaySoldTickets} (real ${data.soldTickets} + FOMO 1200)`);
+  console.log(`   Display Available: ${displayAvailableTickets} (calculated: ${TOTAL_TICKETS} - ${displaySoldTickets} - ${data.reservedTickets})`);
+  console.log(`   Reserved: ${data.reservedTickets}`);
+  console.log(`   SUM CHECK: ${displaySoldTickets} + ${displayAvailableTickets} + ${data.reservedTickets} = ${displayMathCheck} (should be ${TOTAL_TICKETS})`);
+  
   if (displayMathCheck !== data.totalTickets) {
-    console.error(`🚨 DISPLAY MATH ERROR: ${displaySoldTickets}S + ${displayAvailableTickets}A + ${data.reservedTickets}R = ${displayMathCheck} ≠ ${data.totalTickets}`);
+    console.error(`🚨 DISPLAY MATH ERROR: Missing ${data.totalTickets - displayMathCheck} tickets!`);
     console.error(`🔧 DISPLAY CALCULATION BROKEN - NEEDS IMMEDIATE FIX`);
-  } else {
-    // 🔍 Log para verificar display matemático
-    if (Math.random() < 0.1) { // 10% chance to log
-      console.log(`✅ DISPLAY MATH VERIFIED: ${displaySoldTickets}S + ${displayAvailableTickets}A + ${data.reservedTickets}R = ${displayMathCheck}`);
-      console.log(`🎭 FOMO EFFECT: Real ${data.soldTickets} + FOMO 1200 = Display ${displaySoldTickets}`);
-      console.log(`📊 RESERVED SEPARATE: ${data.reservedTickets} reserved tickets properly subtracted from available`);
-      console.log(`🔢 REAL MATH: ${data.soldTickets} + ${data.availableTickets} + ${data.reservedTickets} = ${data.soldTickets + data.availableTickets + data.reservedTickets}`);
-    }
   }
   
   return {
@@ -494,7 +467,7 @@ export const useBasicCounters = () => {
 // Para admin que necesita datos reales vs mostrados
 export const useAdminCounters = () => {
   const data = useMasterCounters();
-  const displayAvailable = TOTAL_TICKETS - data.fomoSoldTickets; // Reserved included in available for display
+  const displayAvailable = TOTAL_TICKETS - data.fomoSoldTickets - data.reservedTickets;
   
   return {
     // Datos mostrados al público (with FOMO)
@@ -529,7 +502,7 @@ export const useAdminCounters = () => {
 export const useDisplayStats = () => {
   const data = useMasterCounters();
   
-  // 🎭 DISPLAY LOGIC: Calculate display available properly by subtracting sold AND reserved
+  // 🎭 DISPLAY LOGIC: Calculate display available to maintain 10,000 total
   const displaySoldCount = data.fomoSoldTickets;     // Real + FOMO (1200)
   const displayAvailableCount = TOTAL_TICKETS - displaySoldCount - data.reservedTickets;
   
@@ -557,7 +530,7 @@ export const useTicketStats = () => {
   
   // 🔢 BUSINESS LOGIC: Use real mathematics for core operations
   const realAvailable = data.availableTickets; // Real available from master counter
-  const displayAvailable = TOTAL_TICKETS - data.fomoSoldTickets; // Reserved included in available for display
+  const displayAvailable = TOTAL_TICKETS - data.fomoSoldTickets - data.reservedTickets;
   
   return {
     total: data.totalTickets,
@@ -602,15 +575,15 @@ export const testMathConsistency = () => {
   
   // Test 2: FOMO display consistency (separate from real math)
   const displaySoldTickets = fomoSoldTickets; // Real + FOMO (1200)
-  const displayAvailableTickets = totalTickets - displaySoldTickets; // Reserved included in available
-  const displaySum = displaySoldTickets + displayAvailableTickets;
+  const displayAvailableTickets = totalTickets - displaySoldTickets - reservedTickets; // Calculated for display
+  const displaySum = displaySoldTickets + displayAvailableTickets + reservedTickets;
 
   console.log(`🎭 FOMO DISPLAY TEST:`);
   console.log(`   Display Sold: ${displaySoldTickets} (real: ${soldTickets} + FOMO: 1200)`);
-  console.log(`   Display Available: ${displayAvailableTickets} (calculated: ${totalTickets} - ${displaySoldTickets}, reserved ${reservedTickets} included)`);
+  console.log(`   Display Available: ${displayAvailableTickets} (calculated: ${totalTickets} - ${displaySoldTickets} - ${reservedTickets})`);
+  console.log(`   Reserved: ${reservedTickets}`);
   console.log(`   Display Sum: ${displaySum} (should be ${totalTickets})`);
   console.log(`   FOMO Active: ${fomoIsActive}`);
-  console.log(`   Reserved Tickets: ${reservedTickets} (shown as available to users)`);
   
   const displayMathValid = displaySum === totalTickets;
   console.log(`   Result: ${displayMathValid ? '✅ PASS - Display math is correct' : '❌ FAIL - Display math is broken'}`);
@@ -725,81 +698,6 @@ if (typeof window !== 'undefined') {
         console.groupEnd();
         return { success: false, error: error instanceof Error ? error.message : String(error) };
       }
-    },
-    
-    // ✅ TEST ESPECÍFICO PARA EL PROBLEMA DE 1900 + 8098 = 9998
-    testMathPrecision: () => {
-      console.group('🔍 TESTING EXACT MATH PRECISION (1900 + 8098 = 9998 issue)');
-      
-      if (!masterCounterInstance) {
-        console.error('❌ No master counter instance available');
-        console.groupEnd();
-        return false;
-      }
-      
-      const { soldTickets, availableTickets, reservedTickets, fomoSoldTickets } = masterCounterInstance;
-      
-      console.log(`📊 REAL DATA FROM MASTER COUNTER:`);
-      console.log(`   Real Sold: ${soldTickets}`);
-      console.log(`   Real Available: ${availableTickets}`);
-      console.log(`   Real Reserved: ${reservedTickets}`);
-      console.log(`   FOMO Display Sold: ${fomoSoldTickets}`);
-      
-      // Test 1: Real mathematics (CRITICAL)
-      const realSum = soldTickets + availableTickets + reservedTickets;
-      const realMathCorrect = realSum === TOTAL_TICKETS;
-      console.log(`\n🔢 REAL MATHEMATICS TEST:`);
-      console.log(`   ${soldTickets} + ${availableTickets} + ${reservedTickets} = ${realSum}`);
-      console.log(`   Expected: ${TOTAL_TICKETS}`);
-      console.log(`   Result: ${realMathCorrect ? '✅ CORRECT' : '❌ INCORRECT - THIS IS THE CRITICAL ERROR!'}`);
-      
-      // Test 2: Display mathematics for useBasicCounters (what user sees)
-      const displaySold = fomoSoldTickets;
-      const displayAvailable = TOTAL_TICKETS - displaySold; // Reserved included in available
-      const displaySum = displaySold + displayAvailable;
-      const displayMathCorrect = displaySum === TOTAL_TICKETS;
-      
-      console.log(`\n🎭 DISPLAY MATHEMATICS TEST (useBasicCounters):`);
-      console.log(`   Display Sold: ${displaySold} (real ${soldTickets} + FOMO 1200)`);
-      console.log(`   Display Available: ${displayAvailable} (calculated: ${TOTAL_TICKETS} - ${displaySold}, reserved ${reservedTickets} included)`);
-      console.log(`   Sum: ${displaySold} + ${displayAvailable} = ${displaySum}`);
-      console.log(`   Expected: ${TOTAL_TICKETS}`);
-      console.log(`   Result: ${displayMathCorrect ? '✅ CORRECT - FIXED! Now shows proper totals' : '❌ INCORRECT - Still broken'}`);
-      
-      // Test 3: Identify the exact problem if it exists
-      if (!realMathCorrect || !displayMathCorrect) {
-        console.log(`\n🚨 PROBLEM IDENTIFICATION:`);
-        
-        if (!realMathCorrect) {
-          const difference = TOTAL_TICKETS - realSum;
-          console.log(`   Real Math Gap: ${difference} tickets missing/extra`);
-          console.log(`   This indicates database inconsistency or sync error`);
-        }
-        
-        if (!displayMathCorrect) {
-          const displayDifference = TOTAL_TICKETS - displaySum;
-          console.log(`   Display Math Gap: ${displayDifference} tickets missing/extra`);
-          console.log(`   This would cause user to see ${displaySold} + ${displayAvailable} = ${displaySum} ≠ 10000`);
-          console.log(`   FIX APPLIED: Reserved tickets now included in available count for display`);
-        }
-      }
-      
-      // Test 4: Verify the specific reported numbers
-      console.log(`\n🎯 SPECIFIC ISSUE CHECK:`);
-      console.log(`   Current Display: ${displaySold} vendidos, ${displayAvailable} disponibles`);
-      console.log(`   Sum: ${displaySold} + ${displayAvailable} = ${displaySum}`);
-      if (displaySum === TOTAL_TICKETS) {
-        console.log(`   ✅ FIXED: Display now shows correct total of ${displaySum} tickets`);
-        console.log(`   📊 Reserved tickets (${reservedTickets}) are included in available count for better UX`);
-      } else {
-        console.log(`   ❌ Still broken: Sum = ${displaySum} ≠ ${TOTAL_TICKETS}`);
-      }
-      
-      const overallCorrect = realMathCorrect && displayMathCorrect;
-      console.log(`\n🎯 OVERALL RESULT: ${overallCorrect ? '✅ MATHEMATICS IS CORRECT' : '❌ MATHEMATICAL ERRORS DETECTED'}`);
-      
-      console.groupEnd();
-      return overallCorrect;
     },
     
     // ✅ NUEVA FUNCIÓN DE TEST DE SINCRONIZACIÓN COMPLETA

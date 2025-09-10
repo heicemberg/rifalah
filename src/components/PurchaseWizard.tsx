@@ -29,9 +29,7 @@ import {
   TrendingUp,
   Gift,
   AlertCircle,
-  Sparkles,
-  RefreshCw,
-  WifiOff
+  Sparkles
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { formatPrice, formatTicketNumber } from '../lib/utils';
@@ -114,9 +112,8 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   // Supabase integration for real-time validation
   const { getRealAvailableTickets, isConnected, loading: supabaseLoading } = useSupabaseSync();
   
-  // Crypto prices integration for Binance Pay - memoized for performance
-  const totalPrice = useMemo(() => selectedTickets.length * 250, [selectedTickets.length]);
-  const { convertedAmounts, loading: cryptoLoading, error: cryptoError, lastUpdate } = useCryptoPrice(totalPrice);
+  // Crypto prices integration for Binance Pay
+  const { convertedAmounts, loading: cryptoLoading, error: cryptoError, lastUpdate } = useCryptoPrice(selectedTickets.length * 250);
 
   // ============================================================================
   // WIZARD CONFIGURATION
@@ -163,6 +160,8 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
 
     return hasTicketsSelected ? baseSteps.slice(1) : baseSteps;
   }, [hasTicketsSelected]);
+
+  const totalPrice = selectedTickets.length * 250;
 
   // Filter main payment methods (4 methods in 2x2 grid)
   const mainPaymentMethods = PAYMENT_METHODS.filter(method => 
@@ -224,10 +223,17 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
       setIsSelectingTickets(false);
     }
     
-    // Advance to step 1 when tickets are selected and we're on step 0 - IMMEDIATE RESPONSE
+    // Advance to step 1 when tickets are selected and we're on step 0
     if (selectedTickets.length >= MIN_TICKETS_PER_PURCHASE && currentStep === 0) {
-      console.log('🚀 WIZARD: Advancing to step 1 immediately');
-      setCurrentStep(1);
+      console.log('🎯 WIZARD: Conditions met, advancing to confirmation step in 200ms');
+      
+      // Small delay to ensure UI is smooth
+      const timeoutId = setTimeout(() => {
+        console.log('🚀 WIZARD: Actually advancing to step 1 now');
+        setCurrentStep(1);
+      }, 200);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [selectedTickets.length, currentStep, isOpen, isSelectingTickets]);
 
@@ -563,10 +569,8 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                     onSelect={() => setSelectedPaymentMethod(method.id)}
                     animationDelay={0}
                     selectedTickets={selectedTickets}
-                    totalPrice={totalPrice}
                     convertedAmounts={convertedAmounts}
                     cryptoLoading={cryptoLoading}
-                    cryptoError={cryptoError}
                     lastUpdate={lastUpdate}
                   />
                 </motion.div>
@@ -639,10 +643,8 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                     expanded={true}
                     animationDelay={0}
                     selectedTickets={selectedTickets}
-                    totalPrice={totalPrice}
                     convertedAmounts={convertedAmounts}
                     cryptoLoading={cryptoLoading}
-                    cryptoError={cryptoError}
                     lastUpdate={lastUpdate}
                   />
                 </motion.div>
@@ -1214,21 +1216,16 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ selectedTickets, to
           Números seleccionados
         </h4>
         <div className="flex flex-wrap gap-3">
-          {selectedTickets && selectedTickets.length > 0 ? (
-            selectedTickets.slice(0, 15).map((ticket) => (
-              <span 
-                key={ticket} 
-                className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 transition-all duration-150 ring-1 ring-blue-500/30"
-              >
-                {formatTicketNumber(ticket)}
-              </span>
-            ))
-          ) : (
-            <div className="w-full text-center py-4 text-slate-500">
-              No hay números seleccionados
-            </div>
-          )}
-          {selectedTickets && selectedTickets.length > 15 && (
+          {selectedTickets.slice(0, 15).map((ticket, index) => (
+            <span 
+              key={ticket} 
+              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 hover:scale-105 transition-all duration-200 ring-1 ring-blue-500/30"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              {formatTicketNumber(ticket)}
+            </span>
+          ))}
+          {selectedTickets.length > 15 && (
             <span className="bg-gradient-to-r from-slate-400 to-slate-500 text-white px-3 py-2 rounded-xl text-sm font-bold shadow-lg shadow-slate-400/25 ring-1 ring-slate-400/30">
               +{selectedTickets.length - 15} más
             </span>
@@ -1246,10 +1243,8 @@ interface PaymentMethodCardProps {
   expanded?: boolean;
   animationDelay: number;
   selectedTickets: number[];
-  totalPrice: number;
   convertedAmounts: any;
   cryptoLoading: boolean;
-  cryptoError: string | null;
   lastUpdate: Date | null;
 }
 
@@ -1260,10 +1255,8 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
   expanded = false, 
   animationDelay,
   selectedTickets,
-  totalPrice,
   convertedAmounts,
   cryptoLoading,
-  cryptoError,
   lastUpdate
 }) => (
   <div className="space-y-3">
@@ -1271,17 +1264,20 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
       onClick={onSelect}
       className={cn(
         'group w-full rounded-3xl border-2 text-center relative backdrop-blur-sm overflow-hidden',
-        'focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-150',
+        'focus:outline-none focus:ring-4',
         expanded 
-          ? 'px-6 py-4 min-h-[80px] border-blue-500 bg-gradient-to-r from-blue-50 to-blue-100/90 shadow-lg'
+          ? 'px-6 py-4 min-h-[80px] border-blue-500 bg-gradient-to-r from-blue-50 to-blue-100/90 ring-4 ring-blue-200/60 shadow-2xl shadow-blue-500/25'
           : 'px-4 py-6 sm:px-6 sm:py-8 min-h-[120px] sm:min-h-[140px]',
         isSelected && !expanded
-          ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100/90 shadow-lg'
-          : !expanded && 'border-slate-200/60 bg-gradient-to-br from-white via-white to-slate-50/40 hover:border-blue-300/70 hover:shadow-md'
+          ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100/90 ring-4 ring-blue-200/60 shadow-2xl shadow-blue-500/25'
+          : !expanded && 'border-slate-200/60 bg-gradient-to-br from-white via-white to-slate-50/40 hover:border-blue-300/70 hover:shadow-blue-100/30 ring-1 ring-slate-200/30'
       )}
-      whileHover={{ scale: expanded ? 1.005 : 1.01 }}
-      whileTap={{ scale: 0.995 }}
-      transition={{ duration: 0.1 }}
+      whileHover={{ 
+        scale: expanded ? 1.01 : 1.02,
+        boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)"
+      }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ duration: 0.2 }}
     >
       {/* Selection Indicator */}
       {isSelected && !expanded && (
@@ -1371,72 +1367,14 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
           </h4>
           
           {/* Binance Crypto Conversions */}
-          {method.id === 'binance' && (
+          {method.id === 'binance' && convertedAmounts && (
             <div className="space-y-3">
-              {cryptoError && (
-                <div className="mb-4 p-4 bg-gradient-to-r from-amber-50 to-amber-100 rounded-xl border border-amber-200">
-                  <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm mb-2">
-                    <AlertCircle size={16} />
-                    Error al cargar precios
-                  </div>
-                  <div className="text-xs text-amber-700 mb-3">
-                    {cryptoError.includes('cached') ? 'Usando precios guardados' : 
-                     cryptoError.includes('approximate') ? 'Usando precios aproximados' :
-                     cryptoError.includes('Offline') ? 'Sin conexión - precios estimados' :
-                     'Los precios mostrados son aproximados'}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => window.location.reload()}
-                      disabled={cryptoLoading}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-amber-100 to-amber-200 text-amber-700 hover:from-amber-200 hover:to-amber-300 ring-amber-200/50 hover:shadow-md disabled:opacity-50"
-                    >
-                      {cryptoLoading ? (
-                        <>
-                          <div className="w-3 h-3 border-2 border-amber-600 border-t-transparent rounded-full animate-spin inline mr-1" />
-                          Actualizando...
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw size={10} className="inline mr-1" />
-                          Actualizar precios
-                        </>
-                      )}
-                    </button>
-                                                          </div>
+              <div className="mb-4 p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200">
+                <div className="flex items-center gap-2 text-yellow-800 font-semibold text-sm mb-2">
+                  <Sparkles size={16} />
+                  Total: {selectedTickets.length * 250} MXN = Montos exactos:
                 </div>
-              )}
-              
-              {convertedAmounts && (
-                <>
-                  {!cryptoError ? (
-                    <div className="mb-4 p-4 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2 text-emerald-800 font-semibold text-sm">
-                          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                          Total: {formatPrice(totalPrice)} = Montos exactos:
-                        </div>
-                        {lastUpdate && (
-                          <div className="text-xs text-emerald-600">
-                            Actualizado: {lastUpdate.toLocaleTimeString()}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-xs text-emerald-700">
-                        Precios actualizados en tiempo real
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mb-4 p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200">
-                      <div className="flex items-center gap-2 text-yellow-800 font-semibold text-sm mb-2">
-                        <Sparkles size={16} />
-                        Total: {formatPrice(totalPrice)} = Montos aproximados:
-                      </div>
-                      <div className="text-xs text-yellow-700">
-                        {cryptoError.includes('cached') ? 'Usando precios guardados' : 'Precios aproximados - verifica antes de enviar'}
-                      </div>
-                    </div>
-                  )}
+              </div>
 
               {/* USDT */}
               <div className="group relative bg-gradient-to-r from-green-50 to-green-100/80 backdrop-blur-sm p-4 rounded-xl border border-green-200/60 hover:border-green-300/60 hover:shadow-lg transition-all duration-200">
@@ -1453,10 +1391,10 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                   </div>
                   <div className="text-right">
                     <div className="font-mono font-bold text-green-800 text-lg">
-                      {cryptoLoading || !convertedAmounts ? '...' : convertedAmounts.USDT.toFixed(2)} USDT
+                      {cryptoLoading ? '...' : convertedAmounts.USDT.toFixed(2)} USDT
                     </div>
                     <button
-                      onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.USDT.toString())}
+                      onClick={() => navigator.clipboard.writeText(convertedAmounts.USDT.toString())}
                       className="px-3 py-1 mt-1 rounded-lg text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-green-100 to-green-200 text-green-700 hover:from-green-200 hover:to-green-300 ring-green-200/50 hover:shadow-md"
                     >
                       <Copy size={10} className="inline mr-1" />
@@ -1481,10 +1419,10 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                   </div>
                   <div className="text-right">
                     <div className="font-mono font-bold text-blue-800 text-lg">
-                      {cryptoLoading || !convertedAmounts ? '...' : convertedAmounts.USDC.toFixed(2)} USDC
+                      {cryptoLoading ? '...' : convertedAmounts.USDC.toFixed(2)} USDC
                     </div>
                     <button
-                      onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.USDC.toString())}
+                      onClick={() => navigator.clipboard.writeText(convertedAmounts.USDC.toString())}
                       className="px-3 py-1 mt-1 rounded-lg text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 hover:from-blue-200 hover:to-blue-300 ring-blue-200/50 hover:shadow-md"
                     >
                       <Copy size={10} className="inline mr-1" />
@@ -1509,10 +1447,10 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                   </div>
                   <div className="text-right">
                     <div className="font-mono font-bold text-orange-800 text-lg">
-                      {cryptoLoading || !convertedAmounts ? '...' : convertedAmounts.BTC.toFixed(8)} BTC
+                      {cryptoLoading ? '...' : convertedAmounts.BTC.toFixed(8)} BTC
                     </div>
                     <button
-                      onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.BTC.toString())}
+                      onClick={() => navigator.clipboard.writeText(convertedAmounts.BTC.toString())}
                       className="px-3 py-1 mt-1 rounded-lg text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-orange-100 to-orange-200 text-orange-700 hover:from-orange-200 hover:to-orange-300 ring-orange-200/50 hover:shadow-md"
                     >
                       <Copy size={10} className="inline mr-1" />
@@ -1537,10 +1475,10 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                   </div>
                   <div className="text-right">
                     <div className="font-mono font-bold text-purple-800 text-lg">
-                      {cryptoLoading || !convertedAmounts ? '...' : convertedAmounts.ETH.toFixed(6)} ETH
+                      {cryptoLoading ? '...' : convertedAmounts.ETH.toFixed(6)} ETH
                     </div>
                     <button
-                      onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.ETH.toString())}
+                      onClick={() => navigator.clipboard.writeText(convertedAmounts.ETH.toString())}
                       className="px-3 py-1 mt-1 rounded-lg text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-purple-100 to-purple-200 text-purple-700 hover:from-purple-200 hover:to-purple-300 ring-purple-200/50 hover:shadow-md"
                     >
                       <Copy size={10} className="inline mr-1" />
@@ -1565,10 +1503,10 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                   </div>
                   <div className="text-right">
                     <div className="font-mono font-bold text-violet-800 text-lg">
-                      {cryptoLoading || !convertedAmounts ? '...' : convertedAmounts.SOL.toFixed(4)} SOL
+                      {cryptoLoading ? '...' : convertedAmounts.SOL.toFixed(4)} SOL
                     </div>
                     <button
-                      onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.SOL.toString())}
+                      onClick={() => navigator.clipboard.writeText(convertedAmounts.SOL.toString())}
                       className="px-3 py-1 mt-1 rounded-lg text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-violet-100 to-violet-200 text-violet-700 hover:from-violet-200 hover:to-violet-300 ring-violet-200/50 hover:shadow-md"
                     >
                       <Copy size={10} className="inline mr-1" />
@@ -1596,8 +1534,6 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                   </button>
                 </div>
               </div>
-                </>
-              )}
             </div>
           )}
 
