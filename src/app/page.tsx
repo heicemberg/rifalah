@@ -229,8 +229,8 @@ export default function NewRaffePage() {
             className="object-cover object-center"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/70 to-black/85"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/60"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-black/40 to-black/55"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40"></div>
         </div>
 
         <div className="container mx-auto px-4 py-20 relative z-10 mt-16">

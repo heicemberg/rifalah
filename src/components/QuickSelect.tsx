@@ -47,130 +47,180 @@ const QuickSelectButton: React.FC<QuickSelectButtonProps> = React.memo(({
   const savings = originalPrice - price;
   
   return (
-    <div className="relative">
+    <div className="relative group/card">
+      {/* Background effect - glassmorphism */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-white/5 rounded-3xl backdrop-blur-xl border border-white/20 shadow-2xl opacity-0 group-hover/card:opacity-100 transition-all duration-500 transform scale-95 group-hover/card:scale-100" />
+      
       <button
         onClick={onSelect}
         disabled={isDisabled}
         className={cn(
-          'relative w-full p-5 rounded-2xl border-2 transition-all duration-500',
-          'group overflow-hidden backdrop-blur-sm shadow-sm hover:shadow-xl',
+          'relative w-full p-6 rounded-3xl border-2 transition-all duration-700 ease-out',
+          'group overflow-hidden backdrop-blur-md shadow-lg hover:shadow-2xl',
+          'transform-gpu will-change-transform',
           {
-            // Estado habilitado
-            'border-gray-200/60 bg-gradient-to-br from-white/90 to-gray-50/90': !isDisabled && !popular,
-            'hover:border-blue-400/70 hover:shadow-2xl hover:scale-105 hover:from-blue-50/90 hover:to-blue-100/90 hover:shadow-blue-200/50': !isDisabled && !popular,
+            // Estado habilitado - Glassmorphism moderno
+            'border-slate-200/40 bg-gradient-to-br from-white/80 via-white/60 to-slate-50/80 backdrop-blur-lg': !isDisabled && !popular && !mostSold,
+            'hover:border-blue-400/60 hover:shadow-blue-500/25 hover:shadow-2xl hover:scale-[1.08] hover:from-blue-50/90 hover:via-blue-50/70 hover:to-blue-100/90 hover:-translate-y-1': !isDisabled && !popular && !mostSold,
             
-            // Estado popular
-            'border-purple-300/70 bg-gradient-to-br from-purple-50/90 to-pink-50/90': !isDisabled && popular && !mostSold,
-            'hover:border-purple-400/80 hover:shadow-2xl hover:scale-105 hover:from-purple-100/90 hover:to-pink-100/90 hover:shadow-purple-300/50': !isDisabled && popular && !mostSold,
-            'ring-2 ring-purple-200/50': popular && !mostSold,
+            // Estado popular - Gradiente púrpura elegante
+            'border-purple-300/60 bg-gradient-to-br from-purple-50/90 via-pink-50/70 to-purple-100/80': !isDisabled && popular && !mostSold,
+            'hover:border-purple-400/80 hover:shadow-purple-500/30 hover:shadow-2xl hover:scale-[1.08] hover:from-purple-100/95 hover:via-pink-100/75 hover:to-purple-200/90 hover:-translate-y-1': !isDisabled && popular && !mostSold,
+            'ring-4 ring-purple-200/40 shadow-purple-200/50': popular && !mostSold,
             
-            // Estado más vendido
-            'border-orange-300/70 bg-gradient-to-br from-orange-50/90 to-red-50/90': !isDisabled && mostSold,
-            'hover:border-orange-400/80 hover:shadow-2xl hover:scale-105 hover:from-orange-100/90 hover:to-red-100/90 hover:shadow-orange-300/50': !isDisabled && mostSold,
-            'ring-2 ring-orange-200/50': mostSold,
+            // Estado más vendido - Gradiente vibrante con animación
+            'border-orange-300/60 bg-gradient-to-br from-orange-50/90 via-red-50/70 to-orange-100/80': !isDisabled && mostSold,
+            'hover:border-orange-400/80 hover:shadow-orange-500/30 hover:shadow-2xl hover:scale-[1.08] hover:from-orange-100/95 hover:via-red-100/75 hover:to-orange-200/90 hover:-translate-y-1': !isDisabled && mostSold,
+            'ring-4 ring-orange-200/40 shadow-orange-200/50 animate-pulse': mostSold,
             
             // Estado deshabilitado
-            'border-gray-200/40 bg-gradient-to-br from-gray-100/60 to-gray-200/60 cursor-not-allowed opacity-50': isDisabled
+            'border-gray-200/30 bg-gradient-to-br from-gray-100/50 to-gray-200/50 cursor-not-allowed opacity-60': isDisabled
           }
         )}
       >
-        {/* Badge Popular */}
-        {popular && (
-          <div className="absolute -top-2 -right-2 z-10">
-            <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-xl transform rotate-12 border-2 border-white backdrop-blur-sm">
-              POPULAR
+        {/* Badge Popular - Mejorado */}
+        {popular && !mostSold && (
+          <div className="absolute -top-3 -right-3 z-20">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full blur-sm opacity-60 animate-pulse" />
+              <div className="relative bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-black px-4 py-2 rounded-full shadow-xl transform rotate-12 border-2 border-white/90 backdrop-blur-sm">
+                ⭐ POPULAR
+              </div>
             </div>
           </div>
         )}
         
-        {/* Badge MÁS VENDIDO */}
+        {/* Badge MÁS VENDIDO - Ultra mejorado */}
         {mostSold && (
-          <div className="absolute -top-2 -left-2 z-10">
-            <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-xl transform -rotate-12 animate-pulse border-2 border-white backdrop-blur-sm">
-              🔥 EL MÁS VENDIDO
+          <div className="absolute -top-3 -left-3 z-20">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-orange-600 rounded-full blur-md opacity-70 animate-pulse" />
+              <div className="relative bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-black px-4 py-2 rounded-full shadow-2xl transform -rotate-12 border-2 border-white/90 backdrop-blur-sm animate-bounce">
+                🔥 EL MÁS VENDIDO
+              </div>
             </div>
           </div>
         )}
         
-        {/* Efecto de gradiente en hover */}
-        <div className={cn(
-          'absolute inset-0 bg-gradient-to-r opacity-0 transition-opacity duration-300',
-          'group-hover:opacity-10',
-          {
-            'from-blue-500 to-purple-500': !popular && !mostSold,
-            'from-purple-500 to-pink-500': popular && !mostSold,
-            'from-orange-500 to-red-500': mostSold
-          }
-        )} />
+        {/* Efectos de brillo en hover */}
+        <div className="absolute inset-0 rounded-3xl overflow-hidden">
+          {/* Efecto de luz deslizante */}
+          <div className={cn(
+            'absolute -top-2 -left-2 w-8 h-8 bg-white/40 rounded-full blur-xl opacity-0 transition-all duration-700',
+            'group-hover:opacity-100 group-hover:top-1/2 group-hover:left-1/2 group-hover:w-32 group-hover:h-32 group-hover:-translate-x-1/2 group-hover:-translate-y-1/2'
+          )} />
+          
+          {/* Gradiente animado */}
+          <div className={cn(
+            'absolute inset-0 bg-gradient-to-r opacity-0 transition-all duration-500',
+            'group-hover:opacity-15',
+            {
+              'from-blue-400 via-cyan-400 to-blue-500': !popular && !mostSold,
+              'from-purple-400 via-pink-400 to-purple-500': popular && !mostSold,
+              'from-orange-400 via-red-400 to-orange-500': mostSold
+            }
+          )} />
+        </div>
         
         {/* Contenido */}
-        <div className="relative z-10 text-center">
-          {/* Cantidad de tickets */}
-          <div className={cn(
-            'text-2xl font-bold mb-2',
-            {
-              'text-gray-800': !isDisabled,
-              'text-gray-500': isDisabled
-            }
-          )}>
-            {tickets}
+        <div className="relative z-10 text-center space-y-3">
+          {/* Cantidad de tickets - Mejorada con icono */}
+          <div className="space-y-1">
+            <div className={cn(
+              'text-4xl font-black mb-1 tracking-tight',
+              {
+                'text-slate-800 bg-gradient-to-br from-slate-800 to-slate-600 bg-clip-text text-transparent': !isDisabled && !popular && !mostSold,
+                'text-purple-800 bg-gradient-to-br from-purple-800 to-pink-600 bg-clip-text text-transparent': !isDisabled && popular && !mostSold,
+                'text-orange-800 bg-gradient-to-br from-orange-800 to-red-600 bg-clip-text text-transparent': !isDisabled && mostSold,
+                'text-gray-500': isDisabled
+              }
+            )}>
+              {tickets}
+            </div>
+            
+            <div className={cn(
+              'text-sm font-bold uppercase tracking-wider',
+              {
+                'text-slate-600': !isDisabled && !popular && !mostSold,
+                'text-purple-600': !isDisabled && popular && !mostSold,
+                'text-orange-600': !isDisabled && mostSold,
+                'text-gray-400': isDisabled
+              }
+            )}>
+              🎫 {tickets === 1 ? 'Boleto' : 'Boletos'}
+            </div>
           </div>
           
-          <div className={cn(
-            'text-sm font-medium mb-3',
-            {
-              'text-gray-600': !isDisabled,
-              'text-gray-400': isDisabled
-            }
-          )}>
-            {tickets === 1 ? 'Boleto' : 'Boletos'}
+          {/* Precio - Mejorado con badge */}
+          <div className="relative">
+            <div className={cn(
+              'inline-block px-4 py-2 rounded-2xl font-black text-xl shadow-md',
+              {
+                'bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-700 border-2 border-emerald-200/60': !isDisabled && !popular && !mostSold,
+                'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-2 border-purple-200/60': !isDisabled && popular && !mostSold,
+                'bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 border-2 border-orange-200/60': !isDisabled && mostSold,
+                'bg-gray-100 text-gray-400 border-2 border-gray-200': isDisabled
+              }
+            )}>
+              {formatPriceMXN(price)}
+            </div>
           </div>
           
-          {/* Precio */}
-          <div className={cn(
-            'text-xl font-bold mb-1',
-            {
-              'text-green-600': !isDisabled,
-              'text-gray-400': isDisabled
-            }
-          )}>
-            {formatPriceMXN(price)}
-          </div>
-          
-          {/* Descuento y ahorro */}
+          {/* Descuento y ahorro - Ultra mejorados */}
           {discount > 0 && (
-            <div className="space-y-1">
-              {/* Precio original tachado */}
+            <div className="space-y-2 pt-2">
+              {/* Precio original tachado con mejor estilo */}
               <div className={cn(
-                'text-sm line-through',
+                'text-sm line-through font-medium px-3 py-1 rounded-lg',
                 {
-                  'text-gray-500': !isDisabled,
-                  'text-gray-400': isDisabled
+                  'text-slate-500 bg-slate-100/60': !isDisabled,
+                  'text-gray-400 bg-gray-100/60': isDisabled
                 }
               )}>
-                {formatPriceMXN(originalPrice)}
+                Antes: {formatPriceMXN(originalPrice)}
               </div>
               
-              {/* Porcentaje de descuento */}
-              <div className={cn(
-                'text-sm font-bold px-2 py-1 rounded-full',
-                {
-                  'bg-red-100 text-red-700': !isDisabled,
-                  'bg-gray-100 text-gray-400': isDisabled
-                }
-              )}>
-                {discount}% OFF
+              {/* Badge de descuento mejorado */}
+              <div className="relative inline-block">
+                <div className={cn(
+                  'text-sm font-black px-4 py-2 rounded-xl shadow-lg border-2 transform transition-transform duration-300',
+                  'group-hover:scale-110',
+                  {
+                    'bg-gradient-to-r from-red-500 to-red-600 text-white border-red-300 shadow-red-200/50': !isDisabled,
+                    'bg-gray-200 text-gray-400 border-gray-300': isDisabled
+                  }
+                )}>
+                  💥 {discount}% OFF
+                </div>
               </div>
               
-              {/* Ahorro */}
+              {/* Ahorro destacado */}
               <div className={cn(
-                'text-xs',
+                'text-sm font-bold px-3 py-1 rounded-lg',
                 {
-                  'text-green-600': !isDisabled,
-                  'text-gray-400': isDisabled
+                  'text-emerald-700 bg-emerald-100/80 border border-emerald-200': !isDisabled,
+                  'text-gray-400 bg-gray-100/80': isDisabled
                 }
               )}>
-                Ahorras {formatPriceMXN(savings)}
+                ✨ Ahorras {formatPriceMXN(savings)}
+              </div>
+            </div>
+          )}
+          
+          {/* Incentivo adicional para mostSold */}
+          {mostSold && !isDisabled && (
+            <div className="pt-2">
+              <div className="text-xs font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-lg border border-orange-200 animate-pulse">
+                🎯 67% de clientes prefieren esta opción
+              </div>
+            </div>
+          )}
+          
+          {/* Incentivo adicional para popular */}
+          {popular && !mostSold && !isDisabled && (
+            <div className="pt-2">
+              <div className="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-lg border border-purple-200">
+                🌟 Opción recomendada por descuento
               </div>
             </div>
           )}
