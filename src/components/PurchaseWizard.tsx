@@ -72,6 +72,262 @@ interface WizardStep {
 }
 
 // ============================================================================
+// OPTIMIZED COMPONENTS FOR MAXIMUM PERFORMANCE
+// ============================================================================
+
+interface OptimizedQuickSelectCardProps {
+  option: { tickets: number; price: number; discount: number; popular?: boolean };
+  onSelect: () => void;
+  disabled?: boolean;
+}
+
+// ✅ ULTRA-OPTIMIZED: High-performance card with GPU acceleration
+const OptimizedQuickSelectCard: React.FC<OptimizedQuickSelectCardProps> = React.memo(({ 
+  option, 
+  onSelect, 
+  disabled = false
+}) => {
+  // ✅ PERFORMANCE: Memoized event handler
+  const handleClick = useCallback(() => {
+    if (!disabled) {
+      onSelect();
+    }
+  }, [onSelect, disabled]);
+
+  // ✅ PERFORMANCE: Pre-calculated styles to avoid runtime computation
+  const isPopular = Boolean(option.popular);
+  const baseStyles = useMemo(() => ({
+    base: cn(
+      'relative overflow-hidden rounded-2xl p-4 sm:p-5 text-center transition-all duration-150 ease-out will-change-transform',
+      'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50',
+      disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
+      isPopular 
+        ? 'bg-gradient-to-b from-amber-50 to-amber-100 border-2 border-amber-300 shadow-lg shadow-amber-400/20' 
+        : 'bg-white border-2 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-md'
+    )
+  }), [disabled, isPopular]);
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={disabled}
+      className={baseStyles.base}
+      style={{
+        transform: disabled ? undefined : 'translateZ(0)', // GPU acceleration
+      }}
+      onMouseEnter={disabled ? undefined : (e) => {
+        e.currentTarget.style.transform = 'translateZ(0) scale(1.02)';
+      }}
+      onMouseLeave={disabled ? undefined : (e) => {
+        e.currentTarget.style.transform = 'translateZ(0) scale(1)';
+      }}
+      onMouseDown={disabled ? undefined : (e) => {
+        e.currentTarget.style.transform = 'translateZ(0) scale(0.98)';
+      }}
+      onMouseUp={disabled ? undefined : (e) => {
+        e.currentTarget.style.transform = 'translateZ(0) scale(1.02)';
+      }}
+    >
+      {/* Popular Badge - Simple and efficient */}
+      {isPopular && (
+        <div className="absolute -top-2 -right-2 z-10 bg-emerald-500 text-white px-2 py-0.5 rounded-full text-xs font-bold shadow-md">
+          POPULAR
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="space-y-3">
+        {/* Tickets Count */}
+        <div className="space-y-1">
+          <div className={cn(
+            'text-3xl sm:text-4xl font-black leading-none',
+            isPopular 
+              ? 'text-amber-700' 
+              : 'text-slate-800'
+          )}>
+            {option.tickets}
+          </div>
+          <div className={cn(
+            'text-xs font-semibold uppercase tracking-wider',
+            isPopular 
+              ? 'text-amber-600' 
+              : 'text-slate-500'
+          )}>
+            Números
+          </div>
+        </div>
+
+        {/* Price Section */}
+        <div className="space-y-1">
+          <div className={cn(
+            'text-xl sm:text-2xl font-black',
+            isPopular 
+              ? 'text-emerald-700' 
+              : 'text-slate-900'
+          )}>
+            {formatPrice(option.price)}
+          </div>
+          
+          {/* Discount Badge */}
+          {option.discount > 0 && (
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-slate-400 line-through text-sm">
+                {formatPrice(option.tickets * 250)}
+              </span>
+              <span className={cn(
+                'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-bold',
+                isPopular
+                  ? 'bg-emerald-100 text-emerald-800' 
+                  : 'bg-red-100 text-red-800'
+              )}>
+                <TrendingUp size={10} />
+                -{option.discount}%
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+});
+
+OptimizedQuickSelectCard.displayName = 'OptimizedQuickSelectCard';
+
+// ============================================================================
+// OPTIMIZED PAYMENT METHOD CARD - ULTRA-FAST PERFORMANCE
+// ============================================================================
+
+interface OptimizedPaymentMethodCardProps {
+  method: any;
+  isSelected: boolean;
+  onSelect: () => void;
+  expanded?: boolean;
+  selectedTickets?: number[];
+  convertedAmounts?: any;
+  cryptoLoading?: boolean;
+  lastUpdate?: Date | null;
+}
+
+// ✅ ULTRA-OPTIMIZED: Payment method card with instant responsiveness
+const OptimizedPaymentMethodCard: React.FC<OptimizedPaymentMethodCardProps> = React.memo(({ 
+  method, 
+  isSelected, 
+  onSelect, 
+  expanded = false,
+  selectedTickets = [],
+  convertedAmounts = {},
+  cryptoLoading = false,
+  lastUpdate = null
+}) => {
+  // ✅ PERFORMANCE: Memoized click handler
+  const handleClick = useCallback(() => {
+    onSelect();
+  }, [onSelect]);
+
+  // ✅ PERFORMANCE: Pre-calculated styles - no runtime computation
+  const cardStyles = useMemo(() => {
+    const base = 'group w-full rounded-2xl border-2 text-center relative overflow-hidden transition-all duration-150 will-change-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50';
+    
+    if (expanded) {
+      return cn(base, 'px-6 py-4 min-h-[80px] border-blue-500 bg-blue-50 shadow-lg');
+    }
+    
+    if (isSelected) {
+      return cn(base, 'px-4 py-6 min-h-[120px] border-blue-500 bg-blue-50 shadow-lg');
+    }
+    
+    return cn(base, 'px-4 py-6 min-h-[120px] border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-md');
+  }, [expanded, isSelected]);
+
+  // ✅ PERFORMANCE: Memoized converted amount for Binance
+  const convertedAmount = useMemo(() => {
+    if (method.id !== 'binance' || !convertedAmounts.total) return null;
+    return convertedAmounts.total;
+  }, [method.id, convertedAmounts.total]);
+
+  return (
+    <button
+      onClick={handleClick}
+      className={cardStyles}
+      style={{
+        transform: 'translateZ(0)', // GPU acceleration
+      }}
+      onMouseEnter={(e) => {
+        if (!expanded) {
+          e.currentTarget.style.transform = 'translateZ(0) scale(1.02)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateZ(0) scale(1)';
+      }}
+      onMouseDown={(e) => {
+        e.currentTarget.style.transform = 'translateZ(0) scale(0.98)';
+      }}
+      onMouseUp={(e) => {
+        if (!expanded) {
+          e.currentTarget.style.transform = 'translateZ(0) scale(1.02)';
+        }
+      }}
+    >
+      {/* Selection Indicator - Simple and efficient */}
+      {isSelected && !expanded && (
+        <div className="absolute -top-2 -right-2 z-10 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-md">
+          <CheckCircle size={14} className="text-white" />
+        </div>
+      )}
+
+      <div className={cn(
+        'flex items-center justify-center h-full',
+        expanded ? 'flex-row gap-4' : 'flex-col space-y-3'
+      )}>
+        {/* Logo Container - Simplified */}
+        <div className={cn(
+          'flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-100',
+          expanded ? 'w-16 h-16 p-3' : 'w-full py-4 px-6'
+        )}>
+          <img
+            src={method.icon}
+            alt={method.name}
+            className={cn(
+              'object-contain',
+              expanded 
+                ? (method.id === 'binance' ? 'max-w-12 max-h-12' : 'max-w-8 max-h-8')
+                : (method.id === 'binance' ? 'max-w-full max-h-[80px]' : 'max-w-full max-h-[60px]')
+            )}
+          />
+        </div>
+        
+        {/* Payment Method Info */}
+        <div className={cn(
+          'text-center',
+          expanded ? 'flex-1 text-left' : ''
+        )}>
+          <div className="font-black text-slate-900 text-base group-hover:text-blue-700 transition-colors duration-150">
+            {method.name}
+          </div>
+          
+          {/* Binance Price Display - Optimized */}
+          {method.id === 'binance' && convertedAmount && (
+            <div className="mt-2 space-y-1">
+              <div className="text-lg font-bold text-emerald-700">
+                {cryptoLoading ? 'Calculando...' : `$${convertedAmount.toFixed(2)} MXN`}
+              </div>
+              {lastUpdate && (
+                <div className="text-xs text-slate-500">
+                  Actualizado: {lastUpdate.toLocaleTimeString()}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+});
+
+OptimizedPaymentMethodCard.displayName = 'OptimizedPaymentMethodCard';
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -548,22 +804,8 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
               transition={{ duration: 0.15, ease: "easeOut" }}
             >
               {mainPaymentMethods.map((method, index) => (
-                <motion.div
-                  key={method.id}
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ 
-                    duration: 0.15, 
-                    delay: index * 0.02,
-                    ease: "easeOut" 
-                  }}
-                  whileHover={{ 
-                    scale: 1.02,
-                    transition: { duration: 0.1 }
-                  }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <PaymentMethodCard
+                <div key={method.id}>
+                  <OptimizedPaymentMethodCard
                     method={method}
                     isSelected={false}
                     onSelect={() => {
@@ -573,13 +815,12 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
                         activateCrypto();
                       }
                     }}
-                    animationDelay={0}
                     selectedTickets={selectedTickets}
                     convertedAmounts={convertedAmounts}
                     cryptoLoading={cryptoLoading}
                     lastUpdate={lastUpdate}
                   />
-                </motion.div>
+                </div>
               ))}
             </motion.div>
           ) : (
@@ -637,29 +878,18 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
 
               {/* Bottom - expanded selected method */}
               {selectedMethod && (
-                <motion.div
-                  key={selectedMethod.id}
-                  layoutId={selectedMethod.id}
-                  initial={{ y: 10, opacity: 0, scale: 0.98 }}
-                  animate={{ y: 0, opacity: 1, scale: 1 }}
-                  transition={{ 
-                    duration: 0.2, 
-                    delay: 0.05,
-                    ease: "easeOut" 
-                  }}
-                >
-                  <PaymentMethodCard
+                <div key={selectedMethod.id}>
+                  <OptimizedPaymentMethodCard
                     method={selectedMethod}
                     isSelected={true}
                     onSelect={() => {}}
                     expanded={true}
-                    animationDelay={0}
                     selectedTickets={selectedTickets}
                     convertedAmounts={convertedAmounts}
                     cryptoLoading={cryptoLoading}
                     lastUpdate={lastUpdate}
                   />
-                </motion.div>
+                </div>
               )}
             </motion.div>
           )}
@@ -680,7 +910,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
         <div className="fixed inset-0 z-50 overflow-y-auto">
           {/* ✅ PERFORMANCE: Optimized backdrop without heavy blur */}
           <motion.div 
-            className="fixed inset-0 bg-gradient-to-br from-slate-900/95 via-slate-800/90 to-slate-900/95" 
+            className="fixed inset-0 bg-gradient-to-br from-slate-900/60 via-slate-800/50 to-slate-900/60" 
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1050,105 +1280,16 @@ const QuickSelectionStep: React.FC<QuickSelectionStepProps> = ({ onQuickSelect, 
     )}
 
     {/* Quick Buy Cards Grid */}
-    <motion.div 
-      className="grid grid-cols-2 md:grid-cols-3 gap-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.6, delay: 0.3 }}
-    >
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
       {QUICK_SELECT_OPTIONS.map((option, index) => (
-        <motion.button
+        <OptimizedQuickSelectCard
           key={option.tickets}
-          onClick={() => onQuickSelect(option.tickets)}
+          option={option}
+          onSelect={() => onQuickSelect(option.tickets)}
           disabled={isSelectingTickets}
-          className={cn(
-            'group relative bg-gradient-to-br from-white via-white to-slate-50/80 rounded-3xl p-4 sm:p-6 text-center focus:outline-none focus:ring-4 ring-1 ring-slate-200/50',
-            'hover:from-blue-50 hover:via-blue-50 hover:to-blue-100/80 hover:ring-blue-300/40 hover:shadow-blue-100/30',
-            'disabled:opacity-50 disabled:cursor-wait',
-            option.popular 
-              ? 'border-2 border-amber-400 bg-gradient-to-br from-amber-50 via-amber-50 to-amber-100/80 ring-amber-300/50 shadow-xl shadow-amber-400/15'
-              : 'border-2 border-transparent hover:border-blue-300/50'
-          )}
-          initial={{ opacity: 0, y: 30, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ 
-            duration: 0.5, 
-            delay: 0.1 * index,
-            ease: "easeOut" 
-          }}
-          whileHover={{ 
-            scale: 1.02,
-            boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
-            transition: { duration: 0.15 }
-          }}
-          whileTap={{ 
-            scale: 0.98,
-            transition: { duration: 0.1 }
-          }}
-        >
-          {/* Popular Badge */}
-          {option.popular && (
-            <div className="absolute -top-2 -right-2 z-10">
-              <div className="relative">
-                <div className="absolute inset-0 bg-emerald-500 rounded-full blur animate-pulse" />
-                <div className="relative bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg shadow-emerald-500/40 flex items-center gap-1">
-                  <Gift size={10} />
-                  MÁS POPULAR
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="relative space-y-3">
-            <div className="space-y-2">
-              <div className={cn(
-                'text-3xl sm:text-4xl font-black transition-colors duration-300',
-                option.popular
-                  ? 'bg-gradient-to-br from-mexican-red to-sunset-orange bg-clip-text text-transparent'
-                  : 'bg-gradient-to-br from-slate-800 to-slate-600 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:to-blue-600'
-              )}>
-                {option.tickets}
-              </div>
-              <div className={cn(
-                'text-xs font-bold uppercase tracking-wider transition-colors duration-300',
-                option.popular 
-                  ? 'text-emerald-700'
-                  : 'text-slate-600 group-hover:text-blue-700'
-              )}>
-                Números
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <div className={cn(
-                'text-xl sm:text-2xl font-black transition-colors duration-300',
-                option.popular
-                  ? 'text-emerald-700'
-                  : 'text-slate-900 group-hover:text-blue-700'
-              )}>
-                {formatPrice(option.price)}
-              </div>
-              {option.discount > 0 && (
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-slate-400 line-through text-sm font-medium">
-                    {formatPrice(option.tickets * 250)}
-                  </span>
-                  <span className={cn(
-                    'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold shadow-sm',
-                    option.popular
-                      ? 'bg-emerald-200 text-emerald-800 ring-1 ring-emerald-300/50'
-                      : 'bg-red-100 text-red-800 ring-1 ring-red-200/50'
-                  )}>
-                    <TrendingUp size={10} />
-                    -{option.discount}%
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.button>
+        />
       ))}
-    </motion.div>
+    </div>
 
     {/* Benefits Section */}
     <div className="relative bg-gradient-to-r from-blue-50 to-blue-100/80 backdrop-blur-sm border border-blue-200/60 rounded-2xl p-6 ring-1 ring-blue-200/30 shadow-lg">

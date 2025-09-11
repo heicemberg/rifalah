@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { obtenerCompras, actualizarEstadoCompra, type CompraConDetalles, type PurchaseStatus } from '../lib/supabase';
 import { useAdminSync } from '../hooks/useAdminSync';
+import { testMathConsistency, monitorSystemHealth } from '../hooks/useMasterCounters';
 import toast from 'react-hot-toast';
 
 // Importar test utilities para verificación matemática
@@ -21,7 +22,10 @@ import {
   Clock,
   DollarSign,
   Filter,
-  Search
+  Search,
+  AlertTriangle,
+  Shield,
+  Calculator
 } from 'lucide-react';
 
 // ============================================================================
@@ -48,6 +52,15 @@ export default function AdminPanel() {
   const adminSync = useAdminSync();
   const { isConnected } = adminSync.sync;
   const { forceSync, onAdminConfirmation } = adminSync;
+
+  // 🛡️ SISTEMA DE VALIDACIÓN MATEMÁTICA EN TIEMPO REAL
+  const [mathValidation, setMathValidation] = useState({
+    isValid: true,
+    issues: [] as string[],
+    lastCheck: new Date(),
+    realSum: 10000,
+    displaySum: 10000
+  });
 
   // Cargar compras al montar el componente y cuando cambian los contadores
   useEffect(() => {
@@ -668,6 +681,100 @@ export default function AdminPanel() {
     }
   }, [compras, adminSync.display.soldCount]); // ✅ FIXED: Depend on display counter (FOMO + real)
 
+  // 🛡️ VALIDACIÓN MATEMÁTICA EN TIEMPO REAL
+  useEffect(() => {
+    const validateSystemMath = () => {
+      console.log('🛡️ ADMIN: Ejecutando validación matemática en tiempo real...');
+      
+      try {
+        // Ejecutar test de consistencia matemática
+        const mathTest = testMathConsistency();
+        
+        // Monitorear salud del sistema
+        const systemHealth = monitorSystemHealth();
+        
+        // Calcular sumas para validación
+        const realSum = adminSync.real.soldCount + adminSync.real.availableCount + adminSync.real.reservedCount;
+        const displaySum = adminSync.display.soldCount + adminSync.display.availableCount + adminSync.real.reservedCount;
+        
+        // Detectar problemas
+        const issues: string[] = [];
+        
+        if (!mathTest) {
+          issues.push('Inconsistencia matemática detectada en contadores maestros');
+        }
+        
+        if (realSum !== 10000) {
+          issues.push(`Math real incorrecta: ${realSum} ≠ 10,000`);
+        }
+        
+        if (displaySum !== 10000) {
+          issues.push(`Math display incorrecta: ${displaySum} ≠ 10,000`);
+        }
+        
+        if (!systemHealth.healthy) {
+          issues.push(...systemHealth.issues);
+        }
+        
+        // Actualizar estado de validación
+        setMathValidation({
+          isValid: issues.length === 0,
+          issues,
+          lastCheck: new Date(),
+          realSum,
+          displaySum
+        });
+        
+        // Mostrar alertas críticas
+        if (issues.length > 0) {
+          console.error('🚨 ADMIN: Problemas matemáticos detectados:', issues);
+          toast.error(`🚨 Integridad matemática comprometida: ${issues.length} problema(s)`, {
+            duration: 8000,
+            position: 'top-center'
+          });
+        } else {
+          console.log('✅ ADMIN: Validación matemática exitosa - sistema íntegro');
+        }
+        
+      } catch (error) {
+        console.error('❌ ADMIN: Error en validación matemática:', error);
+        setMathValidation(prev => ({
+          ...prev,
+          isValid: false,
+          issues: ['Error ejecutando validación matemática'],
+          lastCheck: new Date()
+        }));
+      }
+    };
+
+    // Validación inicial
+    validateSystemMath();
+    
+    // Validación periódica cada 15 segundos
+    const validationInterval = setInterval(validateSystemMath, 15000);
+    
+    // Validar cuando cambien los contadores críticos
+    const handleCounterChange = () => {
+      console.log('🔄 ADMIN: Cambio en contadores detectado, revalidando...');
+      setTimeout(validateSystemMath, 500);
+    };
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('raffle-counters-updated', handleCounterChange);
+      window.addEventListener('admin-stats-update', handleCounterChange);
+      
+      return () => {
+        clearInterval(validationInterval);
+        window.removeEventListener('raffle-counters-updated', handleCounterChange);
+        window.removeEventListener('admin-stats-update', handleCounterChange);
+      };
+    }
+    
+    return () => {
+      clearInterval(validationInterval);
+    };
+  }, [adminSync.real.soldCount, adminSync.real.availableCount, adminSync.real.reservedCount, adminSync.display.soldCount]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -719,7 +826,287 @@ export default function AdminPanel() {
           </div>
         </motion.div>
 
-        {/* Dashboard FOMO + Real - Solo para Admin */}
+        {/* 📊 ESTADÍSTICAS DE VENTAS REALES - Nueva sección para transparencia admin */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.03 }}
+          className="bg-gradient-to-br from-emerald-800 via-emerald-900 to-teal-800 rounded-2xl p-6 text-white shadow-2xl border border-emerald-700"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-3 bg-emerald-500 rounded-xl">
+              <DollarSign className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white">📊 ESTADÍSTICAS DE VENTAS REALES</h2>
+              <p className="text-emerald-200 text-sm">Panel de transparencia completa para administrador</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 🎯 Tickets Reales (Base de Datos) */}
+            <div className="bg-emerald-700/40 rounded-xl p-5 border border-emerald-600/50">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-green-500 rounded-lg">
+                  <CheckCircle2 className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-green-300">🎯 Tickets Reales (Base de Datos)</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-emerald-200">Vendidos confirmados:</span>
+                  <span className="text-2xl font-bold text-white">{adminSync.real.soldCount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-emerald-200">Reservados temporales:</span>
+                  <span className="text-xl font-bold text-yellow-300">{adminSync.real.reservedCount.toLocaleString()}</span>
+                </div>
+                <div className="border-t border-emerald-600 pt-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-emerald-200 font-medium">Total real ocupados:</span>
+                    <span className="text-2xl font-bold text-green-300">
+                      {(adminSync.real.soldCount + adminSync.real.reservedCount).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3 p-2 bg-emerald-800/50 rounded-lg">
+                  <div className="text-xs text-emerald-300 mb-1">Porcentaje real vendido:</div>
+                  <div className="text-lg font-bold text-white">{adminSync.real.soldPercentage.toFixed(2)}%</div>
+                </div>
+              </div>
+            </div>
+
+            {/* 🎭 Display para Usuarios */}
+            <div className="bg-blue-700/40 rounded-xl p-5 border border-blue-600/50">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-blue-500 rounded-lg">
+                  <Eye className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-blue-300">🎭 Display para Usuarios</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-200">FOMO añadido:</span>
+                  <span className="text-xl font-bold text-orange-300">+{adminSync.fomo.fomoAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-200">Total mostrado:</span>
+                  <span className="text-2xl font-bold text-white">
+                    {adminSync.display.soldCount.toLocaleString()} ({adminSync.display.soldPercentage.toFixed(1)}%)
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-200">Urgencia generada:</span>
+                  <span className={`text-lg font-bold ${adminSync.fomo.isActive ? 'text-green-400' : 'text-red-400'}`}>
+                    {adminSync.fomo.isActive ? '✅ Activa' : '❌ Desactivada'}
+                  </span>
+                </div>
+                <div className="mt-3 p-2 bg-blue-800/50 rounded-lg">
+                  <div className="text-xs text-blue-300 mb-1">Fórmula display:</div>
+                  <div className="text-sm font-mono text-white">
+                    {adminSync.real.soldCount} + {adminSync.fomo.fomoAmount} = {adminSync.display.soldCount}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 💰 Ingresos y Meta */}
+            <div className="bg-purple-700/40 rounded-xl p-5 border border-purple-600/50">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-purple-500 rounded-lg">
+                  <DollarSign className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-purple-300">💰 Ingresos Reales</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-purple-200">Tickets vendidos:</span>
+                  <span className="text-lg font-bold text-white">
+                    {adminSync.real.soldCount} × $250
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-purple-200">Total confirmado:</span>
+                  <span className="text-2xl font-bold text-green-300">
+                    ${(adminSync.real.soldCount * 250).toLocaleString()} MXN
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-purple-200">Tickets reservados:</span>
+                  <span className="text-sm text-yellow-300">
+                    ${(adminSync.real.reservedCount * 250).toLocaleString()} MXN (pendientes)
+                  </span>
+                </div>
+                <div className="border-t border-purple-600 pt-2">
+                  <div className="text-xs text-purple-300 mb-1">Meta 70% (7,000 tickets):</div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-purple-200">Progreso real:</span>
+                    <span className="text-lg font-bold text-white">
+                      {((adminSync.real.soldCount / 7000) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="mt-2 w-full bg-purple-800/50 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-purple-400 to-pink-400 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min((adminSync.real.soldCount / 7000) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-purple-300 mt-1">
+                    Necesitas {Math.max(7000 - adminSync.real.soldCount, 0).toLocaleString()} tickets más para alcanzar la meta
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 📈 Resumen Ejecutivo */}
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-emerald-800/30 rounded-xl p-4 border border-emerald-600/30">
+              <h4 className="font-bold text-emerald-300 mb-3 flex items-center gap-2">
+                📈 Progreso Real vs Display
+              </h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-emerald-200">Vendidos reales:</span>
+                  <span className="font-bold text-white">{adminSync.real.soldPercentage.toFixed(2)}% de 10,000</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-emerald-200">Mostrado a usuarios:</span>
+                  <span className="font-bold text-blue-300">{adminSync.display.soldPercentage.toFixed(2)}% de 10,000</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-emerald-200">Diferencia FOMO:</span>
+                  <span className="font-bold text-orange-300">+{adminSync.fomo.difference.toLocaleString()} tickets</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-purple-800/30 rounded-xl p-4 border border-purple-600/30">
+              <h4 className="font-bold text-purple-300 mb-3 flex items-center gap-2">
+                🧮 Verificación Matemática
+              </h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-purple-200">Real disponibles:</span>
+                  <span className="font-bold text-white">{adminSync.real.availableCount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-purple-200">Display disponibles:</span>
+                  <span className="font-bold text-blue-300">{adminSync.display.availableCount.toLocaleString()}</span>
+                </div>
+                <div className="mt-2 p-2 bg-purple-900/50 rounded text-xs">
+                  <div className="text-purple-300">💡 Los usuarios ven {adminSync.display.soldCount.toLocaleString()} vendidos (motivante)</div>
+                  <div className="text-purple-300">Pero pueden comprar de {adminSync.real.availableCount.toLocaleString()} realmente disponibles</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* 🛡️ GUARDIAN DE INTEGRIDAD MATEMÁTICA - Validación en tiempo real */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.04 }}
+          className={`rounded-2xl p-4 text-white shadow-xl border-2 transition-all duration-500 ${
+            mathValidation.isValid 
+              ? 'bg-gradient-to-r from-green-800 via-emerald-900 to-green-800 border-green-600' 
+              : 'bg-gradient-to-r from-red-800 via-red-900 to-red-800 border-red-600 animate-pulse'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-xl ${mathValidation.isValid ? 'bg-green-500' : 'bg-red-500'}`}>
+                {mathValidation.isValid ? (
+                  <Shield className="w-6 h-6 text-white" />
+                ) : (
+                  <AlertTriangle className="w-6 h-6 text-white animate-bounce" />
+                )}
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  🛡️ Guardian de Integridad Matemática
+                  {mathValidation.isValid ? (
+                    <span className="text-green-300">✅ SISTEMA ÍNTEGRO</span>
+                  ) : (
+                    <span className="text-red-300 animate-pulse">🚨 PROBLEMAS DETECTADOS</span>
+                  )}
+                </h2>
+                <p className="text-sm opacity-90">
+                  Última validación: {mathValidation.lastCheck.toLocaleTimeString()} • 
+                  Validación automática cada 15 segundos
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <div className="text-sm opacity-80">Sumas matemáticas:</div>
+                <div className="flex gap-4 text-sm font-mono">
+                  <span className={mathValidation.realSum === 10000 ? 'text-green-300' : 'text-red-300'}>
+                    Real: {mathValidation.realSum.toLocaleString()}
+                  </span>
+                  <span className={mathValidation.displaySum === 10000 ? 'text-green-300' : 'text-red-300'}>
+                    Display: {mathValidation.displaySum.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  console.log('🛡️ ADMIN: Forzando validación matemática manual...');
+                  const mathTest = testMathConsistency();
+                  const systemHealth = monitorSystemHealth();
+                  
+                  if (mathTest && systemHealth.healthy) {
+                    toast.success('✅ Validación matemática exitosa - Sistema íntegro', {
+                      duration: 3000,
+                      position: 'top-center'
+                    });
+                  } else {
+                    toast.error(`🚨 Problemas detectados: ${systemHealth.issues.join(', ')}`, {
+                      duration: 6000,
+                      position: 'top-center'
+                    });
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl font-medium transition-all duration-200"
+              >
+                <Calculator size={16} />
+                Validar Ahora
+              </motion.button>
+            </div>
+          </div>
+          
+          {/* Mostrar problemas si los hay */}
+          {!mathValidation.isValid && mathValidation.issues.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mt-4 p-3 bg-red-900/50 rounded-xl border border-red-600/50"
+            >
+              <h4 className="font-bold text-red-300 mb-2 flex items-center gap-2">
+                🚨 Problemas Detectados:
+              </h4>
+              <ul className="space-y-1 text-sm text-red-200">
+                {mathValidation.issues.map((issue, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="text-red-400 mt-0.5">•</span>
+                    {issue}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-3 p-2 bg-red-800/50 rounded text-xs text-red-300">
+                💡 Los problemas matemáticos pueden afectar la precisión del sistema. 
+                Contacta al desarrollador si persisten.
+              </div>
+            </motion.div>
+          )}
+        </motion.div>
+
+        {/* Dashboard FOMO + Real - Sistema Técnico */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -731,8 +1118,8 @@ export default function AdminPanel() {
               <Zap className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">🎯 Sistema de Contadores Integrado</h2>
-              <p className="text-slate-300 text-sm">Transparencia completa: Real + FOMO = Display</p>
+              <h2 className="text-xl font-bold text-white">🎯 Sistema de Contadores Integrado (Técnico)</h2>
+              <p className="text-slate-300 text-sm">Vista técnica: Real + FOMO = Display</p>
             </div>
           </div>
           

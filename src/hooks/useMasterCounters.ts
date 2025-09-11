@@ -59,12 +59,22 @@ const calculateFOMO = (realSoldCount: number): { fomoCount: number; displaySoldC
     };
   }
   
-  // 🎯 SINCRONIZACIÓN REAL + FOMO: Tickets reales + FOMO fijos = Display Total
-  const FOMO_BASE_FIXED = 1200; // Tickets FOMO fijos que se suman a los reales
+  // 🎯 SINCRONIZACIÓN REAL + FOMO: Máximo inteligente para evitar overflow
+  const FOMO_BASE_FIXED = 1200; // Base FOMO deseada
   
-  // ✅ FÓRMULA INTEGRADA: Display = Real vendidos + FOMO constante
-  const fomoTickets = FOMO_BASE_FIXED;
-  const displaySoldCount = realSoldCount + fomoTickets;
+  // ✅ FÓRMULA INTELIGENTE: Evitar que Display > 8000 (80% máximo de urgencia)
+  const maxDisplaySoldCount = Math.floor(TOTAL_TICKETS * 0.8); // 8000 tickets máximo mostrado
+  const proposedDisplay = realSoldCount + FOMO_BASE_FIXED;
+  
+  // Si propuesta excede límite, reducir FOMO proporcionalmente
+  let fomoTickets = FOMO_BASE_FIXED;
+  let displaySoldCount = proposedDisplay;
+  
+  if (proposedDisplay > maxDisplaySoldCount) {
+    displaySoldCount = maxDisplaySoldCount;
+    fomoTickets = maxDisplaySoldCount - realSoldCount;
+    console.log(`🔄 FOMO ADJUSTED: Reduced from ${FOMO_BASE_FIXED} to ${fomoTickets} to cap at ${maxDisplaySoldCount}`);
+  }
   
   // 🔍 Log integración FOMO + Real
   console.log(`🔄 INTEGRATED FOMO: Real(${realSoldCount}) + FOMO(${fomoTickets}) = Display(${displaySoldCount})`);
