@@ -167,6 +167,7 @@ export default function AdminPanel() {
       const supabaseCount = comprasSupabase.length;
       const localCount = comprasLocales.length;
       const totalCount = todasLasCompras.length;
+      const visualPercentage = (totalCount / 10000) * 100; // Calculate visual percentage
       
       if (isConnected && !supabaseError) {
         toast.success(`✅ ${totalCount} órdenes cargadas (${supabaseCount} BD + ${localCount} locales) • ${visualPercentage.toFixed(1)}% mostrado`);
@@ -263,7 +264,7 @@ export default function AdminPanel() {
             window.dispatchEvent(new CustomEvent('raffle-counters-updated', {
               detail: { 
                 source: 'admin-confirmation',
-                soldCount: currentCounters.real.soldCount,
+                soldCount: adminSync.real.soldCount,
                 timestamp: new Date().toISOString()
               }
             }));
@@ -301,12 +302,12 @@ export default function AdminPanel() {
         
         // ✅ CRITICAL: Force immediate master counter update
         console.log(`🔄 ADMIN: Forzando actualización INMEDIATA del master counter...`);
-        await refreshData();
+        await forceSync();
         
         // Double refresh to ensure sync propagation
         setTimeout(async () => {
           console.log(`🔄 ADMIN: Segunda actualización para garantizar sincronización...`);
-          await refreshData();
+          await forceSync();
         }, 1000);
         
         // ✅ CRITICAL: Force admin stats update after confirmation
@@ -330,8 +331,8 @@ export default function AdminPanel() {
             purchaseId: id,
             newStatus: nuevoEstado,
             finalCounters: {
-              real: adminCounters.real.soldCount,
-              display: adminCounters.display.soldCount
+              real: adminSync.real.soldCount,
+              display: adminSync.display.soldCount
             },
             timestamp: new Date().toLocaleTimeString()
           });
@@ -622,8 +623,8 @@ export default function AdminPanel() {
       };
       
       // ✅ CRITICAL FIX: Use DISPLAY COUNTER (FOMO + real) to match main page logic
-      const realCounterTickets = adminCounters.real.soldCount || 0;
-      const displayTickets = adminCounters.display.soldCount || 0;
+      const realCounterTickets = adminSync.real.soldCount || 0;
+      const displayTickets = adminSync.display.soldCount || 0;
       
       const newStats = {
         ...purchaseStats,
@@ -665,7 +666,7 @@ export default function AdminPanel() {
         window.removeEventListener('admin-stats-update', handleSyncEvent);
       };
     }
-  }, [compras, adminCounters.display.soldCount]); // ✅ FIXED: Depend on display counter (FOMO + real)
+  }, [compras, adminSync.display.soldCount]); // ✅ FIXED: Depend on display counter (FOMO + real)
 
   if (loading) {
     return (

@@ -473,8 +473,8 @@ const initializeMasterCounters = async () => {
           console.log('🔄 TRIGGERING IMMEDIATE COUNTER UPDATE (PURCHASES)...');
           
           // ✅ ENHANCED: Admin confirmation detection
-          const purchase = payload.new || payload.old;
-          const isAdminConfirmation = payload.eventType === 'UPDATE' && purchase?.status === 'confirmada';
+          const purchase = payload.new || payload.old || {};
+          const isAdminConfirmation = payload.eventType === 'UPDATE' && (purchase as any)?.status === 'confirmada';
           
           if (isAdminConfirmation) {
             console.log('🎯 ADMIN CONFIRMATION DETECTED - Applying enhanced sync protocol');
