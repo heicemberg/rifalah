@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 
 // Importar desde archivos anteriores
 import { useRaffleStore } from '../stores/raffle-store';
@@ -24,6 +24,7 @@ interface QuickSelectButtonProps {
   mostSold?: boolean;
   isDisabled: boolean;
   onSelect: () => void;
+  context?: 'feed' | 'modal';
 }
 
 // ============================================================================
@@ -37,41 +38,44 @@ const QuickSelectButton: React.FC<QuickSelectButtonProps> = React.memo(({
   popular = false,
   mostSold = false,
   isDisabled,
-  onSelect
+  onSelect,
+  context = 'modal'
 }) => {
   // Hook para formateo mexicano (dentro del componente)
   const { formatPriceMXN, PRECIO_POR_BOLETO_MXN } = useRealTimeTickets();
   
-  // Calcular precio original y ahorro
+  // Calcular precio según contexto
   const originalPrice = tickets * PRECIO_POR_BOLETO_MXN;
-  const savings = originalPrice - price;
+  const displayPrice = context === 'feed' ? originalPrice : price;
+  const displayDiscount = context === 'feed' ? 0 : discount;
+  const savings = originalPrice - displayPrice;
   
   return (
     <div className="relative group/card">
-      {/* Background effect - glassmorphism */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-white/5 rounded-3xl backdrop-blur-xl border border-white/20 shadow-2xl opacity-0 group-hover/card:opacity-100 transition-all duration-500 transform scale-95 group-hover/card:scale-100" />
+      {/* Background effect - optimized without heavy blur */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-white/10 rounded-3xl border border-white/30 shadow-xl opacity-0 group-hover/card:opacity-100 transition-all duration-200 transform scale-98 group-hover/card:scale-100" />
       
       <button
         onClick={onSelect}
         disabled={isDisabled}
         className={cn(
-          'relative w-full p-6 rounded-3xl border-2 transition-all duration-700 ease-out',
-          'group overflow-hidden backdrop-blur-md shadow-lg hover:shadow-2xl',
+          'relative w-full p-6 rounded-3xl border-2 transition-all duration-200 ease-out',
+          'group overflow-hidden shadow-md hover:shadow-xl',
           'transform-gpu will-change-transform',
           {
-            // Estado habilitado - Glassmorphism moderno
-            'border-slate-200/40 bg-gradient-to-br from-white/80 via-white/60 to-slate-50/80 backdrop-blur-lg': !isDisabled && !popular && !mostSold,
-            'hover:border-blue-400/60 hover:shadow-blue-500/25 hover:shadow-2xl hover:scale-[1.08] hover:from-blue-50/90 hover:via-blue-50/70 hover:to-blue-100/90 hover:-translate-y-1': !isDisabled && !popular && !mostSold,
+            // Estado habilitado - Optimized without heavy blur
+            'border-slate-200/60 bg-gradient-to-br from-white/90 via-white/80 to-slate-50/90': !isDisabled && !popular && !mostSold,
+            'hover:border-blue-400/70 hover:shadow-blue-500/20 hover:shadow-xl hover:scale-105 hover:from-blue-50/95 hover:via-blue-50/85 hover:to-blue-100/95 hover:-translate-y-0.5': !isDisabled && !popular && !mostSold,
             
-            // Estado popular - Gradiente púrpura elegante
-            'border-purple-300/60 bg-gradient-to-br from-purple-50/90 via-pink-50/70 to-purple-100/80': !isDisabled && popular && !mostSold,
-            'hover:border-purple-400/80 hover:shadow-purple-500/30 hover:shadow-2xl hover:scale-[1.08] hover:from-purple-100/95 hover:via-pink-100/75 hover:to-purple-200/90 hover:-translate-y-1': !isDisabled && popular && !mostSold,
-            'ring-4 ring-purple-200/40 shadow-purple-200/50': popular && !mostSold,
+            // Estado popular - Optimized
+            'border-purple-300/70 bg-gradient-to-br from-purple-50/95 via-pink-50/85 to-purple-100/90': !isDisabled && popular && !mostSold,
+            'hover:border-purple-400/80 hover:shadow-purple-500/25 hover:shadow-xl hover:scale-105 hover:from-purple-100/95 hover:via-pink-100/85 hover:to-purple-200/95 hover:-translate-y-0.5': !isDisabled && popular && !mostSold,
+            'ring-2 ring-purple-200/60 shadow-purple-200/40': popular && !mostSold,
             
-            // Estado más vendido - Gradiente vibrante con animación
-            'border-orange-300/60 bg-gradient-to-br from-orange-50/90 via-red-50/70 to-orange-100/80': !isDisabled && mostSold,
-            'hover:border-orange-400/80 hover:shadow-orange-500/30 hover:shadow-2xl hover:scale-[1.08] hover:from-orange-100/95 hover:via-red-100/75 hover:to-orange-200/90 hover:-translate-y-1': !isDisabled && mostSold,
-            'ring-4 ring-orange-200/40 shadow-orange-200/50 animate-pulse': mostSold,
+            // Estado más vendido - Optimized animation
+            'border-orange-300/70 bg-gradient-to-br from-orange-50/95 via-red-50/85 to-orange-100/90': !isDisabled && mostSold,
+            'hover:border-orange-400/80 hover:shadow-orange-500/25 hover:shadow-xl hover:scale-105 hover:from-orange-100/95 hover:via-red-100/85 hover:to-orange-200/95 hover:-translate-y-0.5': !isDisabled && mostSold,
+            'ring-2 ring-orange-200/60 shadow-orange-200/40': mostSold,
             
             // Estado deshabilitado
             'border-gray-200/30 bg-gradient-to-br from-gray-100/50 to-gray-200/50 cursor-not-allowed opacity-60': isDisabled
@@ -102,22 +106,16 @@ const QuickSelectButton: React.FC<QuickSelectButtonProps> = React.memo(({
           </div>
         )}
         
-        {/* Efectos de brillo en hover */}
-        <div className="absolute inset-0 rounded-3xl overflow-hidden">
-          {/* Efecto de luz deslizante */}
+        {/* Optimized hover effects - removed heavy blur */}
+        <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+          {/* Simple shine effect */}
           <div className={cn(
-            'absolute -top-2 -left-2 w-8 h-8 bg-white/40 rounded-full blur-xl opacity-0 transition-all duration-700',
-            'group-hover:opacity-100 group-hover:top-1/2 group-hover:left-1/2 group-hover:w-32 group-hover:h-32 group-hover:-translate-x-1/2 group-hover:-translate-y-1/2'
-          )} />
-          
-          {/* Gradiente animado */}
-          <div className={cn(
-            'absolute inset-0 bg-gradient-to-r opacity-0 transition-all duration-500',
-            'group-hover:opacity-15',
+            'absolute inset-0 bg-gradient-to-r opacity-0 transition-opacity duration-200',
+            'group-hover:opacity-10',
             {
-              'from-blue-400 via-cyan-400 to-blue-500': !popular && !mostSold,
-              'from-purple-400 via-pink-400 to-purple-500': popular && !mostSold,
-              'from-orange-400 via-red-400 to-orange-500': mostSold
+              'from-blue-400 to-transparent': !popular && !mostSold,
+              'from-purple-400 to-transparent': popular && !mostSold,
+              'from-orange-400 to-transparent': mostSold
             }
           )} />
         </div>
@@ -162,12 +160,12 @@ const QuickSelectButton: React.FC<QuickSelectButtonProps> = React.memo(({
                 'bg-gray-100 text-gray-400 border-2 border-gray-200': isDisabled
               }
             )}>
-              {formatPriceMXN(price)}
+              {formatPriceMXN(displayPrice)}
             </div>
           </div>
           
-          {/* Descuento y ahorro - Ultra mejorados */}
-          {discount > 0 && (
+          {/* Descuento y ahorro - Ultra mejorados - Solo en modal */}
+          {displayDiscount > 0 && (
             <div className="space-y-2 pt-2">
               {/* Precio original tachado con mejor estilo */}
               <div className={cn(
@@ -190,7 +188,7 @@ const QuickSelectButton: React.FC<QuickSelectButtonProps> = React.memo(({
                     'bg-gray-200 text-gray-400 border-gray-300': isDisabled
                   }
                 )}>
-                  💥 {discount}% OFF
+                  💥 {displayDiscount}% OFF
                 </div>
               </div>
               
@@ -247,32 +245,43 @@ const QuickSelectButton: React.FC<QuickSelectButtonProps> = React.memo(({
 QuickSelectButton.displayName = 'QuickSelectButton';
 
 // ============================================================================
-// COMPONENTE PRINCIPAL
+// COMPONENTE PRINCIPAL - OPTIMIZADO CON MEMO
 // ============================================================================
 
-export const QuickSelect: React.FC = () => {
-  // Estado del store
+interface QuickSelectProps {
+  context?: 'feed' | 'modal';
+}
+
+export const QuickSelect: React.FC<QuickSelectProps> = React.memo(({ context = 'modal' }) => {
+  // ✅ PERFORMANCE: Optimized store selectors with useMemo
+  const storeState = useRaffleStore(
+    useCallback((state) => ({
+      availableTickets: state.availableTickets,
+      quickSelect: state.quickSelect,
+      selectedTickets: state.selectedTickets,
+      clearSelection: state.clearSelection
+    }), [])
+  );
+  
   const {
     availableTickets,
     quickSelect,
     selectedTickets,
     clearSelection
-  } = useRaffleStore();
+  } = storeState;
   
   // Hook para formateo mexicano
   const { formatMexicanNumber, formatPriceMXN, calculatePrice, PRECIO_POR_BOLETO_MXN } = useRealTimeTickets();
   
-  // Handler para selección rápida
+  // Handler para selección rápida OPTIMIZADO - Sin delay artificial
   const handleQuickSelect = useCallback((tickets: number) => {
     // Limpiar selección actual antes de hacer nueva selección
     if (selectedTickets.length > 0) {
       clearSelection();
     }
     
-    // Pequeño delay para mejor UX
-    setTimeout(() => {
-      quickSelect(tickets);
-    }, 100);
+    // ✅ PERFORMANCE: Eliminar delay artificial - ejecución instantánea
+    quickSelect(tickets);
   }, [quickSelect, selectedTickets.length, clearSelection]);
   
   return (
@@ -299,25 +308,28 @@ export const QuickSelect: React.FC = () => {
         </div>
       </div>
       
-      {/* Grid de opciones */}
+      {/* ✅ PERFORMANCE: Memoized options grid */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
-        {QUICK_SELECT_OPTIONS.map((option) => {
-          const isDisabled = availableTickets.length < option.tickets;
-          const isMostSold = option.tickets === 10; // El paquete de 10 boletos es el más vendido
-          
-          return (
-            <QuickSelectButton
-              key={option.tickets}
-              tickets={option.tickets}
-              price={option.price}
-              discount={option.discount}
-              popular={option.popular}
-              mostSold={isMostSold}
-              isDisabled={isDisabled}
-              onSelect={() => handleQuickSelect(option.tickets)}
-            />
-          );
-        })}
+        {useMemo(() => 
+          QUICK_SELECT_OPTIONS.map((option) => {
+            const isDisabled = availableTickets.length < option.tickets;
+            const isMostSold = option.tickets === 10; // El paquete de 10 boletos es el más vendido
+            
+            return (
+              <QuickSelectButton
+                key={option.tickets}
+                tickets={option.tickets}
+                price={option.price}
+                discount={option.discount}
+                popular={option.popular}
+                mostSold={isMostSold}
+                isDisabled={isDisabled}
+                onSelect={() => handleQuickSelect(option.tickets)}
+                context={context}
+              />
+            );
+          }), [availableTickets.length, handleQuickSelect, context])
+        }
       </div>
       
       {/* Mensaje de ayuda con estadísticas */}
@@ -405,7 +417,7 @@ export const QuickSelect: React.FC = () => {
       )}
     </div>
   );
-};
+});
 
 // ============================================================================
 // EXPORT CON DISPLAY NAME

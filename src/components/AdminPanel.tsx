@@ -2,8 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { obtenerCompras, actualizarEstadoCompra, type CompraConDetalles, type PurchaseStatus } from '../lib/supabase';
-import { useAdminDisplayCounters } from '../hooks/useCounters';
+import { useAdminSync } from '../hooks/useAdminSync';
 import toast from 'react-hot-toast';
+
+// Importar test utilities para verificación matemática
+import '../utils/testCounters';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CheckCircle2, 
@@ -41,9 +44,10 @@ export default function AdminPanel() {
   const [processingIndividual, setProcessingIndividual] = useState<Set<string>>(new Set());
   const [expandedCompra, setExpandedCompra] = useState<string | null>(null);
   
-  // Hook unificado para administración (reemplaza useSupabaseSync + useAdminCounters)
-  const adminCounters = useAdminDisplayCounters();
-  const { isConnected, visualPercentage, refreshData } = adminCounters;
+  // Hook unificado para administración con sincronización avanzada
+  const adminSync = useAdminSync();
+  const { isConnected } = adminSync.sync;
+  const { forceSync, onAdminConfirmation } = adminSync;
 
   // Cargar compras al montar el componente y cuando cambian los contadores
   useEffect(() => {
@@ -53,7 +57,7 @@ export default function AdminPanel() {
   // Auto-refresh cuando los contadores reales cambian (indica nueva confirmación)
   useEffect(() => {
     const lastSoldCount = localStorage.getItem('admin-last-sold-count');
-    const currentSoldCount = adminCounters.real.soldCount;
+    const currentSoldCount = adminSync.real.soldCount;
     
     if (lastSoldCount && parseInt(lastSoldCount) !== currentSoldCount) {
       console.log('🔄 ADMIN: Detectado cambio en tickets vendidos, recargando compras...');
@@ -61,7 +65,7 @@ export default function AdminPanel() {
     }
     
     localStorage.setItem('admin-last-sold-count', currentSoldCount.toString());
-  }, [adminCounters.real.soldCount]);
+  }, [adminSync.real.soldCount]);
 
   const cargarCompras = async () => {
     console.log('📊 ADMIN: Cargando compras...');
@@ -82,7 +86,7 @@ export default function AdminPanel() {
           console.log(`✅ ADMIN: ${comprasSupabase.length} compras desde Supabase`);
           
           // Sync ticket counters
-          await refreshData();
+          await forceSync();
         } catch (error) {
           console.error('❌ ADMIN: Error cargando desde Supabase:', error);
           supabaseError = error instanceof Error ? error.message : 'Error desconocido';
@@ -212,8 +216,8 @@ export default function AdminPanel() {
       purchaseId: id,
       newStatus: nuevoEstado,
       currentCounters: {
-        real: adminCounters.real.soldCount,
-        display: adminCounters.display.soldCount
+        real: adminSync.real.soldCount,
+        display: adminSync.display.soldCount
       },
       timestamp: new Date().toLocaleTimeString()
     });
@@ -234,35 +238,21 @@ export default function AdminPanel() {
         await actualizarEstadoCompra(id, nuevoEstado);
         toast.success(`Estado actualizado a: ${nuevoEstado}`);
         
-        // Si se confirma una compra, implementar sincronización ROBUSTA
+        // Si se confirma una compra, usar sincronización avanzada
         if (nuevoEstado === 'confirmada') {
-          console.log(`🎯 ADMIN: Compra confirmada - iniciando sincronización global...`);
+          console.log(`🎯 ADMIN: Compra confirmada - ejecutando sincronización avanzada...`);
           
-          // PASO 1: Forzar actualización inmediata del master counter
-          console.log(`🔄 ADMIN: Forzando actualización INMEDIATA del master counter...`);
-          await refreshData();
+          // Usar el nuevo sistema de sincronización admin
+          await onAdminConfirmation();
           
-          // PASO 1.5: Force additional master counter update via direct function call
-          if (typeof window !== 'undefined' && (window as any).raffleCounterTest) {
-            console.log(`🔄 ADMIN: Executing direct master counter force update...`);
-            await (window as any).raffleCounterTest.forceUpdate();
-          }
-          
-          // PASO 2: Dar tiempo para que WebSocket propague (crítico para sync)
-          console.log(`⏱️ ADMIN: Esperando propagación WebSocket...`);
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          
-          // PASO 3: Forzar segunda actualización para garantizar sincronización
-          await refreshData();
-          
-          // PASO 4: Verificar que la sincronización fue exitosa
-          const currentCounters = adminCounters;
+          // Verificar que la sincronización fue exitosa
           console.log(`📊 ADMIN: Verificación post-confirmación:`);
-          console.log(`   Real vendidos: ${currentCounters.real.soldCount}`);
-          console.log(`   Mostrado: ${currentCounters.display.soldPercentage.toFixed(1)}%`);
+          console.log(`   Real vendidos: ${adminSync.real.soldCount}`);
+          console.log(`   Display: ${adminSync.display.soldCount} (${adminSync.display.soldPercentage.toFixed(1)}%)`);
+          console.log(`   FOMO: ${adminSync.fomo.fomoAmount} tickets (diferencia: ${adminSync.fomo.difference})`);
           
-          toast.success(`🎯 Sincronización completada - Real: ${currentCounters.real.soldCount}, Mostrado: ${currentCounters.display.soldPercentage.toFixed(1)}%`, {
-            duration: 4000
+          toast.success(`🎯 Confirmación procesada: ${adminSync.real.soldCount} reales + ${adminSync.fomo.fomoAmount} FOMO = ${adminSync.display.soldCount} mostrados`, {
+            duration: 5000
           });
           
           // PASO 5: ENHANCED - Force immediate Zustand + Master Counter sync
@@ -728,6 +718,130 @@ export default function AdminPanel() {
           </div>
         </motion.div>
 
+        {/* Dashboard FOMO + Real - Solo para Admin */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-2xl border border-slate-700"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-orange-500 rounded-xl">
+              <Zap className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">🎯 Sistema de Contadores Integrado</h2>
+              <p className="text-slate-300 text-sm">Transparencia completa: Real + FOMO = Display</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Real Numbers */}
+            <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600">
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle2 className="w-5 h-5 text-green-400" />
+                <h3 className="font-semibold text-green-400">Real (Base de Datos)</h3>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-slate-300">Tickets Vendidos:</span>
+                  <span className="text-white font-bold">{adminSync.real.soldCount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-300">Porcentaje Real:</span>
+                  <span className="text-white font-bold">{adminSync.real.soldPercentage.toFixed(2)}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-300">Disponibles Reales:</span>
+                  <span className="text-white font-bold">{adminSync.real.availableCount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-300">Reservados:</span>
+                  <span className="text-white font-bold">{adminSync.real.reservedCount.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* FOMO Numbers */}
+            <div className="bg-orange-900/50 rounded-xl p-4 border border-orange-600">
+              <div className="flex items-center gap-2 mb-3">
+                <Zap className="w-5 h-5 text-orange-400" />
+                <h3 className="font-semibold text-orange-400">FOMO (Visual)</h3>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-slate-300">FOMO Fijo:</span>
+                  <span className="text-white font-bold">+{adminSync.fomo.fomoAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-300">Estado FOMO:</span>
+                  <span className={`font-bold ${adminSync.fomo.isActive ? 'text-orange-400' : 'text-slate-400'}`}>
+                    {adminSync.fomo.isActive ? '✅ Activo' : '❌ Desactivado'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-300">Diferencia:</span>
+                  <span className="text-white font-bold">+{adminSync.fomo.difference.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-300">Fórmula:</span>
+                  <span className="text-xs text-orange-300">Real + 1200</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Display Numbers */}
+            <div className="bg-blue-900/50 rounded-xl p-4 border border-blue-600">
+              <div className="flex items-center gap-2 mb-3">
+                <Eye className="w-5 h-5 text-blue-400" />
+                <h3 className="font-semibold text-blue-400">Display (Usuario Ve)</h3>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-slate-300">Tickets Mostrados:</span>
+                  <span className="text-white font-bold">{adminSync.display.soldCount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-300">Porcentaje Display:</span>
+                  <span className="text-white font-bold">{adminSync.display.soldPercentage.toFixed(2)}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-300">Disponibles Display:</span>
+                  <span className="text-white font-bold">{adminSync.display.availableCount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-300">Cálculo:</span>
+                  <span className="text-xs text-blue-300">{adminSync.real.soldCount} + {adminSync.fomo.fomoAmount}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mathematical Verification */}
+          <div className="mt-6 p-4 bg-slate-700/30 rounded-xl border border-slate-600">
+            <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
+              🧮 Verificación Matemática
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-slate-300">Real: </span>
+                <span className="text-white font-mono">
+                  {adminSync.real.soldCount} + {adminSync.real.availableCount} + {adminSync.real.reservedCount} = {adminSync.real.soldCount + adminSync.real.availableCount + adminSync.real.reservedCount}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-300">Display: </span>
+                <span className="text-white font-mono">
+                  {adminSync.display.soldCount} mostrados, {adminSync.real.availableCount} disponibles reales
+                </span>
+              </div>
+            </div>
+            <div className="mt-2 text-xs text-slate-400">
+              💡 Los usuarios ven {adminSync.display.soldCount} vendidos (motivante), pero pueden comprar de {adminSync.real.availableCount} realmente disponibles
+            </div>
+          </div>
+        </motion.div>
+
         {/* Estadísticas mejoradas con animaciones */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -743,10 +857,10 @@ export default function AdminPanel() {
             { icon: DollarSign, label: 'Ingresos', value: formatearPrecio(stats.ingresosTotales), color: 'purple', bgColor: 'bg-purple-50' },
             { 
               icon: Eye, 
-              label: 'Tickets Mostrados', 
-              value: `🎯 ${adminCounters.display.soldCount.toLocaleString()} | Real: ${adminCounters.real.soldCount} | FOMO: +${adminCounters.fomo.difference}`, 
-              color: 'gray', 
-              bgColor: 'bg-gray-50' 
+              label: 'Sistema FOMO + Real', 
+              value: `🎭 Display: ${adminSync.display.soldCount.toLocaleString()} (${adminSync.display.soldPercentage.toFixed(1)}%)`, 
+              color: 'indigo', 
+              bgColor: 'bg-indigo-50' 
             }
           ].map((stat, index) => (
             <motion.div

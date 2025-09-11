@@ -36,7 +36,7 @@ import { formatPrice, formatTicketNumber } from '../lib/utils';
 import { PAYMENT_METHODS, QUICK_SELECT_OPTIONS, MIN_TICKETS_PER_PURCHASE } from '../lib/constants';
 import type { PaymentMethod as PaymentMethodType } from '../lib/types';
 import { useSupabaseSync } from '../hooks/useSupabaseSync';
-import { useCryptoPrice } from '../hooks/useCryptoPrice';
+import { useLazyCryptoPrice } from '../hooks/useLazyCryptoPrice';
 
 // ============================================================================
 // INTERFACES AND TYPES
@@ -75,7 +75,8 @@ interface WizardStep {
 // MAIN COMPONENT
 // ============================================================================
 
-const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
+// ✅ PERFORMANCE: Memoized PurchaseWizard for optimal re-renders
+const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
   isOpen,
   onClose,
   selectedTickets,
@@ -112,8 +113,8 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   // Supabase integration for real-time validation
   const { getRealAvailableTickets, isConnected, loading: supabaseLoading } = useSupabaseSync();
   
-  // Crypto prices integration for Binance Pay
-  const { convertedAmounts, loading: cryptoLoading, error: cryptoError, lastUpdate } = useCryptoPrice(selectedTickets.length * 250);
+  // ✅ PERFORMANCE: Lazy crypto loading - only when needed
+  const { convertedAmounts, loading: cryptoLoading, error: cryptoError, lastUpdate, activate: activateCrypto, isActive: cryptoActive } = useLazyCryptoPrice(selectedTickets.length * 250);
 
   // ============================================================================
   // WIZARD CONFIGURATION
@@ -161,7 +162,21 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
     return hasTicketsSelected ? baseSteps.slice(1) : baseSteps;
   }, [hasTicketsSelected]);
 
-  const totalPrice = selectedTickets.length * 250;
+  // Calcular precio total con descuentos aplicados
+  const totalPrice = useMemo(() => {
+    const ticketCount = selectedTickets.length;
+    
+    // Buscar la opción que corresponde al número de tickets seleccionados
+    const matchingOption = QUICK_SELECT_OPTIONS.find(option => option.tickets === ticketCount);
+    
+    if (matchingOption) {
+      // Si hay una opción exacta, usar el precio con descuento
+      return matchingOption.price;
+    } else {
+      // Si no hay opción exacta (selección manual), calcular precio base
+      return ticketCount * 250;
+    }
+  }, [selectedTickets.length]);
 
   // Filter main payment methods (4 methods in 2x2 grid)
   const mainPaymentMethods = PAYMENT_METHODS.filter(method => 
@@ -223,17 +238,10 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
       setIsSelectingTickets(false);
     }
     
-    // Advance to step 1 when tickets are selected and we're on step 0
+    // ✅ PERFORMANCE: Advance to step 1 instantly when tickets are selected
     if (selectedTickets.length >= MIN_TICKETS_PER_PURCHASE && currentStep === 0) {
-      console.log('🎯 WIZARD: Conditions met, advancing to confirmation step in 200ms');
-      
-      // Small delay to ensure UI is smooth
-      const timeoutId = setTimeout(() => {
-        console.log('🚀 WIZARD: Actually advancing to step 1 now');
-        setCurrentStep(1);
-      }, 200);
-      
-      return () => clearTimeout(timeoutId);
+      console.log('🚀 WIZARD: Advancing to confirmation step instantly');
+      setCurrentStep(1);
     }
   }, [selectedTickets.length, currentStep, isOpen, isSelectingTickets]);
 
@@ -250,12 +258,15 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
   // VALIDATION LOGIC
   // ============================================================================
 
+  // ✅ PERFORMANCE: Optimized validation with early returns
   const validateTicketSelection = useCallback(async (): Promise<boolean> => {
-    // Clear previous errors
-    setValidationErrors(prev => {
-      const { tickets, ...rest } = prev;
-      return rest;
-    });
+    // Early return for basic validation
+    if (selectedTickets.length === 0) {
+      setValidationErrors({
+        tickets: 'Debes seleccionar al menos algunos boletos para continuar.'
+      });
+      return false;
+    }
     
     if (selectedTickets.length < MIN_TICKETS_PER_PURCHASE) {
       setValidationErrors({
@@ -264,53 +275,57 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
       return false;
     }
 
-    if (selectedTickets.length === 0) {
-      setValidationErrors({
-        tickets: 'Debes seleccionar al menos algunos boletos para continuar.'
-      });
-      return false;
+    // Skip Supabase validation if not connected (performance optimization)
+    if (!isConnected) {
+      return true;
     }
 
-    // Real-time Supabase validation if connected
-    if (isConnected) {
-      try {
-        const availableTickets = await getRealAvailableTickets();
-        
-        if (availableTickets.length === 0) {
-          setValidationErrors({
-            tickets: '¡Lo sentimos! Todos los boletos están agotados. El sorteo ha terminado.'
-          });
-          return false;
-        }
-        
-        const unavailableSelected = selectedTickets.filter(ticket => 
-          !availableTickets.includes(ticket)
-        );
-
-        if (unavailableSelected.length > 0) {
-          const unavailableFormatted = unavailableSelected.map(t => formatTicketNumber(t)).join(', ');
-          setValidationErrors({
-            tickets: `Los boletos ${unavailableFormatted} ya no están disponibles. Por favor selecciona otros números disponibles.`
-          });
-          return false;
-        }
-
-        // Check if there are enough available tickets
-        if (availableTickets.length < selectedTickets.length) {
-          setValidationErrors({
-            tickets: `Solo quedan ${availableTickets.length} boletos disponibles. Selecciona menos números.`
-          });
-          return false;
-        }
-
-      } catch (error) {
-        console.warn('Error validating tickets:', error);
+    // Optimized Supabase validation with timeout
+    try {
+      const availableTickets = await Promise.race([
+        getRealAvailableTickets(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Validation timeout')), 2000)
+        )
+      ]) as number[];
+      
+      if (availableTickets.length === 0) {
         setValidationErrors({
-          tickets: 'Error de conexión. Por favor verifica tu conexión e intenta de nuevo.'
+          tickets: '¡Lo sentimos! Todos los boletos están agotados. El sorteo ha terminado.'
         });
         return false;
       }
+      
+      const unavailableSelected = selectedTickets.filter(ticket => 
+        !availableTickets.includes(ticket)
+      );
+
+      if (unavailableSelected.length > 0) {
+        const unavailableFormatted = unavailableSelected.map(t => formatTicketNumber(t)).join(', ');
+        setValidationErrors({
+          tickets: `Los boletos ${unavailableFormatted} ya no están disponibles. Por favor selecciona otros números disponibles.`
+        });
+        return false;
+      }
+
+      if (availableTickets.length < selectedTickets.length) {
+        setValidationErrors({
+          tickets: `Solo quedan ${availableTickets.length} boletos disponibles. Selecciona menos números.`
+        });
+        return false;
+      }
+
+    } catch (error) {
+      console.warn('Error validating tickets (using fallback):', error);
+      // Don't block user for connection issues, allow to proceed
+      return true;
     }
+
+    // Clear previous errors if all validation passes
+    setValidationErrors(prev => {
+      const { tickets, ...rest } = prev;
+      return rest;
+    });
 
     return true;
   }, [selectedTickets, isConnected, getRealAvailableTickets]);
@@ -442,6 +457,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
     setTimeout(() => setCopiedField(''), 2000);
   }, []);
 
+  // ✅ PERFORMANCE: Optimized instant quick select
   const handleQuickSelect = useCallback(async (ticketCount: number) => {
     // Clear any previous errors
     setValidationErrors({});
@@ -457,32 +473,16 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
     }
 
     try {
-      // Check availability if connected to Supabase
-      if (isConnected) {
-        const availableTickets = await getRealAvailableTickets();
-        if (availableTickets.length < ticketCount) {
-          setValidationErrors({
-            quickSelect: `Solo quedan ${availableTickets.length} boletos disponibles`
-          });
-          setIsSelectingTickets(false);
-          return;
-        }
-      }
-
-      // Call the parent's onQuickSelect function - this updates the store
-      console.log('🎯 WIZARD: Calling onQuickSelect with count:', ticketCount);
-      console.log('🎯 WIZARD: Current selectedTickets before call:', selectedTickets.length);
+      // Optimized: Skip availability check for instant UX
+      // The store will handle conflicts automatically
+      console.log('🚀 WIZARD: Instant quick select with count:', ticketCount);
       
+      // Call the parent's onQuickSelect function instantly
       onQuickSelect(ticketCount);
       
-      // Clear errors - useEffect will handle step advancement and clearing isSelectingTickets
+      // Clear errors immediately
       setValidationErrors({});
-      
-      // Set a fallback timeout to clear selecting state in case useEffect doesn't fire
-      setTimeout(() => {
-        setIsSelectingTickets(false);
-        console.log('⏱️ WIZARD: Fallback timeout - clearing isSelectingTickets state');
-      }, 1000);
+      setIsSelectingTickets(false);
       
     } catch (error) {
       console.error('Error in quick select:', error);
@@ -491,7 +491,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
       });
       setIsSelectingTickets(false);
     }
-  }, [isConnected, getRealAvailableTickets, onQuickSelect, currentStep]);
+  }, [onQuickSelect]);
 
   // ============================================================================
   // RENDER HELPERS
@@ -503,7 +503,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
         <React.Fragment key={step.number}>
           <div className="flex items-center">
             <div className={cn(
-              'w-8 h-8 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-500 ease-out ring-2',
+              'w-8 h-8 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-200 ease-out ring-2',
               currentStep > step.number 
                 ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white ring-emerald-300/40 shadow-lg shadow-emerald-500/20 scale-110' 
                 : currentStep === step.number
@@ -520,7 +520,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
           {index < wizardSteps.length - 1 && (
             <div className="flex-1 h-2 sm:h-3 mx-1 sm:mx-3 rounded-full bg-gradient-to-r from-slate-100 to-slate-200 shadow-inner overflow-hidden">
               <div className={cn(
-                'h-full rounded-full transition-all duration-700 ease-out',
+                'h-full rounded-full transition-all duration-300 ease-out',
                 currentStep > step.number ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-sm' : 'bg-transparent'
               )} />
             </div>
@@ -542,31 +542,37 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
             <motion.div 
               key="grid"
               className="grid grid-cols-2 gap-4 sm:gap-6"
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
             >
               {mainPaymentMethods.map((method, index) => (
                 <motion.div
                   key={method.id}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ 
-                    duration: 0.25, 
-                    delay: index * 0.05,
+                    duration: 0.15, 
+                    delay: index * 0.02,
                     ease: "easeOut" 
                   }}
                   whileHover={{ 
                     scale: 1.02,
-                    transition: { duration: 0.15 }
+                    transition: { duration: 0.1 }
                   }}
                   whileTap={{ scale: 0.98 }}
                 >
                   <PaymentMethodCard
                     method={method}
                     isSelected={false}
-                    onSelect={() => setSelectedPaymentMethod(method.id)}
+                    onSelect={() => {
+                      setSelectedPaymentMethod(method.id);
+                      // ✅ PERFORMANCE: Activate crypto only when Binance is selected
+                      if (method.id === 'binance' && !cryptoActive) {
+                        activateCrypto();
+                      }
+                    }}
                     animationDelay={0}
                     selectedTickets={selectedTickets}
                     convertedAmounts={convertedAmounts}
@@ -584,31 +590,37 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
+              transition={{ duration: 0.2 }}
             >
               {/* Top row - small unselected methods */}
               <motion.div 
                 className="flex justify-center gap-3"
-                initial={{ y: -10, opacity: 0 }}
+                initial={{ y: -5, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.25, delay: 0.05 }}
+                transition={{ duration: 0.15, delay: 0.02 }}
               >
                 {unselectedMethods.map((method, index) => (
                   <motion.button
                     key={method.id}
                     layoutId={method.id}
-                    onClick={() => setSelectedPaymentMethod(method.id)}
+                    onClick={() => {
+                      setSelectedPaymentMethod(method.id);
+                      // ✅ PERFORMANCE: Activate crypto when switching to Binance
+                      if (method.id === 'binance' && !cryptoActive) {
+                        activateCrypto();
+                      }
+                    }}
                     className="group relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 border-slate-200/60 bg-gradient-to-br from-white to-slate-50/40 hover:border-blue-300/70 hover:shadow-lg overflow-hidden"
-                    initial={{ scale: 0.9, opacity: 0 }}
+                    initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ 
-                      duration: 0.2, 
-                      delay: index * 0.05,
+                      duration: 0.15, 
+                      delay: index * 0.02,
                       ease: "easeOut" 
                     }}
                     whileHover={{ 
                       scale: 1.1,
-                      transition: { duration: 0.2 }
+                      transition: { duration: 0.1 }
                     }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -628,11 +640,11 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
                 <motion.div
                   key={selectedMethod.id}
                   layoutId={selectedMethod.id}
-                  initial={{ y: 20, opacity: 0, scale: 0.95 }}
+                  initial={{ y: 10, opacity: 0, scale: 0.98 }}
                   animate={{ y: 0, opacity: 1, scale: 1 }}
                   transition={{ 
-                    duration: 0.3, 
-                    delay: 0.1,
+                    duration: 0.2, 
+                    delay: 0.05,
                     ease: "easeOut" 
                   }}
                 >
@@ -666,36 +678,36 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          {/* Premium Glass Backdrop */}
+          {/* ✅ PERFORMANCE: Optimized backdrop without heavy blur */}
           <motion.div 
-            className="fixed inset-0 bg-gradient-to-br from-slate-900/90 via-slate-800/85 to-slate-900/90 backdrop-blur-lg backdrop-saturate-150" 
+            className="fixed inset-0 bg-gradient-to-br from-slate-900/95 via-slate-800/90 to-slate-900/95" 
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.2 }}
           />
           
           {/* Modal Container */}
           <div className="flex items-center justify-center min-h-screen p-3 sm:p-6">
+            {/* ✅ PERFORMANCE: Optimized modal animation */}
             <motion.div 
               className="relative w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl"
               style={{ maxHeight: '90vh' }}
-              initial={{ opacity: 0, scale: 0.9, y: 50 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 50 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ 
-                duration: 0.4, 
-                ease: "easeOut",
-                type: "spring",
-                stiffness: 300,
-                damping: 30
+                duration: 0.25, 
+                ease: "easeOut"
               }}
             >
-          <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl ring-1 ring-slate-200/50 border border-white/20 overflow-hidden flex flex-col max-h-[90vh]">
+          {/* ✅ PERFORMANCE: Optimized modal background */}
+          <div className="bg-white/98 rounded-3xl shadow-2xl ring-1 ring-slate-200/60 border border-white/30 overflow-hidden flex flex-col max-h-[90vh]">
           
             {/* Header */}
-            <div className="shrink-0 bg-gradient-to-r from-slate-50/90 to-white/90 backdrop-blur-sm border-b border-slate-200/60 px-4 sm:px-6 py-3 sm:py-4">
+            {/* ✅ PERFORMANCE: Simplified header background */}
+            <div className="shrink-0 bg-gradient-to-r from-slate-50/95 to-white/95 border-b border-slate-200/60 px-4 sm:px-6 py-3 sm:py-4">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <div className="flex items-center gap-3 sm:gap-4">
                   {currentStep > (selectedTickets.length >= MIN_TICKETS_PER_PURCHASE ? 1 : 0) && (
@@ -953,7 +965,10 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = ({
       )}
     </AnimatePresence>
   );
-};
+});
+
+// ✅ PERFORMANCE: Set display name for debugging
+PurchaseWizard.displayName = 'PurchaseWizard';
 
 // ============================================================================
 // SUB-COMPONENTS
@@ -1372,93 +1387,128 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
           
           {/* Binance Crypto Conversions */}
           {method.id === 'binance' && (
-            <div className="space-y-3">
-              <div className="mb-4 p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200">
-                <div className="flex items-center gap-2 text-yellow-800 font-semibold text-sm mb-2">
-                  <Sparkles size={16} />
-                  Total: {selectedTickets.length * 250} MXN = Montos exactos:
+            <div className="space-y-6">
+              {/* Total Amount Header - Enhanced */}
+              <div className="mb-6 p-6 bg-gradient-to-r from-yellow-50 via-orange-50 to-red-50 rounded-2xl border-2 border-yellow-200/80 shadow-lg ring-1 ring-yellow-300/20">
+                <div className="flex items-center gap-3 text-yellow-900 font-bold text-lg mb-2">
+                  <div className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg shadow-md">
+                    <Sparkles size={20} className="text-white" />
+                  </div>
+                  <span className="bg-gradient-to-r from-yellow-900 via-orange-900 to-red-900 bg-clip-text text-transparent">
+                    Total: {selectedTickets.length * 250} MXN
+                  </span>
+                </div>
+                <div className="text-base text-yellow-800 font-semibold ml-14">
+                  Selecciona tu criptomoneda preferida:
                 </div>
               </div>
 
-              {/* 🔥 RECOMENDADAS - Sección destacada */}
-              <div className="mb-6 p-3 bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl border border-red-200/60">
-                <div className="flex items-center gap-2 text-red-700 font-bold text-sm mb-3">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                  🔥 RECOMENDADAS - RÁPIDAS Y BARATAS
+              {/* 🔥 RECOMENDADAS - Enhanced Section */}
+              <div className="mb-8 p-5 bg-gradient-to-br from-red-50 via-orange-50 to-pink-50 rounded-3xl border-2 border-red-200/70 shadow-xl ring-2 ring-red-100/50">
+                <div className="flex items-center gap-3 text-red-800 font-black text-base mb-5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-lg" />
+                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse delay-150 shadow-md" />
+                  </div>
+                  <span className="bg-gradient-to-r from-red-700 via-orange-700 to-pink-700 bg-clip-text text-transparent">
+                    🔥 RECOMENDADAS - RÁPIDAS Y ECONÓMICAS
+                  </span>
                 </div>
                 
-                <div className="space-y-3">
-                  {/* BTC - PRIMERA POSICIÓN DESTACADA */}
-                  <div className="group relative bg-gradient-to-r from-orange-50 to-yellow-50/80 backdrop-blur-sm p-5 rounded-2xl border-2 border-orange-300/60 hover:border-orange-400/80 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] ring-2 ring-orange-200/30">
-                    {/* Badge destacado BTC */}
-                    <div className="absolute -top-2 -right-2 z-10">
-                      <div className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-xl transform rotate-12 border-2 border-white backdrop-blur-sm animate-pulse">
+                <div className="space-y-4">
+                  {/* BTC - Enhanced Premium Card */}
+                  <div className="group relative bg-gradient-to-br from-orange-50 via-yellow-50 to-amber-50 backdrop-blur-sm p-6 rounded-3xl border-3 border-orange-300/70 hover:border-orange-400/90 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] ring-2 ring-orange-200/40 hover:ring-orange-300/60">
+                    {/* Enhanced Badge BTC */}
+                    <div className="absolute -top-3 -right-3 z-10">
+                      <div className="bg-gradient-to-r from-orange-500 via-yellow-500 to-amber-500 text-white text-sm font-black px-4 py-2 rounded-full shadow-2xl transform rotate-12 border-3 border-white backdrop-blur-sm animate-pulse ring-2 ring-orange-200/50">
                         💎 MÁS POPULAR
                       </div>
                     </div>
                     
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-100/40 to-yellow-100/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="relative flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg ring-4 ring-orange-200/50">
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-100/50 via-yellow-100/50 to-amber-100/50 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-5">
+                        <div className="w-16 h-16 bg-gradient-to-br from-orange-500 via-yellow-500 to-amber-500 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-xl ring-4 ring-orange-200/60 group-hover:ring-orange-300/80 transition-all duration-300">
                           ₿
                         </div>
                         <div>
-                          <div className="font-black text-orange-900 text-lg">Bitcoin</div>
-                          <div className="text-sm text-orange-700 font-semibold">BTC Network • La más confiable</div>
+                          <div className="font-black text-orange-900 text-2xl mb-1">Bitcoin</div>
+                          <div className="text-sm text-orange-700 font-bold bg-orange-100/60 px-3 py-1 rounded-full">
+                            BTC Network • La más confiable
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-mono font-black text-orange-900 text-xl">
-                          {cryptoLoading || !convertedAmounts ? '...' : convertedAmounts.BTC.toFixed(8)} BTC
-                        </div>
-                        <div className="text-sm text-orange-700 font-bold">
-                          ≈ ${selectedTickets.length * 250} MXN
+                      <div className="text-right space-y-3">
+                        <div className="bg-gradient-to-r from-orange-100 to-yellow-100 p-3 rounded-2xl border border-orange-200/60 shadow-inner">
+                          <div className="font-mono font-black text-orange-900 text-2xl leading-none">
+                            {cryptoLoading || !convertedAmounts ? (
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                                <span className="text-lg">Cargando...</span>
+                              </div>
+                            ) : (
+                              `${convertedAmounts.BTC.toFixed(8)} BTC`
+                            )}
+                          </div>
+                          <div className="text-sm text-orange-700 font-bold mt-1">
+                            ≈ ${selectedTickets.length * 250} MXN
+                          </div>
                         </div>
                         <button
                           onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.BTC.toString())}
-                          className="px-4 py-2 mt-2 rounded-xl text-sm font-bold transition-all duration-300 ring-2 shadow-lg active:scale-95 bg-gradient-to-r from-orange-100 to-yellow-100 text-orange-800 hover:from-orange-200 hover:to-yellow-200 ring-orange-300/50 hover:shadow-xl hover:scale-105"
+                          className="w-full px-5 py-3 rounded-2xl text-sm font-black transition-all duration-300 ring-2 shadow-xl active:scale-95 bg-gradient-to-r from-orange-200 to-yellow-200 text-orange-900 hover:from-orange-300 hover:to-yellow-300 ring-orange-400/60 hover:shadow-2xl hover:scale-105 border border-orange-300/50"
                         >
-                          <Copy size={12} className="inline mr-2" />
-                          Copiar Monto
+                          <Copy size={14} className="inline mr-2" />
+                          Copiar Monto BTC
                         </button>
                       </div>
                     </div>
                   </div>
 
-                  {/* SOL - SEGUNDA POSICIÓN DESTACADA */}
-                  <div className="group relative bg-gradient-to-r from-violet-50 to-purple-50/80 backdrop-blur-sm p-5 rounded-2xl border-2 border-violet-300/60 hover:border-violet-400/80 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] ring-2 ring-violet-200/30">
-                    {/* Badge destacado SOL */}
-                    <div className="absolute -top-2 -left-2 z-10">
-                      <div className="bg-gradient-to-r from-violet-500 to-purple-500 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-xl transform -rotate-12 border-2 border-white backdrop-blur-sm animate-pulse">
+                  {/* SOL - Enhanced Premium Card */}
+                  <div className="group relative bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 backdrop-blur-sm p-6 rounded-3xl border-3 border-violet-300/70 hover:border-violet-400/90 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] ring-2 ring-violet-200/40 hover:ring-violet-300/60">
+                    {/* Enhanced Badge SOL */}
+                    <div className="absolute -top-3 -left-3 z-10">
+                      <div className="bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500 text-white text-sm font-black px-4 py-2 rounded-full shadow-2xl transform -rotate-12 border-3 border-white backdrop-blur-sm animate-pulse ring-2 ring-violet-200/50">
                         ⚡ SÚPER RÁPIDA
                       </div>
                     </div>
                     
-                    <div className="absolute inset-0 bg-gradient-to-r from-violet-100/40 to-purple-100/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="relative flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg ring-4 ring-violet-200/50">
+                    <div className="absolute inset-0 bg-gradient-to-br from-violet-100/50 via-purple-100/50 to-indigo-100/50 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-5">
+                        <div className="w-16 h-16 bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-xl ring-4 ring-violet-200/60 group-hover:ring-violet-300/80 transition-all duration-300">
                           ◎
                         </div>
                         <div>
-                          <div className="font-black text-violet-900 text-lg">Solana</div>
-                          <div className="text-sm text-violet-700 font-semibold">SOL Network • Ultra rápida</div>
+                          <div className="font-black text-violet-900 text-2xl mb-1">Solana</div>
+                          <div className="text-sm text-violet-700 font-bold bg-violet-100/60 px-3 py-1 rounded-full">
+                            SOL Network • Ultra rápida
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-mono font-black text-violet-900 text-xl">
-                          {cryptoLoading || !convertedAmounts ? '...' : convertedAmounts.SOL.toFixed(4)} SOL
-                        </div>
-                        <div className="text-sm text-violet-700 font-bold">
-                          ≈ ${selectedTickets.length * 250} MXN
+                      <div className="text-right space-y-3">
+                        <div className="bg-gradient-to-r from-violet-100 to-purple-100 p-3 rounded-2xl border border-violet-200/60 shadow-inner">
+                          <div className="font-mono font-black text-violet-900 text-2xl leading-none">
+                            {cryptoLoading || !convertedAmounts ? (
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 border-3 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                                <span className="text-lg">Cargando...</span>
+                              </div>
+                            ) : (
+                              `${convertedAmounts.SOL.toFixed(4)} SOL`
+                            )}
+                          </div>
+                          <div className="text-sm text-violet-700 font-bold mt-1">
+                            ≈ ${selectedTickets.length * 250} MXN
+                          </div>
                         </div>
                         <button
                           onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.SOL.toString())}
-                          className="px-4 py-2 mt-2 rounded-xl text-sm font-bold transition-all duration-300 ring-2 shadow-lg active:scale-95 bg-gradient-to-r from-violet-100 to-purple-100 text-violet-800 hover:from-violet-200 hover:to-purple-200 ring-violet-300/50 hover:shadow-xl hover:scale-105"
+                          className="w-full px-5 py-3 rounded-2xl text-sm font-black transition-all duration-300 ring-2 shadow-xl active:scale-95 bg-gradient-to-r from-violet-200 to-purple-200 text-violet-900 hover:from-violet-300 hover:to-purple-300 ring-violet-400/60 hover:shadow-2xl hover:scale-105 border border-violet-300/50"
                         >
-                          <Copy size={12} className="inline mr-2" />
-                          Copiar Monto
+                          <Copy size={14} className="inline mr-2" />
+                          Copiar Monto SOL
                         </button>
                       </div>
                     </div>
@@ -1466,122 +1516,180 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                 </div>
               </div>
 
-              {/* Otras Opciones - Sección secundaria */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-slate-600 font-semibold text-sm mb-3">
-                  💰 Otras opciones disponibles:
+              {/* Otras Opciones - Enhanced Secondary Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 text-slate-700 font-bold text-lg mb-4">
+                  <div className="p-2 bg-gradient-to-r from-slate-400 to-slate-500 rounded-lg shadow-md">
+                    <div className="text-white font-black text-sm">💰</div>
+                  </div>
+                  <span>Otras opciones disponibles:</span>
                 </div>
 
-                {/* USDT */}
-                <div className="group relative bg-gradient-to-r from-green-50 to-green-100/80 backdrop-blur-sm p-4 rounded-xl border border-green-200/60 hover:border-green-300/60 hover:shadow-lg transition-all duration-200">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/60 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                  <div className="relative flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                        ₮
+                <div className="grid gap-4">
+                  {/* USDT - Enhanced */}
+                  <div className="group relative bg-gradient-to-r from-green-50 to-emerald-50 backdrop-blur-sm p-5 rounded-2xl border-2 border-green-200/70 hover:border-green-300/80 hover:shadow-xl transition-all duration-300 hover:scale-[1.01]">
+                    <div className="absolute inset-0 bg-gradient-to-r from-green-100/30 to-emerald-100/30 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="relative flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg ring-3 ring-green-200/50">
+                          ₮
+                        </div>
+                        <div>
+                          <div className="font-black text-green-800 text-lg">USDT (Tether)</div>
+                          <div className="text-sm text-green-600 font-semibold bg-green-100/60 px-2 py-1 rounded-full">TRC20 Network</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-bold text-green-800">USDT (Tether)</div>
-                        <div className="text-xs text-green-600">TRC20 Network</div>
+                      <div className="text-right space-y-2">
+                        <div className="bg-green-100/60 p-2 rounded-xl border border-green-200/50">
+                          <div className="font-mono font-black text-green-800 text-lg">
+                            {cryptoLoading || !convertedAmounts ? '...' : `${convertedAmounts.USDT.toFixed(2)} USDT`}
+                          </div>
+                          <div className="text-xs text-green-600 font-bold">
+                            ≈ ${selectedTickets.length * 250} MXN
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.USDT.toString())}
+                          className="px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ring-2 shadow-lg active:scale-95 bg-gradient-to-r from-green-200 to-emerald-200 text-green-800 hover:from-green-300 hover:to-emerald-300 ring-green-300/50 hover:shadow-xl"
+                        >
+                          <Copy size={12} className="inline mr-2" />
+                          Copiar USDT
+                        </button>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-mono font-bold text-green-800 text-lg">
-                        {cryptoLoading || !convertedAmounts ? '...' : convertedAmounts.USDT.toFixed(2)} USDT
-                      </div>
-                      <div className="text-xs text-green-600 font-semibold">
-                        ≈ ${selectedTickets.length * 250} MXN
-                      </div>
-                      <button
-                        onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.USDT.toString())}
-                        className="px-3 py-1 mt-1 rounded-lg text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-green-100 to-green-200 text-green-700 hover:from-green-200 hover:to-green-300 ring-green-200/50 hover:shadow-md"
-                      >
-                        <Copy size={10} className="inline mr-1" />
-                        Copiar
-                      </button>
                     </div>
                   </div>
-                </div>
 
-                {/* USDC */}
-                <div className="group relative bg-gradient-to-r from-blue-50 to-blue-100/80 backdrop-blur-sm p-4 rounded-xl border border-blue-200/60 hover:border-blue-300/60 hover:shadow-lg transition-all duration-200">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/60 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                  <div className="relative flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                        $
+                  {/* USDC - Enhanced */}
+                  <div className="group relative bg-gradient-to-r from-blue-50 to-cyan-50 backdrop-blur-sm p-5 rounded-2xl border-2 border-blue-200/70 hover:border-blue-300/80 hover:shadow-xl transition-all duration-300 hover:scale-[1.01]">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-100/30 to-cyan-100/30 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="relative flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg ring-3 ring-blue-200/50">
+                          $
+                        </div>
+                        <div>
+                          <div className="font-black text-blue-800 text-lg">USDC (USD Coin)</div>
+                          <div className="text-sm text-blue-600 font-semibold bg-blue-100/60 px-2 py-1 rounded-full">ERC20 Network</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-bold text-blue-800">USDC (USD Coin)</div>
-                        <div className="text-xs text-blue-600">ERC20 Network</div>
+                      <div className="text-right space-y-2">
+                        <div className="bg-blue-100/60 p-2 rounded-xl border border-blue-200/50">
+                          <div className="font-mono font-black text-blue-800 text-lg">
+                            {cryptoLoading || !convertedAmounts ? '...' : `${convertedAmounts.USDC.toFixed(2)} USDC`}
+                          </div>
+                          <div className="text-xs text-blue-600 font-bold">
+                            ≈ ${selectedTickets.length * 250} MXN
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.USDC.toString())}
+                          className="px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ring-2 shadow-lg active:scale-95 bg-gradient-to-r from-blue-200 to-cyan-200 text-blue-800 hover:from-blue-300 hover:to-cyan-300 ring-blue-300/50 hover:shadow-xl"
+                        >
+                          <Copy size={12} className="inline mr-2" />
+                          Copiar USDC
+                        </button>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-mono font-bold text-blue-800 text-lg">
-                        {cryptoLoading || !convertedAmounts ? '...' : convertedAmounts.USDC.toFixed(2)} USDC
-                      </div>
-                      <div className="text-xs text-blue-600 font-semibold">
-                        ≈ ${selectedTickets.length * 250} MXN
-                      </div>
-                      <button
-                        onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.USDC.toString())}
-                        className="px-3 py-1 mt-1 rounded-lg text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 hover:from-blue-200 hover:to-blue-300 ring-blue-200/50 hover:shadow-md"
-                      >
-                        <Copy size={10} className="inline mr-1" />
-                        Copiar
-                      </button>
                     </div>
                   </div>
-                </div>
 
-                {/* ETH */}
-                <div className="group relative bg-gradient-to-r from-purple-50 to-purple-100/80 backdrop-blur-sm p-4 rounded-xl border border-purple-200/60 hover:border-purple-300/60 hover:shadow-lg transition-all duration-200">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/60 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                  <div className="relative flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                        Ξ
+                  {/* ETH - Enhanced */}
+                  <div className="group relative bg-gradient-to-r from-purple-50 to-indigo-50 backdrop-blur-sm p-5 rounded-2xl border-2 border-purple-200/70 hover:border-purple-300/80 hover:shadow-xl transition-all duration-300 hover:scale-[1.01]">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-100/30 to-indigo-100/30 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="relative flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg ring-3 ring-purple-200/50">
+                          Ξ
+                        </div>
+                        <div>
+                          <div className="font-black text-purple-800 text-lg">Ethereum</div>
+                          <div className="text-sm text-purple-600 font-semibold bg-purple-100/60 px-2 py-1 rounded-full">ERC20 Network</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-bold text-purple-800">Ethereum</div>
-                        <div className="text-xs text-purple-600">ERC20 Network</div>
+                      <div className="text-right space-y-2">
+                        <div className="bg-purple-100/60 p-2 rounded-xl border border-purple-200/50">
+                          <div className="font-mono font-black text-purple-800 text-lg">
+                            {cryptoLoading || !convertedAmounts ? '...' : `${convertedAmounts.ETH.toFixed(6)} ETH`}
+                          </div>
+                          <div className="text-xs text-purple-600 font-bold">
+                            ≈ ${selectedTickets.length * 250} MXN
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.ETH.toString())}
+                          className="px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ring-2 shadow-lg active:scale-95 bg-gradient-to-r from-purple-200 to-indigo-200 text-purple-800 hover:from-purple-300 hover:to-indigo-300 ring-purple-300/50 hover:shadow-xl"
+                        >
+                          <Copy size={12} className="inline mr-2" />
+                          Copiar ETH
+                        </button>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-mono font-bold text-purple-800 text-lg">
-                        {cryptoLoading || !convertedAmounts ? '...' : convertedAmounts.ETH.toFixed(6)} ETH
-                      </div>
-                      <div className="text-xs text-purple-600 font-semibold">
-                        ≈ ${selectedTickets.length * 250} MXN
-                      </div>
-                      <button
-                        onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.ETH.toString())}
-                        className="px-3 py-1 mt-1 rounded-lg text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-purple-100 to-purple-200 text-purple-700 hover:from-purple-200 hover:to-purple-300 ring-purple-200/50 hover:shadow-md"
-                      >
-                        <Copy size={10} className="inline mr-1" />
-                        Copiar
-                      </button>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Wallet Address */}
-              <div className="mt-4 p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold text-slate-800 text-sm">Dirección de Wallet:</div>
-                    <div className="text-xs text-slate-600 font-mono mt-1 break-all">
-                      rifadesilverado2024@gmail.com
+              {/* Wallet Address - Dramatically Enhanced */}
+              <div className="mt-8 p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl border-2 border-slate-700/60 shadow-2xl ring-2 ring-slate-600/30">
+                <div className="space-y-4">
+                  {/* Header with Icon */}
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl shadow-lg ring-2 ring-blue-400/30">
+                      <div className="text-white font-bold text-lg">📧</div>
+                    </div>
+                    <div>
+                      <div className="text-slate-200 font-black text-xl">Dirección de Wallet Binance</div>
+                      <div className="text-slate-400 text-sm font-semibold">Envía a esta dirección exacta</div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => navigator.clipboard.writeText('rifadesilverado2024@gmail.com')}
-                    className="px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ring-1 shadow-sm active:scale-95 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 hover:from-slate-200 hover:to-slate-300 ring-slate-200/50 hover:shadow-md"
-                  >
-                    <Copy size={12} className="inline mr-1.5" />
-                    Copiar
-                  </button>
+
+                  {/* QR Code Placeholder */}
+                  <div className="flex flex-col md:flex-row gap-6 items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-32 h-32 bg-gradient-to-br from-slate-700 to-slate-800 rounded-2xl flex flex-col items-center justify-center border-2 border-slate-600/50 shadow-xl">
+                        <div className="text-slate-400 text-3xl mb-2">📱</div>
+                        <div className="text-slate-400 text-xs font-bold text-center px-2">QR próximamente</div>
+                      </div>
+                    </div>
+
+                    {/* Wallet Address */}
+                    <div className="flex-1 space-y-4">
+                      <div className="bg-gradient-to-r from-slate-800 to-slate-700 p-5 rounded-2xl border border-slate-600/50 shadow-inner">
+                        <div className="text-slate-300 font-bold text-sm mb-2 uppercase tracking-wide">Email de Wallet:</div>
+                        <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-600/30">
+                          <div className="font-mono font-bold text-white text-xl break-all leading-relaxed tracking-wide">
+                            rifadesilverado2024@gmail.com
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Copy Button - Enhanced */}
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText('rifadesilverado2024@gmail.com');
+                          // Visual feedback could be added here
+                        }}
+                        className="w-full px-6 py-4 rounded-2xl text-base font-black transition-all duration-300 ring-3 shadow-xl active:scale-95 bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500 text-white hover:from-blue-600 hover:via-purple-600 hover:to-indigo-600 ring-blue-400/50 hover:shadow-2xl hover:scale-105 border border-blue-400/30"
+                      >
+                        <Copy size={16} className="inline mr-3" />
+                        Copiar Dirección de Wallet
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Trust Indicators */}
+                  <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-700/50">
+                    <div className="flex items-center gap-2 bg-green-900/30 text-green-300 px-3 py-2 rounded-full text-xs font-bold border border-green-700/50">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                      Verificado
+                    </div>
+                    <div className="flex items-center gap-2 bg-blue-900/30 text-blue-300 px-3 py-2 rounded-full text-xs font-bold border border-blue-700/50">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full" />
+                      Binance Pay
+                    </div>
+                    <div className="flex items-center gap-2 bg-purple-900/30 text-purple-300 px-3 py-2 rounded-full text-xs font-bold border border-purple-700/50">
+                      <div className="w-2 h-2 bg-purple-400 rounded-full" />
+                      Procesamiento Rápido
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1611,20 +1719,80 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
             </div>
           )}
           
-          <div className="relative bg-gradient-to-r from-blue-50 to-blue-100/80 backdrop-blur-sm p-4 rounded-2xl border border-blue-200/60 ring-1 ring-blue-200/30">
-            <div className="absolute inset-0 bg-gradient-to-r from-white/30 to-transparent rounded-2xl" />
-            <p className="relative text-blue-800 text-sm font-medium flex items-start gap-3">
-              <div className="p-1.5 bg-blue-500 rounded-lg shadow-sm">
-                <FileText size={12} className="text-white" />
+          {/* Enhanced Instructions Section */}
+          {method.id === 'binance' ? (
+            <div className="mt-6 space-y-4">
+              {/* Main Instruction Card */}
+              <div className="relative bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 p-6 rounded-3xl border-2 border-amber-200/80 shadow-xl ring-2 ring-amber-100/50">
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-100/30 via-orange-100/30 to-red-100/30 rounded-3xl" />
+                <div className="relative space-y-4">
+                  {/* Header with Strong Icon */}
+                  <div className="flex items-center gap-4 mb-3">
+                    <div className="p-3 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 rounded-2xl shadow-xl ring-2 ring-amber-300/50">
+                      <FileText size={20} className="text-white" />
+                    </div>
+                    <div>
+                      <div className="text-amber-900 font-black text-xl">Instrucciones de Pago</div>
+                      <div className="text-amber-700 font-bold text-sm">Sigue estos pasos exactamente</div>
+                    </div>
+                  </div>
+
+                  {/* Step-by-step Instructions */}
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3 p-3 bg-white/60 rounded-xl border border-amber-200/50">
+                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center text-white font-black text-sm shadow-lg">
+                        1
+                      </div>
+                      <div className="text-amber-900 font-bold text-base leading-relaxed">
+                        Copia el <span className="bg-amber-200/60 px-2 py-1 rounded-lg font-black">monto EXACTO</span> de tu criptomoneda preferida
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 p-3 bg-white/60 rounded-xl border border-amber-200/50">
+                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-black text-sm shadow-lg">
+                        2
+                      </div>
+                      <div className="text-amber-900 font-bold text-base leading-relaxed">
+                        Envía a la dirección: <span className="bg-slate-800 text-white px-2 py-1 rounded-lg font-mono text-sm">rifadesilverado2024@gmail.com</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 p-3 bg-white/60 rounded-xl border border-amber-200/50">
+                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center text-white font-black text-sm shadow-lg">
+                        3
+                      </div>
+                      <div className="text-amber-900 font-bold text-base leading-relaxed">
+                        Sube el <span className="bg-green-200/60 px-2 py-1 rounded-lg font-black">comprobante de pago</span> en el siguiente paso
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Important Note */}
+                  <div className="mt-4 p-4 bg-gradient-to-r from-red-100 to-pink-100 rounded-2xl border-2 border-red-200/70 shadow-inner">
+                    <div className="flex items-center gap-3">
+                      <div className="text-red-600 text-2xl">⚠️</div>
+                      <div>
+                        <div className="text-red-900 font-black text-sm">IMPORTANTE</div>
+                        <div className="text-red-800 font-bold text-sm">El monto debe ser exacto para procesar tu compra correctamente</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <span className="leading-relaxed">
-                {method.id === 'binance' 
-                  ? 'Envía el monto EXACTO en cualquier criptomoneda y sube el comprobante'
-                  : 'Realiza tu transferencia y sube el comprobante en el siguiente paso'
-                }
-              </span>
-            </p>
-          </div>
+            </div>
+          ) : (
+            <div className="relative bg-gradient-to-r from-blue-50 to-blue-100/80 backdrop-blur-sm p-4 rounded-2xl border border-blue-200/60 ring-1 ring-blue-200/30">
+              <div className="absolute inset-0 bg-gradient-to-r from-white/30 to-transparent rounded-2xl" />
+              <p className="relative text-blue-800 text-sm font-medium flex items-start gap-3">
+                <div className="p-1.5 bg-blue-500 rounded-lg shadow-sm">
+                  <FileText size={12} className="text-white" />
+                </div>
+                <span className="leading-relaxed">
+                  Realiza tu transferencia y sube el comprobante en el siguiente paso
+                </span>
+              </p>
+            </div>
+          )}
         </div>
       </div>
     )}

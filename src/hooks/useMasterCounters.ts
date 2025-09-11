@@ -51,6 +51,7 @@ const calculateFOMO = (realSoldCount: number): { fomoCount: number; displaySoldC
   
   // Si ventas reales >= 18%, desactivar FOMO y mostrar solo reales
   if (realPercentage >= FOMO_THRESHOLD) {
+    console.log(`🎯 FOMO DISABLED: Real sales ${realPercentage.toFixed(1)}% >= ${FOMO_THRESHOLD}% threshold`);
     return { 
       fomoCount: 0, 
       displaySoldCount: realSoldCount, 
@@ -58,17 +59,17 @@ const calculateFOMO = (realSoldCount: number): { fomoCount: number; displaySoldC
     };
   }
   
-  // 🎯 NUEVA LÓGICA FOMO: 1200 FIJOS + VENDIDOS REALES (SUMA DINÁMICA)
-  const FOMO_BASE_FIXED = 1200; // Tickets FOMO fijos que siempre se muestran
+  // 🎯 SINCRONIZACIÓN REAL + FOMO: Tickets reales + FOMO fijos = Display Total
+  const FOMO_BASE_FIXED = 1200; // Tickets FOMO fijos que se suman a los reales
   
-  // FOMO se suma a los vendidos reales, no es MAX
+  // ✅ FÓRMULA INTEGRADA: Display = Real vendidos + FOMO constante
   const fomoTickets = FOMO_BASE_FIXED;
   const displaySoldCount = realSoldCount + fomoTickets;
   
-  // 🔍 Debug log para seguimiento de la nueva lógica
-  console.log(`🎯 NUEVA LÓGICA SUMA: Reales(${realSoldCount}) + FOMO(${fomoTickets}) = Display(${displaySoldCount})`);
+  // 🔍 Log integración FOMO + Real
+  console.log(`🔄 INTEGRATED FOMO: Real(${realSoldCount}) + FOMO(${fomoTickets}) = Display(${displaySoldCount})`);
+  console.log(`📊 PERCENTAGES: Real(${realPercentage.toFixed(1)}%) → Display(${(displaySoldCount / TOTAL_TICKETS * 100).toFixed(1)}%)`);
   
-  // 🚀 LÓGICA SUMA: FOMO fijos + ventas reales
   return { 
     fomoCount: fomoTickets,
     displaySoldCount: displaySoldCount, 
@@ -471,9 +472,22 @@ const initializeMasterCounters = async () => {
           console.log('💰 PURCHASE CHANGE DETECTED:', payload.eventType, payload.new || payload.old);
           console.log('🔄 TRIGGERING IMMEDIATE COUNTER UPDATE (PURCHASES)...');
           
-          // Forzar actualización inmediata con doble refresh para asegurar sync
-          setTimeout(() => updateMasterCounters(true), 100);
-          setTimeout(() => updateMasterCounters(true), 1500); // Segundo refresh después de 1.5s
+          // ✅ ENHANCED: Admin confirmation detection
+          const purchase = payload.new || payload.old;
+          const isAdminConfirmation = payload.eventType === 'UPDATE' && purchase?.status === 'confirmada';
+          
+          if (isAdminConfirmation) {
+            console.log('🎯 ADMIN CONFIRMATION DETECTED - Applying enhanced sync protocol');
+            
+            // CRITICAL: Triple refresh for admin confirmations to ensure perfect sync
+            setTimeout(() => updateMasterCounters(true), 50);   // Immediate
+            setTimeout(() => updateMasterCounters(true), 800);  // Short delay for DB propagation
+            setTimeout(() => updateMasterCounters(true), 2000); // Final sync verification
+          } else {
+            // Standard double refresh for other purchase changes
+            setTimeout(() => updateMasterCounters(true), 100);
+            setTimeout(() => updateMasterCounters(true), 1500);
+          }
           
           // Disparar evento global de sincronización
           if (typeof window !== 'undefined') {
@@ -482,6 +496,7 @@ const initializeMasterCounters = async () => {
                 source: 'websocket',
                 event: payload.eventType,
                 purchase: payload.new || payload.old,
+                isAdminConfirmation,
                 timestamp: new Date().toISOString()
               }
             }));
@@ -593,28 +608,31 @@ export const useBasicCounters = () => {
   
   // 🎭 DISPLAY MODE: Show FOMO-enhanced counts to create urgency
   const displaySoldTickets = data.fomoSoldTickets;  // Real sold + FOMO (1200)
-  const displayAvailableTickets = TOTAL_TICKETS - displaySoldTickets - data.reservedTickets; // Calculate for display
   
-  // ✅ DISPLAY MATH CHECK: Ensure display totals = 10,000
-  const displayMathCheck = displaySoldTickets + displayAvailableTickets + data.reservedTickets;
+  // 🔄 CRITICAL MATH FIX: Available tickets must be calculated from REAL data, not display
+  // Available = Total - Real Sold - Real Reserved (NOT display numbers)
+  const displayAvailableTickets = data.availableTickets; // Use real available from Guardian
   
-  // 🔍 DEBUG: Always log the calculation to find the 2-ticket discrepancy
-  console.log(`🧮 BASIC COUNTERS CALCULATION:`);
-  console.log(`   Display Sold: ${displaySoldTickets} (real ${data.soldTickets} + FOMO 1200)`);
-  console.log(`   Display Available: ${displayAvailableTickets} (calculated: ${TOTAL_TICKETS} - ${displaySoldTickets} - ${data.reservedTickets})`);
-  console.log(`   Reserved: ${data.reservedTickets}`);
-  console.log(`   SUM CHECK: ${displaySoldTickets} + ${displayAvailableTickets} + ${data.reservedTickets} = ${displayMathCheck} (should be ${TOTAL_TICKETS})`);
+  // ✅ DISPLAY MATH VALIDATION: Check consistency
+  const realSum = data.soldTickets + data.availableTickets + data.reservedTickets;
+  const displaySumForUser = displaySoldTickets + displayAvailableTickets + data.reservedTickets;
   
-  if (displayMathCheck !== data.totalTickets) {
-    console.error(`🚨 DISPLAY MATH ERROR: Missing ${data.totalTickets - displayMathCheck} tickets!`);
-    console.error(`🔧 DISPLAY CALCULATION BROKEN - NEEDS IMMEDIATE FIX`);
+  // 🔍 ENHANCED DEBUG: Show both real and display math
+  console.log(`🧮 DISPLAY COUNTERS CALCULATION:`);
+  console.log(`   📊 REAL MATH: ${data.soldTickets}S + ${data.availableTickets}A + ${data.reservedTickets}R = ${realSum}`);
+  console.log(`   🎭 DISPLAY MATH: ${displaySoldTickets}S + ${displayAvailableTickets}A + ${data.reservedTickets}R = ${displaySumForUser}`);
+  console.log(`   🔍 BREAKDOWN: Display sold (${displaySoldTickets}) = Real sold (${data.soldTickets}) + FOMO (1200)`);
+  console.log(`   ✅ AVAILABLE: Using real available (${displayAvailableTickets}) ensures accurate ticket purchasing`);
+  
+  if (realSum !== TOTAL_TICKETS) {
+    console.error(`🚨 REAL MATH ERROR: ${realSum} ≠ ${TOTAL_TICKETS}`);
   }
   
   return {
     totalTickets: data.totalTickets,
-    soldTickets: displaySoldTickets,           // ✅ Display sold (with FOMO)
-    availableTickets: displayAvailableTickets, // ✅ Display available (calculated)
-    soldPercentage: data.fomoPercentage,       // ✅ Display percentage
+    soldTickets: displaySoldTickets,           // ✅ Display sold (Real + FOMO for urgency)
+    availableTickets: displayAvailableTickets, // ✅ Real available (for accurate purchases)
+    soldPercentage: data.fomoPercentage,       // ✅ Display percentage (with FOMO)
     isConnected: data.isConnected,
     lastUpdate: data.lastUpdate
   };
