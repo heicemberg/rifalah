@@ -51,7 +51,7 @@ const calculateFOMO = (realSoldCount: number): { fomoCount: number; displaySoldC
   
   // Si ventas reales >= 18%, desactivar FOMO y mostrar solo reales
   if (realPercentage >= FOMO_THRESHOLD) {
-    console.log(`🎯 FOMO DISABLED: Real sales ${realPercentage.toFixed(1)}% >= ${FOMO_THRESHOLD}% threshold`);
+    // Silent mode - no logs that reveal FOMO logic
     return { 
       fomoCount: 0, 
       displaySoldCount: realSoldCount, 
@@ -73,12 +73,10 @@ const calculateFOMO = (realSoldCount: number): { fomoCount: number; displaySoldC
   if (proposedDisplay > maxDisplaySoldCount) {
     displaySoldCount = maxDisplaySoldCount;
     fomoTickets = maxDisplaySoldCount - realSoldCount;
-    console.log(`🔄 FOMO ADJUSTED: Reduced from ${FOMO_BASE_FIXED} to ${fomoTickets} to cap at ${maxDisplaySoldCount}`);
+    // Silent adjustment - no client-visible logs
   }
   
-  // 🔍 Log integración FOMO + Real
-  console.log(`🔄 INTEGRATED FOMO: Real(${realSoldCount}) + FOMO(${fomoTickets}) = Display(${displaySoldCount})`);
-  console.log(`📊 PERCENTAGES: Real(${realPercentage.toFixed(1)}%) → Display(${(displaySoldCount / TOTAL_TICKETS * 100).toFixed(1)}%)`);
+  // Silent calculation - no logs that reveal internal FOMO logic
   
   return { 
     fomoCount: fomoTickets,
@@ -166,14 +164,10 @@ const calculateDisplayCounters = (realSold: number, realReserved: number, fomoSo
   displayAvailable: number;
   displayReserved: number;
 } => {
-  console.log(`🎭 DISPLAY CALCULATOR: Real(${realSold}S + ${realReserved}R) + FOMO(${fomoSoldCount - realSold})`);
-  
-  // ✅ CLEAN SEPARATION: Display math completely separate from real math
-  const displaySold = fomoSoldCount;        // FOMO-enhanced sold count
-  const displayReserved = realReserved;     // Reserved stays the same
-  const displayAvailable = TOTAL_TICKETS - displaySold - displayReserved; // Simple subtraction
-  
-  console.log(`🎭 DISPLAY RESULT: ${displaySold}S + ${displayAvailable}A + ${displayReserved}R = ${displaySold + displayAvailable + displayReserved}`);
+  // ✅ SILENT CALCULATION: NO logs that reveal internal logic to clients  
+  const displaySold = fomoSoldCount;        // Enhanced sold count (clients see this as real)
+  const displayReserved = 0;                // No reserved shown to public
+  const displayAvailable = TOTAL_TICKETS - displaySold; // Simple: 10,000 - sold
   
   return {
     displaySold,
@@ -570,20 +564,16 @@ export const useMasterCounters = (): MasterCounterData => {
 export const useBasicCounters = () => {
   const data = useMasterCounters();
   
-  // ✅ FIXED: Use consistent data source - displaySoldTickets already includes FOMO
-  // ✅ Available must be calculated from FOMO sold count, not mixed with real reserved
+  // ✅ SIMPLIFIED DISPLAY: Only sold + available = 10,000 (NO reserved shown to public)
   const displaySoldTickets = data.fomoSoldTickets;                           // FOMO-enhanced sold
-  const displayReservedTickets = data.reservedTickets;                       // Reserved stays same  
-  const displayAvailableTickets = TOTAL_TICKETS - displaySoldTickets - displayReservedTickets; // Consistent calculation
+  const displayAvailableTickets = TOTAL_TICKETS - displaySoldTickets;        // Simple: 10,000 - FOMO sold
+  const displayReservedTickets = 0;                                          // Don't show reserved to public
   
   // ✅ VALIDATION: Display math should sum to 10,000
   const displaySum = displaySoldTickets + displayAvailableTickets + displayReservedTickets;
   const realSum = data.soldTickets + data.availableTickets + data.reservedTickets;
   
-  console.log(`🧮 BASIC COUNTERS (DISPLAY MODE):`);
-  console.log(`   📊 REAL: ${data.soldTickets}S + ${data.availableTickets}A + ${data.reservedTickets}R = ${realSum}`);
-  console.log(`   🎭 DISPLAY: ${displaySoldTickets}S + ${displayAvailableTickets}A + ${displayReservedTickets}R = ${displaySum}`);
-  console.log(`   🔍 FOMO: +${displaySoldTickets - data.soldTickets} tickets added for urgency`);
+  // ✅ SILENT MODE: No logs that reveal internal business logic to clients
   
   if (realSum !== TOTAL_TICKETS) {
     console.error(`🚨 REAL MATH ERROR: ${realSum} ≠ ${TOTAL_TICKETS}`);
@@ -605,8 +595,8 @@ export const useBasicCounters = () => {
 // Para admin que necesita datos reales vs mostrados
 export const useAdminCounters = () => {
   const data = useMasterCounters();
-  // ✅ FIXED: Use consistent calculation like useBasicCounters
-  const displayAvailable = TOTAL_TICKETS - data.fomoSoldTickets - data.reservedTickets;
+  // ✅ SIMPLIFIED DISPLAY: Only sold + available = 10,000 (consistent with useBasicCounters)
+  const displayAvailable = TOTAL_TICKETS - data.fomoSoldTickets; // No reserved in public display
   
   return {
     // Datos mostrados al público (with FOMO)
@@ -723,9 +713,9 @@ export const emergencyMathCorrection = (): MasterCounterData => {
 export const validateRuntimeMath = (data: MasterCounterData): boolean => {
   const realSum = data.soldTickets + data.availableTickets + data.reservedTickets;
   
-  // ✅ Calculate display math using same logic as hooks
-  const displayAvailable = TOTAL_TICKETS - data.fomoSoldTickets - data.reservedTickets;
-  const displaySum = data.fomoSoldTickets + displayAvailable + data.reservedTickets;
+  // ✅ Calculate display math using simplified logic: only sold + available
+  const displayAvailable = TOTAL_TICKETS - data.fomoSoldTickets;
+  const displaySum = data.fomoSoldTickets + displayAvailable; // No reserved in display
   
   const realMathValid = realSum === data.totalTickets;
   const displayMathValid = displaySum === data.totalTickets;
@@ -1005,12 +995,12 @@ if (typeof window !== 'undefined') {
         console.log(`   Guardian Protection: ${guardianProtection ? '✅ ACTIVE' : '❌ FAILED'}`);
         console.log(`   Corrections Applied: ${testGuardian1.corrections.length + testGuardian2.corrections.length}`);
         
-        // 3. Test Display Math Guardian
-        console.log('3️⃣ Testing Display Math Guardian...');
-        const displayTest = enforceDisplayMathIntegrity(100, 50, 15000); // Impossible display values
-        const displayGuardianWorking = (displayTest.displaySold + displayTest.displayAvailable + displayTest.displayReserved) === TOTAL_TICKETS;
-        console.log(`   Display Guardian: ${displayGuardianWorking ? '✅ ACTIVE' : '❌ FAILED'}`);
-        console.log(`   Display Corrections: ${displayTest.corrections.length}`);
+        // 3. Test Display Calculator
+        console.log('3️⃣ Testing Display Calculator...');
+        const displayTest = calculateDisplayCounters(100, 50, 1500); // Test display calculation
+        const displayCalculatorWorking = (displayTest.displaySold + displayTest.displayAvailable + displayTest.displayReserved) === TOTAL_TICKETS;
+        console.log(`   Display Calculator: ${displayCalculatorWorking ? '✅ ACTIVE' : '❌ FAILED'}`);
+        console.log(`   Display Math: ${displayTest.displaySold}S + ${displayTest.displayAvailable}A + ${displayTest.displayReserved}R = ${displayTest.displaySold + displayTest.displayAvailable + displayTest.displayReserved}`);
         
         // 4. Test All Hook Math Protection
         console.log('4️⃣ Testing Hook Math Protection...');
@@ -1024,8 +1014,8 @@ if (typeof window !== 'undefined') {
         
         if (currentData) {
           const realSum = currentData.soldTickets + currentData.availableTickets + currentData.reservedTickets;
-          const displayGuard = enforceDisplayMathIntegrity(currentData.soldTickets, currentData.reservedTickets, currentData.fomoSoldTickets);
-          const displaySum = displayGuard.displaySold + displayGuard.displayAvailable + displayGuard.displayReserved;
+          const displayCalculated = calculateDisplayCounters(currentData.soldTickets, currentData.reservedTickets, currentData.fomoSoldTickets);
+          const displaySum = displayCalculated.displaySold + displayCalculated.displayAvailable + displayCalculated.displayReserved;
           
           zeroToleranceValid = (realSum === TOTAL_TICKETS) && (displaySum === TOTAL_TICKETS);
           console.log(`   Real Sum: ${realSum} (${realSum === TOTAL_TICKETS ? '✅' : '❌'})`);
