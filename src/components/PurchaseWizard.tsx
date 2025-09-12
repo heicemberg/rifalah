@@ -908,9 +908,9 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          {/* ✅ PERFORMANCE: Optimized backdrop without heavy blur */}
+          {/* ✅ SOLID BACKDROP: No transparency issues */}
           <motion.div 
-            className="fixed inset-0 bg-gradient-to-br from-slate-900/60 via-slate-800/50 to-slate-900/60" 
+            className="fixed inset-0 bg-slate-900/75" 
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

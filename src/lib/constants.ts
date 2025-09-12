@@ -30,7 +30,7 @@ export const RESERVATION_TIME_MS = RESERVATION_TIME * 60 * 1000;
 // OPCIONES DE SELECCIÓN RÁPIDA
 // ============================================================================
 
-// ✅ CARDS PRINCIPALES: Sin descuentos (precio completo)
+// ✅ CARDS PRINCIPALES: Sin descuentos (precio completo) - 6 cards
 export const MAIN_CARD_OPTIONS: QuickSelectOption[] = [
   {
     tickets: 2,
@@ -53,6 +53,18 @@ export const MAIN_CARD_OPTIONS: QuickSelectOption[] = [
   {
     tickets: 25,
     price: 6250,     // Sin descuento: 25 × $250 = $6,250
+    discount: 0,
+    popular: false
+  },
+  {
+    tickets: 50,
+    price: 12500,    // Sin descuento: 50 × $250 = $12,500
+    discount: 0,
+    popular: false
+  },
+  {
+    tickets: 100,
+    price: 25000,    // Sin descuento: 100 × $250 = $25,000
     discount: 0,
     popular: false
   }
