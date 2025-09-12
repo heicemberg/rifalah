@@ -1024,17 +1024,17 @@ if (typeof window !== 'undefined') {
         
         // 6. Test System Integrity
         console.log('6️⃣ Testing System Integrity...');
-        const systemIntegrity = mathTest && guardianProtection && displayGuardianWorking && zeroToleranceValid;
+        const systemIntegrity = mathTest && guardianProtection && displayCalculatorWorking && zeroToleranceValid;
         
         // 7. Final Mathematical Assessment
         console.log('7️⃣ Final Mathematical Assessment...');
-        const mathematicalPerfection = mathTest && guardianProtection && displayGuardianWorking && zeroToleranceValid && systemIntegrity;
+        const mathematicalPerfection = mathTest && guardianProtection && displayCalculatorWorking && zeroToleranceValid && systemIntegrity;
         
         console.log(`
 🛡️ MATHEMATICAL INTEGRITY GUARDIAN RESULTS:
    Guardian Math Test: ${mathTest ? '✅' : '❌'}
    Raw Input Protection: ${guardianProtection ? '✅' : '❌'}
-   Display Math Guardian: ${displayGuardianWorking ? '✅' : '❌'}
+   Display Calculator: ${displayCalculatorWorking ? '✅' : '❌'}
    Zero Tolerance Enforcement: ${zeroToleranceValid ? '✅' : '❌'}
    System Integrity: ${systemIntegrity ? '✅' : '❌'}
    
@@ -1051,7 +1051,7 @@ if (typeof window !== 'undefined') {
           details: {
             mathTest,
             guardianProtection,
-            displayGuardianWorking,
+            displayCalculatorWorking,
             zeroToleranceValid,
             systemIntegrity,
             perfectMath: true
