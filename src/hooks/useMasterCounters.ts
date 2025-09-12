@@ -88,13 +88,13 @@ const calculateFOMO = (realSoldCount: number): { fomoCount: number; displaySoldC
 };
 
 // ============================================================================
-// MATHEMATICAL INTEGRITY GUARDIAN
+// SIMPLIFIED MATHEMATICAL INTEGRITY GUARDIAN - FIXED VERSION
 // ============================================================================
 
 /**
- * 🛡️ MATHEMATICAL INTEGRITY GUARDIAN
- * Ensures PERFECT mathematical consistency regardless of database state
- * ZERO TOLERANCE for mathematical inconsistencies in the UI
+ * ✅ SIMPLIFIED MATHEMATICAL INTEGRITY GUARDIAN
+ * Simple validation WITHOUT altering real database data
+ * PRINCIPLE: Validate, don't modify
  */
 interface MathGuardianResult {
   sold: number;
@@ -107,130 +107,78 @@ interface MathGuardianResult {
 
 const enforceMathematicalIntegrity = (rawSold: number, rawReserved: number): MathGuardianResult => {
   const corrections: string[] = [];
-  let sold = rawSold;
-  let reserved = rawReserved;
-  let available: number;
+  
+  // ✅ NEVER ALTER DATABASE DATA - Only validate and calculate
+  const sold = Math.max(0, Math.floor(rawSold)); // Ensure non-negative integer
+  const reserved = Math.max(0, Math.floor(rawReserved)); // Ensure non-negative integer
   
   console.log(`🛡️ MATH GUARDIAN: Validating ${sold}S + ${reserved}R = ${sold + reserved} occupied`);
   
-  // 🔍 CRITICAL CHECK: Database state validation
+  // ✅ SIMPLE CALCULATION: This is the ONLY math that matters
+  const available = TOTAL_TICKETS - sold - reserved;
+  
+  // ✅ VALIDATION: Check for impossible values (but DON'T modify)
   const totalOccupied = sold + reserved;
   
-  // 🚨 SCENARIO 1: Database has impossible values (> 10,000)
   if (totalOccupied > TOTAL_TICKETS) {
-    corrections.push(`Database overflow: ${totalOccupied} > ${TOTAL_TICKETS}`);
-    console.warn(`🛡️ CORRECTION: Database overflow detected, scaling down proportionally`);
-    
-    // Scale down proportionally to maintain ratios
-    const ratio = TOTAL_TICKETS * 0.95 / totalOccupied; // Use 95% to leave buffer
-    sold = Math.floor(sold * ratio);
-    reserved = Math.floor(reserved * ratio);
-    corrections.push(`Scaled to: ${sold}S + ${reserved}R`);
+    corrections.push(`⚠️ Database integrity issue: ${totalOccupied} > ${TOTAL_TICKETS} (admin review needed)`);
+    console.warn(`🛡️ WARNING: Database has more tickets than possible - admin intervention required`);
   }
   
-  // 🔍 SCENARIO 2: Database has too few tickets (scaling issue)
-  if (totalOccupied < 1000 && totalOccupied > 0) {
-    corrections.push(`Database undercount detected: only ${totalOccupied} tickets found`);
-    console.warn(`🛡️ CORRECTION: Database appears to have scaling issue, applying 10x multiplier`);
-    
-    // Apply intelligent scaling
-    const scaleFactor = Math.min(10, Math.floor((TOTAL_TICKETS * 0.15) / totalOccupied));
-    sold = sold * scaleFactor;
-    reserved = reserved * scaleFactor;
-    corrections.push(`Applied ${scaleFactor}x scaling: ${sold}S + ${reserved}R`);
+  if (available < 0) {
+    corrections.push(`⚠️ Negative available tickets: ${available} (database corruption detected)`);
+    console.warn(`🛡️ WARNING: Calculated negative available tickets - database needs cleanup`);
   }
   
-  // 🔢 FINAL CALCULATION: Ensure perfect math
-  available = TOTAL_TICKETS - sold - reserved;
-  
-  // 🛡️ FINAL VALIDATION: Guarantee mathematical perfection
+  // ✅ FINAL SUM CHECK: Always should equal TOTAL_TICKETS
   const finalSum = sold + available + reserved;
-  if (finalSum !== TOTAL_TICKETS) {
-    corrections.push(`Final math error: ${finalSum} ≠ ${TOTAL_TICKETS}`);
-    console.error(`🛡️ CRITICAL: Final math still broken, forcing correction`);
-    
-    // Force perfect math by adjusting available
-    available = TOTAL_TICKETS - sold - reserved;
-    
-    // If still broken, reset to safe defaults
-    if (sold + available + reserved !== TOTAL_TICKETS) {
-      corrections.push(`Emergency reset: Using safe defaults`);
-      sold = 0;
-      reserved = 0;
-      available = TOTAL_TICKETS;
-    }
+  const isValid = finalSum === TOTAL_TICKETS && available >= 0;
+  
+  if (!isValid) {
+    corrections.push(`Math consistency check: ${sold} + ${available} + ${reserved} = ${finalSum} (expected ${TOTAL_TICKETS})`);
   }
   
   const result: MathGuardianResult = {
     sold,
-    reserved,
+    reserved, 
     available,
     total: TOTAL_TICKETS,
     corrections,
-    isValid: (sold + available + reserved) === TOTAL_TICKETS
+    isValid
   };
   
   if (corrections.length > 0) {
-    console.warn(`🛡️ MATH GUARDIAN CORRECTIONS APPLIED:`, corrections);
+    console.warn(`🛡️ MATH GUARDIAN WARNINGS:`, corrections);
   }
   
-  console.log(`🛡️ MATH GUARDIAN RESULT: ${sold}S + ${available}A + ${reserved}R = ${sold + available + reserved} ✅`);
+  console.log(`🛡️ MATH GUARDIAN RESULT: ${sold}S + ${available}A + ${reserved}R = ${sold + available + reserved} ${isValid ? '✅' : '⚠️'}`);
   
   return result;
 };
 
 /**
- * 🎯 DISPLAY MATH GUARDIAN
- * Ensures display counters (with FOMO) always sum to exactly 10,000
+ * ✅ SIMPLIFIED DISPLAY CALCULATOR
+ * Clean separation: Real math vs Display math
+ * NO CONTAMINATION between business logic and UI display
  */
-const enforceDisplayMathIntegrity = (realSold: number, realReserved: number, fomoSold: number): {
+const calculateDisplayCounters = (realSold: number, realReserved: number, fomoSoldCount: number): {
   displaySold: number;
   displayAvailable: number;
   displayReserved: number;
-  corrections: string[];
 } => {
-  const corrections: string[] = [];
-  let displaySold = fomoSold;
-  let displayReserved = realReserved;
-  let displayAvailable: number;
+  console.log(`🎭 DISPLAY CALCULATOR: Real(${realSold}S + ${realReserved}R) + FOMO(${fomoSoldCount - realSold})`);
   
-  console.log(`🎭 DISPLAY GUARDIAN: Validating FOMO display math`);
+  // ✅ CLEAN SEPARATION: Display math completely separate from real math
+  const displaySold = fomoSoldCount;        // FOMO-enhanced sold count
+  const displayReserved = realReserved;     // Reserved stays the same
+  const displayAvailable = TOTAL_TICKETS - displaySold - displayReserved; // Simple subtraction
   
-  // Calculate display available to ensure perfect sum
-  displayAvailable = TOTAL_TICKETS - displaySold - displayReserved;
-  
-  // Validation: Ensure no negative values
-  if (displayAvailable < 0) {
-    corrections.push(`Negative available: ${displayAvailable}`);
-    console.warn(`🎭 CORRECTION: Display available is negative, adjusting FOMO`);
-    
-    // Reduce FOMO to fix negative available
-    displaySold = TOTAL_TICKETS - displayReserved;
-    displayAvailable = 0;
-    corrections.push(`Adjusted FOMO sold to: ${displaySold}`);
-  }
-  
-  // Final validation
-  const displaySum = displaySold + displayAvailable + displayReserved;
-  if (displaySum !== TOTAL_TICKETS) {
-    corrections.push(`Display sum error: ${displaySum} ≠ ${TOTAL_TICKETS}`);
-    console.error(`🎭 CRITICAL: Display math still broken after corrections`);
-    
-    // Force perfect display math
-    displayAvailable = TOTAL_TICKETS - displaySold - displayReserved;
-  }
-  
-  if (corrections.length > 0) {
-    console.warn(`🎭 DISPLAY GUARDIAN CORRECTIONS:`, corrections);
-  }
-  
-  console.log(`🎭 DISPLAY GUARDIAN: ${displaySold}S + ${displayAvailable}A + ${displayReserved}R = ${displaySold + displayAvailable + displayReserved} ✅`);
+  console.log(`🎭 DISPLAY RESULT: ${displaySold}S + ${displayAvailable}A + ${displayReserved}R = ${displaySold + displayAvailable + displayReserved}`);
   
   return {
     displaySold,
     displayAvailable,
-    displayReserved,
-    corrections
+    displayReserved
   };
 };
 
@@ -349,47 +297,53 @@ const updateMasterCounters = async (forceUpdate = false) => {
       console.error('❌ Error syncing with Zustand store:', syncError);
     }
 
-    // 🎯 FOMO CALCULATION: Calculate display sold with FOMO enhancement
+    // ✅ CLEAN SEPARATION: Calculate FOMO for display only
     const { displaySoldCount, isActive } = calculateFOMO(sold);
     
-    // 🛡️ APPLY DISPLAY MATH GUARDIAN: Ensure display counters sum to 10,000
-    const displayGuardian = enforceDisplayMathIntegrity(sold, reserved, displaySoldCount);
+    // ✅ CALCULATE DISPLAY COUNTERS: Clean separation, no contamination
+    const displayCounters = calculateDisplayCounters(sold, reserved, displaySoldCount);
     
-    console.log(`📊 GUARDIAN REAL: Sold(${sold}) + Available(${available}) + Reserved(${reserved}) = ${sold + available + reserved}`);
-    console.log(`🎭 GUARDIAN DISPLAY: Sold(${displayGuardian.displaySold}) + Available(${displayGuardian.displayAvailable}) + Reserved(${displayGuardian.displayReserved}) = ${displayGuardian.displaySold + displayGuardian.displayAvailable + displayGuardian.displayReserved}`);
+    console.log(`📊 REAL MATH: Sold(${sold}) + Available(${available}) + Reserved(${reserved}) = ${sold + available + reserved}`);
+    console.log(`🎭 DISPLAY MATH: Sold(${displayCounters.displaySold}) + Available(${displayCounters.displayAvailable}) + Reserved(${displayCounters.displayReserved}) = ${displayCounters.displaySold + displayCounters.displayAvailable + displayCounters.displayReserved}`);
     
-    // 🔢 MATHEMATICAL VALIDATION: Both real and display math must be perfect
+    // ✅ MATHEMATICAL VALIDATION: Both real and display math must be perfect
     const realSum = sold + available + reserved;
-    const displaySum = displayGuardian.displaySold + displayGuardian.displayAvailable + displayGuardian.displayReserved;
+    const displaySum = displayCounters.displaySold + displayCounters.displayAvailable + displayCounters.displayReserved;
     
     if (realSum !== TOTAL_TICKETS) {
-      throw new Error(`Real math failed: ${realSum} ≠ ${TOTAL_TICKETS}`);
+      console.error(`🚨 REAL MATH ERROR: ${realSum} ≠ ${TOTAL_TICKETS}`);
+      // Don't throw - log error but continue with data we have
     }
     if (displaySum !== TOTAL_TICKETS) {
-      throw new Error(`Display math failed: ${displaySum} ≠ ${TOTAL_TICKETS}`);
+      console.error(`🚨 DISPLAY MATH ERROR: ${displaySum} ≠ ${TOTAL_TICKETS}`);
+      // Don't throw - log error but continue with data we have
     }
     
-    // ✅ MATHEMATICALLY PERFECT MASTER COUNTER
+    // ✅ CLEAN MASTER COUNTER DATA
     const newData: MasterCounterData = {
       totalTickets: TOTAL_TICKETS,
-      soldTickets: sold,                              // ✅ Guardian-corrected real sold
-      reservedTickets: reserved,                      // ✅ Guardian-corrected real reserved
-      availableTickets: available,                    // ✅ Guardian-calculated real available
       
-      fomoSoldTickets: displayGuardian.displaySold,  // ✅ Guardian-corrected display sold
+      // ✅ REAL DATA (Business Logic)
+      soldTickets: sold,                              // Real sold from DB
+      reservedTickets: reserved,                      // Real reserved from DB  
+      availableTickets: available,                    // Real available = 10000 - sold - reserved
+      
+      // ✅ DISPLAY DATA (UI with FOMO)
+      fomoSoldTickets: displayCounters.displaySold,  // Real + FOMO for UI
       fomoIsActive: isActive,
       
-      soldPercentage: (sold / TOTAL_TICKETS) * 100,                           // ✅ Real %
-      fomoPercentage: (displayGuardian.displaySold / TOTAL_TICKETS) * 100,    // ✅ Display %
-      availablePercentage: (available / TOTAL_TICKETS) * 100,                 // ✅ Real Available %
+      // ✅ PERCENTAGES
+      soldPercentage: (sold / TOTAL_TICKETS) * 100,                      // Real percentage
+      fomoPercentage: (displayCounters.displaySold / TOTAL_TICKETS) * 100, // Display percentage
+      availablePercentage: (available / TOTAL_TICKETS) * 100,            // Real available %
       
       isConnected: true,
       lastUpdate: new Date(),
       isLoading: false
     };
 
-    console.log(`📊 GUARDIAN MASTER COUNTER: Display ${displayGuardian.displaySold} (${newData.fomoPercentage.toFixed(1)}%), Real available ${available}`);
-    console.log(`✅ DOUBLE MATH CHECK: Real(${realSum}) + Display(${displaySum}) = ${TOTAL_TICKETS + TOTAL_TICKETS} ✅`);
+    console.log(`📊 CLEAN MASTER COUNTER: Real ${sold}S+${available}A+${reserved}R=${realSum}, Display ${displayCounters.displaySold}S (${newData.fomoPercentage.toFixed(1)}%)`);
+    console.log(`✅ MATH VALIDATION: Real(${realSum}), Display(${displaySum}) both should = ${TOTAL_TICKETS}`);
 
     masterCounterInstance = newData;
     
@@ -612,37 +566,37 @@ export const useMasterCounters = (): MasterCounterData => {
 // HOOKS ESPECIALIZADOS
 // ============================================================================
 
-// Para componentes que solo necesitan datos básicos (DISPLAY MODE)
+// ✅ FIXED: Clean Display Mode - NO MIXING of real and display math
 export const useBasicCounters = () => {
   const data = useMasterCounters();
   
-  // 🎭 DISPLAY MODE: Show FOMO-enhanced counts to create urgency
-  const displaySoldTickets = data.fomoSoldTickets;  // Real sold + FOMO (1200)
+  // ✅ FIXED: Use consistent data source - displaySoldTickets already includes FOMO
+  // ✅ Available must be calculated from FOMO sold count, not mixed with real reserved
+  const displaySoldTickets = data.fomoSoldTickets;                           // FOMO-enhanced sold
+  const displayReservedTickets = data.reservedTickets;                       // Reserved stays same  
+  const displayAvailableTickets = TOTAL_TICKETS - displaySoldTickets - displayReservedTickets; // Consistent calculation
   
-  // 🔄 CRITICAL MATH FIX: Available tickets must be calculated from REAL data, not display
-  // Available = Total - Real Sold - Real Reserved (NOT display numbers)
-  const displayAvailableTickets = data.availableTickets; // Use real available from Guardian
-  
-  // ✅ DISPLAY MATH VALIDATION: Check consistency
+  // ✅ VALIDATION: Display math should sum to 10,000
+  const displaySum = displaySoldTickets + displayAvailableTickets + displayReservedTickets;
   const realSum = data.soldTickets + data.availableTickets + data.reservedTickets;
-  const displaySumForUser = displaySoldTickets + displayAvailableTickets + data.reservedTickets;
   
-  // 🔍 ENHANCED DEBUG: Show both real and display math
-  console.log(`🧮 DISPLAY COUNTERS CALCULATION:`);
-  console.log(`   📊 REAL MATH: ${data.soldTickets}S + ${data.availableTickets}A + ${data.reservedTickets}R = ${realSum}`);
-  console.log(`   🎭 DISPLAY MATH: ${displaySoldTickets}S + ${displayAvailableTickets}A + ${data.reservedTickets}R = ${displaySumForUser}`);
-  console.log(`   🔍 BREAKDOWN: Display sold (${displaySoldTickets}) = Real sold (${data.soldTickets}) + FOMO (1200)`);
-  console.log(`   ✅ AVAILABLE: Using real available (${displayAvailableTickets}) ensures accurate ticket purchasing`);
+  console.log(`🧮 BASIC COUNTERS (DISPLAY MODE):`);
+  console.log(`   📊 REAL: ${data.soldTickets}S + ${data.availableTickets}A + ${data.reservedTickets}R = ${realSum}`);
+  console.log(`   🎭 DISPLAY: ${displaySoldTickets}S + ${displayAvailableTickets}A + ${displayReservedTickets}R = ${displaySum}`);
+  console.log(`   🔍 FOMO: +${displaySoldTickets - data.soldTickets} tickets added for urgency`);
   
   if (realSum !== TOTAL_TICKETS) {
     console.error(`🚨 REAL MATH ERROR: ${realSum} ≠ ${TOTAL_TICKETS}`);
   }
+  if (displaySum !== TOTAL_TICKETS) {
+    console.error(`🚨 DISPLAY MATH ERROR: ${displaySum} ≠ ${TOTAL_TICKETS}`);
+  }
   
   return {
     totalTickets: data.totalTickets,
-    soldTickets: displaySoldTickets,           // ✅ Display sold (Real + FOMO for urgency)
-    availableTickets: displayAvailableTickets, // ✅ Real available (for accurate purchases)
-    soldPercentage: data.fomoPercentage,       // ✅ Display percentage (with FOMO)
+    soldTickets: displaySoldTickets,           // ✅ FOMO-enhanced for urgency
+    availableTickets: displayAvailableTickets, // ✅ Calculated from display math
+    soldPercentage: data.fomoPercentage,       // ✅ FOMO percentage
     isConnected: data.isConnected,
     lastUpdate: data.lastUpdate
   };
@@ -651,6 +605,7 @@ export const useBasicCounters = () => {
 // Para admin que necesita datos reales vs mostrados
 export const useAdminCounters = () => {
   const data = useMasterCounters();
+  // ✅ FIXED: Use consistent calculation like useBasicCounters
   const displayAvailable = TOTAL_TICKETS - data.fomoSoldTickets - data.reservedTickets;
   
   return {
@@ -767,8 +722,10 @@ export const emergencyMathCorrection = (): MasterCounterData => {
  */
 export const validateRuntimeMath = (data: MasterCounterData): boolean => {
   const realSum = data.soldTickets + data.availableTickets + data.reservedTickets;
-  const displayGuardian = enforceDisplayMathIntegrity(data.soldTickets, data.reservedTickets, data.fomoSoldTickets);
-  const displaySum = displayGuardian.displaySold + displayGuardian.displayAvailable + displayGuardian.displayReserved;
+  
+  // ✅ Calculate display math using same logic as hooks
+  const displayAvailable = TOTAL_TICKETS - data.fomoSoldTickets - data.reservedTickets;
+  const displaySum = data.fomoSoldTickets + displayAvailable + data.reservedTickets;
   
   const realMathValid = realSum === data.totalTickets;
   const displayMathValid = displaySum === data.totalTickets;

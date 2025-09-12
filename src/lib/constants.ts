@@ -39,32 +39,32 @@ export const QUICK_SELECT_OPTIONS: QuickSelectOption[] = [
   },
   {
     tickets: 5,
-    price: 1125,     // 10% descuento: $1,250 - $125 = $1,125
-    discount: 10,
+    price: 1250,     // ✅ FIXED: Sin descuento: 5 × $250 = $1,250
+    discount: 0,
     popular: false
   },
   {
     tickets: 10,
-    price: 2000,     // 20% descuento: $2,500 - $500 = $2,000
-    discount: 20,
+    price: 2500,     // ✅ FIXED: Sin descuento: 10 × $250 = $2,500
+    discount: 0,
     popular: true
   },
   {
     tickets: 25,
-    price: 4875,     // 22% descuento: $6,250 - $1,375 = $4,875 (corregido)
-    discount: 22,
+    price: 6250,     // ✅ FIXED: Sin descuento: 25 × $250 = $6,250
+    discount: 0,
     popular: false
   },
   {
     tickets: 50,
-    price: 9375,     // 25% descuento: $12,500 - $3,125 = $9,375 (corregido)
-    discount: 25,
+    price: 12500,    // ✅ FIXED: Sin descuento: 50 × $250 = $12,500
+    discount: 0,
     popular: false
   },
   {
     tickets: 100,
-    price: 17500,    // 30% descuento: $25,000 - $7,500 = $17,500 (corregido para máximo 30%)
-    discount: 30,
+    price: 25000,    // ✅ FIXED: Sin descuento: 100 × $250 = $25,000
+    discount: 0,
     popular: false
   }
 ];
