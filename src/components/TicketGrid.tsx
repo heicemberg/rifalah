@@ -423,7 +423,8 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
     soldTickets,
     reservedTickets,
     selectTicket,
-    deselectTicket
+    deselectTicket,
+    clearSelection
   } = useRaffleStore();
   
   // ✅ USAR SOLO MASTER COUNTER PARA CONSISTENCIA MATEMÁTICA
