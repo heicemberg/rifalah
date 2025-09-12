@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { formatPrice, formatTicketNumber } from '../lib/utils';
-import { PAYMENT_METHODS, QUICK_SELECT_OPTIONS, MIN_TICKETS_PER_PURCHASE } from '../lib/constants';
+import { PAYMENT_METHODS, QUICK_SELECT_OPTIONS, MAIN_CARD_OPTIONS, MIN_TICKETS_PER_PURCHASE } from '../lib/constants';
 import type { PaymentMethod as PaymentMethodType } from '../lib/types';
 import { useSupabaseSync } from '../hooks/useSupabaseSync';
 import { useLazyCryptoPrice } from '../hooks/useLazyCryptoPrice';
@@ -1281,7 +1281,7 @@ const QuickSelectionStep: React.FC<QuickSelectionStepProps> = ({ onQuickSelect, 
 
     {/* Quick Buy Cards Grid */}
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-      {QUICK_SELECT_OPTIONS.map((option, index) => (
+      {MAIN_CARD_OPTIONS.map((option, index) => (
         <OptimizedQuickSelectCard
           key={option.tickets}
           option={option}

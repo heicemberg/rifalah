@@ -8,6 +8,7 @@ import { twMerge } from 'tailwind-merge';
 // Importar SOLO constantes y datos (NO funciones)
 import {
   QUICK_SELECT_OPTIONS,
+  MAIN_CARD_OPTIONS,
   MEXICAN_NAMES,
   MEXICAN_CITIES,
   TICKET_PRICE,
