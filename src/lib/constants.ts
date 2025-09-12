@@ -70,7 +70,7 @@ export const MAIN_CARD_OPTIONS: QuickSelectOption[] = [
   }
 ];
 
-// ✅ MODAL OPTIONS: Con descuentos por volumen
+// ✅ MODAL OPTIONS: Con descuentos por volumen (máximo 30%)
 export const QUICK_SELECT_OPTIONS: QuickSelectOption[] = [
   {
     tickets: 2,
@@ -80,26 +80,26 @@ export const QUICK_SELECT_OPTIONS: QuickSelectOption[] = [
   },
   {
     tickets: 5,
-    price: 1125,     // 10% descuento: $1,250 - $125 = $1,125
-    discount: 10,
+    price: 1188,     // 5% descuento: $1,250 - $62 = $1,188
+    discount: 5,
     popular: false
   },
   {
     tickets: 10,
-    price: 2000,     // 20% descuento: $2,500 - $500 = $2,000
-    discount: 20,
+    price: 2250,     // 10% descuento: $2,500 - $250 = $2,250
+    discount: 10,
     popular: true
   },
   {
     tickets: 25,
-    price: 4875,     // 22% descuento: $6,250 - $1,375 = $4,875
-    discount: 22,
+    price: 5313,     // 15% descuento: $6,250 - $937 = $5,313
+    discount: 15,
     popular: false
   },
   {
     tickets: 50,
-    price: 9375,     // 25% descuento: $12,500 - $3,125 = $9,375
-    discount: 25,
+    price: 10000,    // 20% descuento: $12,500 - $2,500 = $10,000
+    discount: 20,
     popular: false
   },
   {

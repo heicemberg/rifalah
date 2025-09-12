@@ -10,7 +10,7 @@ import React, { useCallback, useMemo, useEffect, useState, useRef } from 'react'
 import { useRaffleStore } from '../stores/raffle-store';
 import { useRealTimeTickets } from '../hooks/useRealTimeTickets';
 import { useBasicCounters, useDisplayStats, forceMasterUpdate } from '../hooks/useMasterCounters';
-import { formatTicketNumber, cn } from '../lib/utils';
+import { formatTicketNumber, cn, calculatePrice } from '../lib/utils';
 import { TOTAL_TICKETS } from '../lib/constants';
 import { Gift, Zap, Trophy } from 'lucide-react';
 import QuickSelectionCards from './QuickSelectionCards';
@@ -550,7 +550,6 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
   const {
     formatMexicanNumber,
     formatPriceMXN,
-    calculatePrice,
     PRECIO_POR_BOLETO_MXN
   } = useRealTimeTickets();
   
@@ -1023,29 +1022,28 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
                   <div className="bg-gradient-to-r from-emerald-500 to-green-500 rounded-full p-3 shadow-lg">
                     <span className="text-xl font-black text-white">{selectedTickets.length}</span>
                   </div>
-                  <div className="text-left">
+                  <div className="text-left flex-1">
                     <div className="text-sm font-bold text-emerald-300">Números Escogidos</div>
                     <div className="text-xl font-black text-white">
-                      {formatPriceMXN(calculatePrice(selectedTickets.length))}
+                      {formatPriceMXN(calculatePrice(selectedTickets.length, false))}
                     </div>
-                    {selectedTickets.length >= 5 && (
-                      <div className="text-xs text-yellow-400 font-semibold">
-                        🎉 ¡Con descuento!
-                      </div>
-                    )}
                   </div>
                 </div>
+                
+                {/* Botón X para cerrar */}
+                <button
+                  onClick={() => clearSelection()}
+                  className="absolute top-3 right-3 w-8 h-8 bg-red-500/20 hover:bg-red-500/30 rounded-full flex items-center justify-center transition-colors duration-200 border border-red-400/50"
+                  aria-label="Cerrar selección"
+                >
+                  <span className="text-white font-bold text-lg">×</span>
+                </button>
                 
                 {/* Información adicional */}
                 <div className="mb-4 p-2 bg-emerald-600/20 rounded-lg border border-emerald-500/30">
                   <div className="text-xs text-emerald-200 text-center">
                     💰 Precio por boleto: {formatPriceMXN(PRECIO_POR_BOLETO_MXN)}
                   </div>
-                  {selectedTickets.length >= 5 && (
-                    <div className="text-xs text-yellow-300 text-center mt-1">
-                      Ahorras: {formatPriceMXN((selectedTickets.length * PRECIO_POR_BOLETO_MXN) - calculatePrice(selectedTickets.length))}
-                    </div>
-                  )}
                 </div>
                 
                 <button

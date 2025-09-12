@@ -63,43 +63,37 @@ export function formatPrice(amount: number, currency: string = 'USD'): string {
 }
 
 /**
- * Calcula el precio total basado en cantidad de tickets y descuentos
- * Usa las opciones de QUICK_SELECT_OPTIONS para aplicar descuentos
+ * Calcula el precio total basado en cantidad de tickets
  * @param tickets - Cantidad de tickets
- * @returns Precio total con descuento aplicado
+ * @param applyDiscount - Si aplicar descuento (true para modal, false para cards principales)
+ * @returns Precio total
  */
-export function calculatePrice(tickets: number): number {
+export function calculatePrice(tickets: number, applyDiscount: boolean = false): number {
   if (tickets <= 0) return 0;
   
-  // Buscar si hay una opción de descuento para esta cantidad exacta
+  // Si no hay descuento, precio completo
+  if (!applyDiscount) {
+    return tickets * TICKET_PRICE;
+  }
+  
+  // Con descuento, buscar en QUICK_SELECT_OPTIONS
   const quickOption = QUICK_SELECT_OPTIONS.find(option => option.tickets === tickets);
   
   if (quickOption) {
     return quickOption.price;
   }
   
-  // Si no hay opción exacta, buscar la mejor opción aplicable
-  // Ordenar opciones por cantidad de tickets descendente
-  const sortedOptions = [...QUICK_SELECT_OPTIONS].sort((a, b) => b.tickets - a.tickets);
+  // Si no hay opción exacta con descuento, aplicar descuento escalonado (máximo 30%)
+  const basePrice = tickets * TICKET_PRICE;
   
-  let totalPrice = 0;
-  let remainingTickets = tickets;
+  // Descuentos progresivos (máximo 30%)
+  if (tickets >= 100) return Math.floor(basePrice * 0.7);   // 30% descuento
+  if (tickets >= 50) return Math.floor(basePrice * 0.8);    // 20% descuento
+  if (tickets >= 25) return Math.floor(basePrice * 0.85);   // 15% descuento
+  if (tickets >= 10) return Math.floor(basePrice * 0.9);    // 10% descuento
+  if (tickets >= 5) return Math.floor(basePrice * 0.95);    // 5% descuento
   
-  // Aplicar descuentos de manera greedy (mayor descuento primero)
-  for (const option of sortedOptions) {
-    if (remainingTickets >= option.tickets) {
-      const setsToApply = Math.floor(remainingTickets / option.tickets);
-      totalPrice += setsToApply * option.price;
-      remainingTickets -= setsToApply * option.tickets;
-    }
-  }
-  
-  // Tickets restantes al precio base
-  if (remainingTickets > 0) {
-    totalPrice += remainingTickets * TICKET_PRICE;
-  }
-  
-  return totalPrice;
+  return basePrice;
 }
 
 /**

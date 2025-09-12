@@ -7,6 +7,7 @@ import { useSupabaseConnection } from '../hooks/useSupabaseConnection';
 import toast from 'react-hot-toast';
 import { useRaffleStore, useTickets } from '../stores/raffle-store';
 import { useMasterCounters } from '../hooks/useMasterCounters';
+import { calculatePrice as calculatePriceFromUtils } from '../lib/utils';
 
 // Tipos para la estructura de datos
 interface TicketData {
@@ -706,21 +707,15 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
 
   // Función para calcular precio con descuentos mexicano
   const calculatePrice = () => {
-    const basePrice = calculatePriceMXN(tickets);
-    if (hasDiscount && tickets >= 10) {
-      // Descuento del 5% para 10+ boletos
-      return Math.floor(basePrice * 0.95);
-    }
-    return basePrice;
+    // Usar la función de utils con el parámetro applyDiscount
+    return calculatePriceFromUtils(tickets, true); // true = aplicar descuento para modal
   };
 
   const getDiscount = () => {
-    if (!hasDiscount) return 0;
-    
     const basePrice = tickets * PRECIO_POR_BOLETO_MXN;
     const discountPrice = calculatePrice();
     const discountAmount = basePrice - discountPrice;
-    return Math.round((discountAmount / basePrice) * 100);
+    return discountAmount > 0 ? Math.round((discountAmount / basePrice) * 100) : 0;
   };
 
   const openWhatsApp = () => {
@@ -736,10 +731,10 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-gradient-to-br from-emerald-900 via-green-800 to-teal-900">
       <div className="relative w-full sm:max-w-3xl h-[100vh] sm:h-auto sm:max-h-[95vh] overflow-hidden bg-white sm:rounded-xl shadow-2xl animate-bounce-in sm:m-2">
         {/* Header - Optimizado móvil */}
-        <div className="flex items-center justify-between p-3 sm:p-6 border-b border-emerald-200/30 bg-gradient-to-r from-emerald-600/95 via-green-600/95 to-teal-600/95 backdrop-blur-sm">
+        <div className="flex items-center justify-between p-3 sm:p-6 border-b border-emerald-200/30 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600">
           <div className="flex-1 min-w-0">
             <h2 className="text-lg sm:text-2xl font-bold text-white drop-shadow-sm truncate">🎯 Compra Rápida</h2>
             <div className="flex flex-wrap items-center mt-1 sm:mt-2 gap-2 sm:space-x-4 text-emerald-100">
@@ -771,7 +766,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
           </div>
           <button
             onClick={onClose}
-            className="p-2 sm:p-3 text-white hover:bg-white/40 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-110 bg-white/20 shadow-xl backdrop-blur-sm border border-white/30 flex-shrink-0"
+            className="p-2 sm:p-3 text-white hover:bg-white/40 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-110 bg-white/20 shadow-xl border border-white/30 flex-shrink-0"
             title="Cerrar"
           >
             <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
@@ -802,7 +797,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
               <span className="mr-3 text-2xl">🎫</span>
               Selecciona tus boletos
             </h3>
-            <div className="p-3 sm:p-5 bg-gradient-to-r from-emerald-50/80 via-green-50/80 to-emerald-50/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-emerald-200/50 shadow-sm">
+            <div className="p-3 sm:p-5 bg-gradient-to-r from-emerald-50 via-green-50 to-emerald-50 rounded-xl sm:rounded-2xl border border-emerald-200 shadow-sm">
               <p className="text-sm sm:text-base text-gray-700 font-medium text-center leading-relaxed">
                 💡 Mínimo 2 boletos • Máximo 10,000 • <span className="font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">{formatPriceMXN(PRECIO_POR_BOLETO_MXN)} por boleto</span>
               </p>
@@ -846,7 +841,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                 value={customTickets}
                 onChange={(e) => handleCustomTickets(e.target.value)}
                 disabled={false}
-                className="w-full p-3 sm:p-4 border-2 border-gray-300/60 rounded-xl sm:rounded-2xl font-medium text-center focus:border-emerald-500 focus:outline-none bg-gradient-to-br from-white to-gray-50 text-gray-900 placeholder-gray-400 transition-all duration-300 hover:shadow-md focus:shadow-lg backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl sm:rounded-2xl font-medium text-center focus:border-emerald-500 focus:outline-none bg-gradient-to-br from-white to-gray-50 text-gray-900 placeholder-gray-400 transition-all duration-300 hover:shadow-md focus:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 min="2"
                 max="10000"
               />
@@ -1325,7 +1320,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
         
         {/* Pantalla de éxito con confeti */}
         {showSuccess && (
-          <div className="absolute inset-0 bg-white/95 backdrop-blur-sm flex items-center justify-center z-50 rounded-xl">
+          <div className="absolute inset-0 bg-white flex items-center justify-center z-50 rounded-xl">
             <div className="text-center p-8 max-w-md mx-auto">
               {/* Confeti animado */}
               <div className="confetti-container mb-6">

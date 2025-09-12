@@ -47,41 +47,13 @@ const FOMO_THRESHOLD = 18; // % umbral para desactivar FOMO
 // const fomoSessionStart: number | null = null;
 
 const calculateFOMO = (realSoldCount: number): { fomoCount: number; displaySoldCount: number; isActive: boolean } => {
-  const realPercentage = (realSoldCount / TOTAL_TICKETS) * 100;
-  
-  // Si ventas reales >= 18%, desactivar FOMO y mostrar solo reales
-  if (realPercentage >= FOMO_THRESHOLD) {
-    // Silent mode - no logs that reveal FOMO logic
-    return { 
-      fomoCount: 0, 
-      displaySoldCount: realSoldCount, 
-      isActive: false 
-    };
-  }
-  
-  // 🎯 SINCRONIZACIÓN REAL + FOMO: Máximo inteligente para evitar overflow
-  const FOMO_BASE_FIXED = 1200; // Base FOMO deseada
-  
-  // ✅ FÓRMULA INTELIGENTE: Evitar que Display > 8000 (80% máximo de urgencia)
-  const maxDisplaySoldCount = Math.floor(TOTAL_TICKETS * 0.8); // 8000 tickets máximo mostrado
-  const proposedDisplay = realSoldCount + FOMO_BASE_FIXED;
-  
-  // Si propuesta excede límite, reducir FOMO proporcionalmente
-  let fomoTickets = FOMO_BASE_FIXED;
-  let displaySoldCount = proposedDisplay;
-  
-  if (proposedDisplay > maxDisplaySoldCount) {
-    displaySoldCount = maxDisplaySoldCount;
-    fomoTickets = maxDisplaySoldCount - realSoldCount;
-    // Silent adjustment - no client-visible logs
-  }
-  
-  // Silent calculation - no logs that reveal internal FOMO logic
+  // FOMO SYSTEM ELIMINATED - Return only real data
+  // No artificial ticket inflation, no fake sales simulation
   
   return { 
-    fomoCount: fomoTickets,
-    displaySoldCount: displaySoldCount, 
-    isActive: true 
+    fomoCount: 0,                    // No FOMO tickets added
+    displaySoldCount: realSoldCount, // Show only real sold tickets
+    isActive: false                  // FOMO system permanently disabled
   };
 };
 
