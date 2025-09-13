@@ -383,6 +383,12 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
     }
   }, []);
 
+  // Función para calcular precio con descuentos mexicano
+  const calculatePrice = useCallback(() => {
+    // Usar la función de utils con el parámetro applyDiscount
+    return calculatePriceFromUtils(tickets, true); // true = aplicar descuento para modal
+  }, [tickets]);
+
   // ✅ Memoizar cálculos de precio para evitar re-cálculos innecesarios
   const priceCalculations = useMemo(() => {
     const basePrice = tickets * PRECIO_POR_BOLETO_MXN;
@@ -722,11 +728,6 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
     }
   };
 
-  // Función para calcular precio con descuentos mexicano
-  const calculatePrice = () => {
-    // Usar la función de utils con el parámetro applyDiscount
-    return calculatePriceFromUtils(tickets, true); // true = aplicar descuento para modal
-  };
 
   const getDiscount = useCallback(() => {
     return priceCalculations.discountPercentage;
