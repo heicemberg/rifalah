@@ -47,28 +47,14 @@ const FOMO_THRESHOLD = 18; // % umbral para desactivar FOMO
 // const fomoSessionStart: number | null = null;
 
 const calculateFOMO = (realSoldCount: number): { fomoCount: number; displaySoldCount: number; isActive: boolean } => {
-  // ✅ FOMO SYSTEM REACTIVATED - Shows ~1300 tickets sold
-  // Shows 13% tickets as sold to create urgency
+  // ✅ FOMO COMPLETAMENTE ELIMINADO - Solo datos reales
+  // Muestra ÚNICAMENTE los boletos realmente vendidos en la base de datos
+  // Sin inflación artificial, sin urgencia falsa
   
-  const currentRealPercentage = (realSoldCount / TOTAL_TICKETS) * 100;
-  
-  // If real sales are below FOMO threshold, apply FOMO
-  if (currentRealPercentage < FOMO_THRESHOLD) {
-    const fomoTarget = 1300; // Fixed target: 1300 tickets (13%)
-    const fomoTickets = Math.max(0, fomoTarget - realSoldCount);
-    
-    return {
-      fomoCount: fomoTickets,
-      displaySoldCount: realSoldCount + fomoTickets,
-      isActive: true
-    };
-  }
-  
-  // If real sales exceed threshold, show real data only
   return {
-    fomoCount: 0,
-    displaySoldCount: realSoldCount,
-    isActive: false
+    fomoCount: 0,  // Sin FOMO
+    displaySoldCount: realSoldCount,  // Solo boletos reales vendidos
+    isActive: false  // FOMO desactivado permanentemente
   };
 };
 
