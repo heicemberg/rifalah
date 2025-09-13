@@ -112,20 +112,12 @@ const OptimizedQuickSelectCard: React.FC<OptimizedQuickSelectCardProps> = React.
       onClick={handleClick}
       disabled={disabled}
       className={baseStyles.base}
-      style={{
-        transform: disabled ? undefined : 'translateZ(0)', // GPU acceleration
-      }}
+      style={disabled ? {} : undefined}
       onMouseEnter={disabled ? undefined : (e) => {
-        e.currentTarget.style.transform = 'translateZ(0) scale(1.02)';
+        e.currentTarget.style.transform = 'scale(1.02)';
       }}
       onMouseLeave={disabled ? undefined : (e) => {
-        e.currentTarget.style.transform = 'translateZ(0) scale(1)';
-      }}
-      onMouseDown={disabled ? undefined : (e) => {
-        e.currentTarget.style.transform = 'translateZ(0) scale(0.98)';
-      }}
-      onMouseUp={disabled ? undefined : (e) => {
-        e.currentTarget.style.transform = 'translateZ(0) scale(1.02)';
+        e.currentTarget.style.transform = 'scale(1)';
       }}
     >
       {/* Popular Badge - Simple and efficient */}
@@ -259,14 +251,6 @@ const OptimizedPaymentMethodCard: React.FC<OptimizedPaymentMethodCardProps> = Re
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateZ(0) scale(1)';
-      }}
-      onMouseDown={(e) => {
-        e.currentTarget.style.transform = 'translateZ(0) scale(0.98)';
-      }}
-      onMouseUp={(e) => {
-        if (!expanded) {
-          e.currentTarget.style.transform = 'translateZ(0) scale(1.02)';
-        }
       }}
     >
       {/* Selection Indicator - Simple and efficient */}
@@ -910,7 +894,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
         <div className="fixed inset-0 z-50 overflow-y-auto">
           {/* ✅ SOLID BACKDROP: No transparency issues */}
           <motion.div 
-            className="fixed inset-0 bg-slate-900/75" 
+            className="fixed inset-0 bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-sm" 
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1281,7 +1265,7 @@ const QuickSelectionStep: React.FC<QuickSelectionStepProps> = ({ onQuickSelect, 
 
     {/* Quick Buy Cards Grid */}
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-      {MAIN_CARD_OPTIONS.map((option, index) => (
+      {QUICK_SELECT_OPTIONS.map((option, index) => (
         <OptimizedQuickSelectCard
           key={option.tickets}
           option={option}
