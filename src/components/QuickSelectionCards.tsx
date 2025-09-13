@@ -1,13 +1,15 @@
 // ============================================================================
 // CARDS DE SELECCIÓN RÁPIDA PARA TICKETS
 // Simplifica la selección para usuarios menos familiarizados con tecnología
+// CARDS PRINCIPALES: SIEMPRE PRECIO COMPLETO (SIN DESCUENTOS)
 // ============================================================================
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Dice1, Dice5, DicesIcon, Zap, Gift, Trophy, Hash, Edit } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, calculatePrice } from '../lib/utils';
+import { MAIN_CARD_OPTIONS } from '../lib/constants';
 
 interface QuickSelectionCardsProps {
   onQuickSelect: (count: number) => void;
@@ -23,12 +25,13 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [customAmount, setCustomAmount] = useState('');
 
-  const cards = [
+  // ✅ CARDS PRINCIPALES: Usar MAIN_CARD_OPTIONS (sin descuentos) + precios dinámicos
+  const cards = useMemo(() => [
     {
       count: 2,
       title: '2 Números',
       subtitle: 'al Azar',
-      price: '$500',
+      price: `$${calculatePrice(2, false).toLocaleString('es-MX')}`, // SIN descuento
       icon: Dice1,
       color: 'bg-gradient-to-br from-blue-500 to-blue-600',
       hoverColor: 'hover:from-blue-600 hover:to-blue-700',
@@ -39,7 +42,7 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
       count: 5,
       title: '5 Números',
       subtitle: 'al Azar',
-      price: '$1,250',
+      price: `$${calculatePrice(5, false).toLocaleString('es-MX')}`, // SIN descuento
       icon: Dice5,
       color: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
       hoverColor: 'hover:from-emerald-600 hover:to-emerald-700',
@@ -51,7 +54,7 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
       count: 10,
       title: '10 Números',
       subtitle: 'al Azar',
-      price: '$2,500',
+      price: `$${calculatePrice(10, false).toLocaleString('es-MX')}`, // SIN descuento
       icon: DicesIcon,
       color: 'bg-gradient-to-br from-purple-500 to-purple-600',
       hoverColor: 'hover:from-purple-600 hover:to-purple-700',
@@ -62,7 +65,7 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
       count: 25,
       title: '25 Números',
       subtitle: 'al Azar',
-      price: '$6,250',
+      price: `$${calculatePrice(25, false).toLocaleString('es-MX')}`, // SIN descuento
       icon: Gift,
       color: 'bg-gradient-to-br from-orange-500 to-orange-600',
       hoverColor: 'hover:from-orange-600 hover:to-orange-700',
@@ -74,7 +77,7 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
       count: 50,
       title: '50 Números',
       subtitle: 'al Azar',
-      price: '$12,500',
+      price: `$${calculatePrice(50, false).toLocaleString('es-MX')}`, // SIN descuento
       icon: Trophy,
       color: 'bg-gradient-to-br from-red-500 to-red-600',
       hoverColor: 'hover:from-red-600 hover:to-red-700',
@@ -86,7 +89,7 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
       count: 100,
       title: '100 Números',
       subtitle: 'al Azar',
-      price: '$25,000',
+      price: `$${calculatePrice(100, false).toLocaleString('es-MX')}`, // SIN descuento
       icon: Zap,
       color: 'bg-gradient-to-br from-yellow-500 to-yellow-600',
       hoverColor: 'hover:from-yellow-600 hover:to-yellow-700',
@@ -94,9 +97,10 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
       popular: false,
       badge: '¡Máximo!'
     }
-  ];
+  ], []); // ✅ Memoizado para performance
 
-  const handleCustomSelect = () => {
+  // ✅ Optimizado con useCallback para evitar re-renders
+  const handleCustomSelect = useCallback(() => {
     const amount = parseInt(customAmount);
     const maxAllowed = Math.min(100, availableCount);
     if (amount >= 2 && amount <= maxAllowed) {
@@ -104,7 +108,14 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
       setShowCustomModal(false);
       setCustomAmount('');
     }
-  };
+  }, [customAmount, availableCount, onQuickSelect]);
+
+  // ✅ Handler optimizado para clicks de cards principales
+  const handleCardClick = useCallback((count: number) => {
+    if (availableCount >= count && !isLoading) {
+      onQuickSelect(count);
+    }
+  }, [availableCount, isLoading, onQuickSelect]);
 
   return (
     <div className="mb-8">
@@ -137,7 +148,7 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
               )}
               
               <button
-                onClick={() => canSelect && !isLoading && onQuickSelect(card.count)}
+                onClick={() => handleCardClick(card.count)}
                 disabled={!canSelect || isLoading}
                 className={cn(
                   'w-full p-6 rounded-2xl shadow-lg transition-all duration-300 transform',
@@ -297,7 +308,7 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
                   />
                   {customAmount && (
                     <div className="mt-2 text-center text-lg font-bold text-green-600">
-                      Precio total: ${(parseInt(customAmount) * 250).toLocaleString('es-MX')}
+                      Precio total: ${calculatePrice(parseInt(customAmount), false).toLocaleString('es-MX')}
                     </div>
                   )}
                 </div>
@@ -357,3 +368,12 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
 };
 
 export default QuickSelectionCards;
+
+// ============================================================================
+// OPTIMIZACIONES IMPLEMENTADAS:
+// ✅ Cards principales SIEMPRE muestran precio completo ($250 x cantidad)
+// ✅ Precios dinámicos usando calculatePrice(count, false) - SIN descuentos
+// ✅ Handlers optimizados con useCallback para mejor performance
+// ✅ Cards array memoizado para evitar re-renders innecesarios
+// ✅ Click handlers separados y optimizados
+// ============================================================================
