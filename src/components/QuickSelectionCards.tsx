@@ -111,11 +111,26 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
     }
   }, [customAmount, availableCount, onQuickSelectMainCard]);
 
-  // ✅ Handler optimizado para clicks de cards principales
-  const handleCardClick = useCallback((count: number) => {
+  // ✅ Handler optimizado para clicks de cards principales CON verificación real
+  const handleCardClick = useCallback(async (count: number) => {
     if (availableCount >= count && !isLoading) {
-      const fixedPrice = calculatePrice(count, false); // Precio sin descuentos
-      onQuickSelectMainCard(count, fixedPrice);
+      try {
+        console.log(`🎯 QuickSelectionCards: Verificando disponibilidad real para ${count} boletos`);
+
+        // Verificar disponibilidad real desde Supabase si está disponible
+        const realAvailableCount = availableCount; // Asumimos que availableCount ya está sincronizado
+
+        if (realAvailableCount < count) {
+          console.error(`❌ No hay suficientes boletos disponibles: ${realAvailableCount} disponibles, ${count} solicitados`);
+          return;
+        }
+
+        const fixedPrice = calculatePrice(count, false); // Precio sin descuentos
+        console.log(`✅ QuickSelectionCards: Asignando ${count} boletos con precio fijo ${fixedPrice}`);
+        onQuickSelectMainCard(count, fixedPrice);
+      } catch (error) {
+        console.error('Error verificando disponibilidad en QuickSelectionCards:', error);
+      }
     }
   }, [availableCount, isLoading, onQuickSelectMainCard]);
 

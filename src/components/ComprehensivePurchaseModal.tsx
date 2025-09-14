@@ -405,73 +405,107 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
     };
   }, [tickets, calculatePrice]);
 
-  // Función para asignar números de boletos usando pre-seleccionados o aleatorios
+  // Función MEJORADA para asignar números de boletos con verificación robusta
   const asignarBoletos = useCallback(async (cantidad: number): Promise<number[]> => {
     try {
-      console.log(`🎫 Intentando asignar ${cantidad} boletos...`);
-      
-      // Si hay tickets pre-seleccionados, usarlos directamente
+      console.log(`🎫 ASIGNACIÓN MEJORADA: Intentando asignar ${cantidad} boletos...`);
+
+      // PASO 1: Si hay tickets pre-seleccionados, verificar su disponibilidad
       if (selectedTickets.length > 0) {
-        console.log(`🎯 Usando tickets pre-seleccionados: ${selectedTickets}`);
-        if (selectedTickets.length !== cantidad) {
-          console.warn(`⚠️ Cantidad no coincide: ${selectedTickets.length} seleccionados vs ${cantidad} solicitados`);
+        console.log(`🎯 Verificando tickets pre-seleccionados: ${selectedTickets}`);
+
+        if (isConnected) {
+          // Verificar que los tickets pre-seleccionados sigan disponibles
+          const ticketsRealesDisponibles = await getRealAvailableTickets();
+          const ticketsNoDisponibles = selectedTickets.filter(ticket => !ticketsRealesDisponibles.includes(ticket));
+
+          if (ticketsNoDisponibles.length > 0) {
+            console.warn(`⚠️ Tickets pre-seleccionados ya no disponibles: ${ticketsNoDisponibles}`);
+            throw new Error(`Algunos tickets seleccionados ya no están disponibles: ${ticketsNoDisponibles.join(', ')}. Actualiza la página e intenta de nuevo.`);
+          }
         }
+
+        console.log(`✅ Usando tickets pre-seleccionados verificados: ${selectedTickets}`);
         return selectedTickets.sort((a, b) => a - b);
       }
-      
-      // Si está conectado a Supabase, usar tickets realmente disponibles
+
+      // PASO 2: Si está conectado a Supabase, usar verificación robusta
       if (isConnected) {
-        console.log('✅ Conectado a Supabase, obteniendo tickets reales...');
+        console.log('✅ MODO CONECTADO: Obteniendo tickets reales desde Supabase...');
+
+        // Doble verificación de disponibilidad
         const ticketsRealesDisponibles = await getRealAvailableTickets();
         console.log(`📊 Tickets realmente disponibles: ${ticketsRealesDisponibles.length}`);
-        
+
         if (ticketsRealesDisponibles.length < cantidad) {
-          console.warn(`⚠️ Solo hay ${ticketsRealesDisponibles.length} tickets disponibles vs ${cantidad} solicitados`);
+          console.error(`❌ INSUFICIENTES TICKETS: Solo ${ticketsRealesDisponibles.length} disponibles vs ${cantidad} solicitados`);
           throw new Error(`Solo hay ${ticketsRealesDisponibles.length} boletos disponibles en este momento. Intenta con menos boletos.`);
         }
-        
-        // Seleccionar números aleatorios de los realmente disponibles
+
+        // Usar Fisher-Yates shuffle para selección aleatoria segura
         const disponibles = [...ticketsRealesDisponibles];
         const boletosSeleccionados: number[] = [];
-        
+
+        // Fisher-Yates shuffle mejorado
         for (let i = 0; i < cantidad; i++) {
+          if (disponibles.length === 0) {
+            throw new Error('Error interno: no hay más tickets disponibles para asignar');
+          }
+
           const randomIndex = Math.floor(Math.random() * disponibles.length);
           const boletoSeleccionado = disponibles[randomIndex];
           boletosSeleccionados.push(boletoSeleccionado);
+
+          // Remover el ticket seleccionado para evitar duplicados
           disponibles.splice(randomIndex, 1);
         }
-        
-        console.log(`🎯 Boletos asignados desde BD: ${boletosSeleccionados.sort((a, b) => a - b)}`);
-        return boletosSeleccionados.sort((a, b) => a - b);
+
+        // Verificación final de duplicados
+        const uniqueBoletos = [...new Set(boletosSeleccionados)];
+        if (uniqueBoletos.length !== boletosSeleccionados.length) {
+          console.error(`❌ DUPLICADOS DETECTADOS: ${boletosSeleccionados}`);
+          throw new Error('Error interno: se generaron números duplicados');
+        }
+
+        const sortedBoletos = boletosSeleccionados.sort((a, b) => a - b);
+        console.log(`🎯 BOLETOS ASIGNADOS DESDE BD: ${sortedBoletos}`);
+        return sortedBoletos;
+
       } else {
-        // Fallback para modo offline - usar todos los números del 1 al 10000
-        console.log('⚠️ Modo offline, usando simulación de tickets...');
-        
-        // Generar lista completa de tickets disponibles para simulación
+        // PASO 3: Modo offline con simulación mejorada
+        console.log('⚠️ MODO OFFLINE: Usando simulación local...');
+
+        // Usar Zustand store para obtener tickets no disponibles localmente
+        const { soldTickets: localSold, reservedTickets: localReserved } = useRaffleStore.getState();
         const todosLosTickets = Array.from({ length: 10000 }, (_, i) => i + 1);
-        
-        if (todosLosTickets.length < cantidad) {
-          throw new Error(`Solo quedan ${todosLosTickets.length} boletos disponibles`);
+        const ticketsLocalesDisponibles = todosLosTickets.filter(
+          ticket => !localSold.includes(ticket) && !localReserved.includes(ticket)
+        );
+
+        if (ticketsLocalesDisponibles.length < cantidad) {
+          throw new Error(`Solo quedan ${ticketsLocalesDisponibles.length} boletos disponibles localmente`);
         }
-        
-        const disponibles = [...todosLosTickets];
+
+        // Selección aleatoria del estado local
+        const disponibles = [...ticketsLocalesDisponibles];
         const boletosSeleccionados: number[] = [];
-        
+
         for (let i = 0; i < cantidad; i++) {
           const randomIndex = Math.floor(Math.random() * disponibles.length);
           const boletoSeleccionado = disponibles[randomIndex];
           boletosSeleccionados.push(boletoSeleccionado);
           disponibles.splice(randomIndex, 1);
         }
-        
-        console.log(`🎯 Boletos asignados offline: ${boletosSeleccionados.sort((a, b) => a - b)}`);
-        return boletosSeleccionados.sort((a, b) => a - b);
+
+        const sortedBoletos = boletosSeleccionados.sort((a, b) => a - b);
+        console.log(`🎯 BOLETOS ASIGNADOS OFFLINE: ${sortedBoletos}`);
+        return sortedBoletos;
       }
     } catch (error) {
-      console.error('❌ Error al asignar boletos:', error);
+      console.error('❌ ERROR EN ASIGNACIÓN DE BOLETOS:', error);
       throw error;
     }
-  }, [availableTickets, isConnected, getRealAvailableTickets, selectedTickets]);
+  }, [isConnected, getRealAvailableTickets, selectedTickets]);
 
   const formatearNumeroBoleto = (numero: number): string => {
     return numero.toString().padStart(4, '0');
@@ -485,17 +519,25 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
       newErrors.tickets = 'Mínimo 2 boletos';
     }
 
-    if (!selectedPayment) {
+    // Verificar método de pago más robustamente
+    if (!selectedPayment || selectedPayment.trim() === '') {
       newErrors.payment = 'Selecciona un método de pago';
+    } else {
+      // Verificar que el método seleccionado existe
+      const methodExists = paymentMethods.some(method => method.id === selectedPayment);
+      if (!methodExists) {
+        console.error('❌ Método de pago seleccionado no válido:', selectedPayment);
+        newErrors.payment = 'Método de pago no válido. Selecciona uno de los métodos disponibles.';
+      }
     }
 
     // Validación más flexible: solo nombre es obligatorio
     if (!customerData.nombre || !customerData.nombre.trim()) {
       newErrors.nombre = 'Ingresa tu nombre';
     }
-    
+
     // Al menos uno de los dos métodos de contacto
-    if ((!customerData.telefono || !customerData.telefono.trim()) && 
+    if ((!customerData.telefono || !customerData.telefono.trim()) &&
         (!customerData.email || !customerData.email.trim())) {
       newErrors.contacto = 'Ingresa tu teléfono o email para contactarte';
     }
@@ -503,6 +545,18 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
     if (!acceptedTerms) {
       newErrors.terms = 'Debes aceptar los términos y condiciones';
     }
+
+    console.log('🔍 VALIDACIÓN DE FORMULARIO:', {
+      tickets,
+      selectedPayment,
+      customerData: {
+        nombre: customerData.nombre?.trim(),
+        telefono: customerData.telefono?.trim(),
+        email: customerData.email?.trim()
+      },
+      acceptedTerms,
+      errorsFound: Object.keys(newErrors).length
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -746,7 +800,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-75">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-gradient-to-br from-blue-900/30 via-purple-900/40 to-emerald-900/30 backdrop-blur-sm">
       <div className="relative w-full sm:max-w-3xl h-[100vh] sm:h-auto sm:max-h-[95vh] overflow-hidden bg-white sm:rounded-xl shadow-2xl animate-bounce-in sm:m-2">
         {/* Header - Optimizado móvil */}
         <div className="flex items-center justify-between p-3 sm:p-6 border-b border-emerald-200/30 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600">
@@ -840,12 +894,17 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                 return (
                   <button
                     key={amount}
-                    onClick={() => handleTicketSelect(amount)}
-                    className={`p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 font-bold transition-all duration-200 text-center hover:scale-105 hover:shadow-lg group relative overflow-hidden ${
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleTicketSelect(amount);
+                    }}
+                    className={`p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 font-bold transition-all duration-200 text-center hover:scale-105 hover:shadow-lg group relative overflow-hidden cursor-pointer z-10 ${
                       tickets === amount
                         ? 'border-emerald-500 bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-800 shadow-lg scale-105'
                         : 'border-gray-300/60 bg-gradient-to-br from-white to-gray-50 text-gray-700 hover:border-emerald-400 hover:bg-gradient-to-br hover:from-emerald-50 hover:to-emerald-100 hover:text-emerald-700'
                     }`}
+                    type="button"
                   >
                     {/* Badge de descuento si aplica */}
                     {hasDiscountCard && (
