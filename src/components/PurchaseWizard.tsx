@@ -82,28 +82,42 @@ interface OptimizedQuickSelectCardProps {
   disabled?: boolean;
 }
 
-// ✅ ULTRA-OPTIMIZED: High-performance card with GPU acceleration
-const OptimizedQuickSelectCard: React.FC<OptimizedQuickSelectCardProps> = React.memo(({ 
-  option, 
-  onSelect, 
+// ✅ ULTRA-OPTIMIZED: High-performance card with robust click handling
+const OptimizedQuickSelectCard: React.FC<OptimizedQuickSelectCardProps> = React.memo(({
+  option,
+  onSelect,
   disabled = false
 }) => {
-  // ✅ PERFORMANCE: Memoized event handler
-  const handleClick = useCallback(() => {
+  // ✅ PERFORMANCE: Ultra-robust event handler with multiple event types
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     if (!disabled) {
+      console.log(`🎯 CARD CLICKED: ${option.tickets} boletos`, { disabled, option });
       onSelect();
     }
-  }, [onSelect, disabled]);
+  }, [onSelect, disabled, option.tickets]);
+
+  // ✅ FALLBACK: Touch support for mobile
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    if (!disabled) {
+      console.log(`👆 CARD TOUCHED: ${option.tickets} boletos`);
+      onSelect();
+    }
+  }, [onSelect, disabled, option.tickets]);
 
   // ✅ PERFORMANCE: Pre-calculated styles to avoid runtime computation
   const isPopular = Boolean(option.popular);
   const baseStyles = useMemo(() => ({
     base: cn(
-      'relative overflow-hidden rounded-2xl p-4 sm:p-5 text-center transition-all duration-150 ease-out will-change-transform',
+      'relative overflow-hidden rounded-2xl p-4 sm:p-5 text-center transition-all duration-150 ease-out',
       'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50',
-      disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
-      isPopular 
-        ? 'bg-gradient-to-b from-amber-50 to-amber-100 border-2 border-amber-300 shadow-lg shadow-amber-400/20' 
+      'z-10', // Ensure cards are above any background elements
+      disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95',
+      isPopular
+        ? 'bg-gradient-to-b from-amber-50 to-amber-100 border-2 border-amber-300 shadow-lg shadow-amber-400/20'
         : 'bg-white border-2 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-md'
     )
   }), [disabled, isPopular]);
@@ -111,15 +125,15 @@ const OptimizedQuickSelectCard: React.FC<OptimizedQuickSelectCardProps> = React.
   return (
     <button
       onClick={handleClick}
+      onTouchStart={handleTouchStart}
       disabled={disabled}
       className={baseStyles.base}
-      style={disabled ? {} : undefined}
-      onMouseEnter={disabled ? undefined : (e) => {
-        e.currentTarget.style.transform = 'scale(1.02)';
+      style={{
+        userSelect: 'none',
+        WebkitTapHighlightColor: 'transparent',
+        touchAction: 'manipulation'
       }}
-      onMouseLeave={disabled ? undefined : (e) => {
-        e.currentTarget.style.transform = 'scale(1)';
-      }}
+      aria-label={`Seleccionar ${option.tickets} boletos por $${option.price.toLocaleString('es-MX')}`}
     >
       {/* Popular Badge - Simple and efficient */}
       {isPopular && (
@@ -709,11 +723,15 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
     setTimeout(() => setCopiedField(''), 2000);
   }, []);
 
-  // ✅ PERFORMANCE: Optimized instant quick select
+  // ✅ PERFORMANCE: Optimized instant quick select with enhanced logging
   const handleQuickSelect = useCallback(async (ticketCount: number) => {
+    console.log(`🚀 MODAL WIZARD: handleQuickSelect called with ${ticketCount} boletos`);
+
     // Clear any previous errors
     setValidationErrors({});
     setIsSelectingTickets(true);
+
+    console.log(`⚡ Estado: isSelectingTickets = true para ${ticketCount} boletos`);
 
     // Validate minimum tickets
     if (ticketCount < MIN_TICKETS_PER_PURCHASE) {
@@ -1276,16 +1294,22 @@ const QuickSelectionStep: React.FC<QuickSelectionStepProps> = ({ onQuickSelect, 
       </motion.div>
     )}
 
-    {/* Quick Buy Cards Grid */}
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-      {QUICK_SELECT_OPTIONS.map((option, index) => (
-        <OptimizedQuickSelectCard
-          key={option.tickets}
-          option={option}
-          onSelect={() => onQuickSelect(option.tickets)}
-          disabled={isSelectingTickets}
-        />
-      ))}
+    {/* Quick Buy Cards Grid - Enhanced for all cards */}
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full">
+      {QUICK_SELECT_OPTIONS.map((option, index) => {
+        console.log(`🔄 Renderizando card ${index}: ${option.tickets} boletos, disabled: ${isSelectingTickets}`);
+        return (
+          <OptimizedQuickSelectCard
+            key={`quick-${option.tickets}`}
+            option={option}
+            onSelect={() => {
+              console.log(`🎯 onSelect triggered para ${option.tickets} boletos`);
+              onQuickSelect(option.tickets);
+            }}
+            disabled={isSelectingTickets}
+          />
+        );
+      })}
     </div>
 
     {/* Benefits Section */}
