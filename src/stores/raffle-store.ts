@@ -67,6 +67,7 @@ export interface RaffleState {
   // Estado del cliente
   customerData: Customer | null;
   currentStep: RaffleStep;
+  fixedPrice: number | null; // Precio fijo para cards principales
   
   // Estado de actividades y configuración
   liveActivities: LiveActivity[];
@@ -83,6 +84,7 @@ export interface RaffleActions {
   selectTicket: (ticketNumber: number) => void;
   deselectTicket: (ticketNumber: number) => void;
   quickSelect: (count: number) => void;
+  quickSelectMainCard: (count: number, fixedPrice: number) => void; // Nueva función para cards principales
   clearSelection: () => void;
   
   // Acciones de cliente y checkout
@@ -146,6 +148,7 @@ const initialState: RaffleState = {
   reservedTickets: [],
   customerData: null,
   currentStep: 'selecting',
+  fixedPrice: null,
   liveActivities: [],
   viewingCount: randomBetween(89, 347),
   adminConfig: DEFAULT_ADMIN_CONFIG,
@@ -391,11 +394,52 @@ export const useRaffleStore = create<RaffleStore>()(
             };
           });
         },
-        
+
+        // Nueva función para cards principales (precio fijo sin descuentos)
+        quickSelectMainCard: (count: number, fixedPrice: number) => {
+          console.log('🎯 STORE: quickSelectMainCard called with count:', count, 'fixedPrice:', fixedPrice);
+          set(state => {
+            // Reutilizar la misma lógica de selección de tickets que quickSelect
+            const { availableTickets } = get();
+
+            if (availableTickets.length < count) {
+              console.error('❌ Not enough available tickets for main card selection');
+              return {
+                ...state,
+                errors: [...state.errors, `Solo ${availableTickets.length} boletos disponibles, se necesitan ${count}`]
+              };
+            }
+
+            // Fisher-Yates shuffle para selección aleatoria
+            const shuffled = [...availableTickets];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+
+            const selected = shuffled.slice(0, count).sort((a, b) => a - b);
+
+            console.log('✅ STORE: Main card selection complete:', {
+              count,
+              fixedPrice,
+              selected: selected.length,
+              tickets: selected
+            });
+
+            return {
+              ...state,
+              selectedTickets: selected,
+              fixedPrice: fixedPrice, // Guardar precio fijo
+              errors: []
+            };
+          });
+        },
+
         clearSelection: () => {
           set(state => ({
             ...state,
-            selectedTickets: []
+            selectedTickets: [],
+            fixedPrice: null // Limpiar precio fijo también
           }));
         },
         

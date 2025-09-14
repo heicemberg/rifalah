@@ -424,7 +424,8 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
     reservedTickets,
     selectTicket,
     deselectTicket,
-    clearSelection
+    clearSelection,
+    quickSelectMainCard
   } = useRaffleStore();
   
   // ✅ USAR SOLO MASTER COUNTER PARA CONSISTENCIA MATEMÁTICA
@@ -764,7 +765,7 @@ export const TicketGrid: React.FC<TicketGridProps> = ({ onOpenPurchaseModal }) =
 
       {/* Cards de Selección Rápida */}
       <QuickSelectionCards
-        onQuickSelect={handleQuickSelection}
+        onQuickSelectMainCard={quickSelectMainCard}
         availableCount={realAvailableCount}
         isLoading={false}
       />

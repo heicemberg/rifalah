@@ -12,13 +12,13 @@ import { cn, calculatePrice } from '../lib/utils';
 import { MAIN_CARD_OPTIONS } from '../lib/constants';
 
 interface QuickSelectionCardsProps {
-  onQuickSelect: (count: number) => void;
+  onQuickSelectMainCard: (count: number, fixedPrice: number) => void;
   availableCount: number;
   isLoading?: boolean;
 }
 
 const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
-  onQuickSelect,
+  onQuickSelectMainCard,
   availableCount,
   isLoading = false
 }) => {
@@ -104,18 +104,20 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
     const amount = parseInt(customAmount);
     const maxAllowed = Math.min(100, availableCount);
     if (amount >= 2 && amount <= maxAllowed) {
-      onQuickSelect(amount);
+      const fixedPrice = calculatePrice(amount, false); // Precio sin descuentos
+      onQuickSelectMainCard(amount, fixedPrice);
       setShowCustomModal(false);
       setCustomAmount('');
     }
-  }, [customAmount, availableCount, onQuickSelect]);
+  }, [customAmount, availableCount, onQuickSelectMainCard]);
 
   // ✅ Handler optimizado para clicks de cards principales
   const handleCardClick = useCallback((count: number) => {
     if (availableCount >= count && !isLoading) {
-      onQuickSelect(count);
+      const fixedPrice = calculatePrice(count, false); // Precio sin descuentos
+      onQuickSelectMainCard(count, fixedPrice);
     }
-  }, [availableCount, isLoading, onQuickSelect]);
+  }, [availableCount, isLoading, onQuickSelectMainCard]);
 
   return (
     <div className="mb-8">

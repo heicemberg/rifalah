@@ -37,6 +37,7 @@ import { PAYMENT_METHODS, QUICK_SELECT_OPTIONS, MAIN_CARD_OPTIONS, MIN_TICKETS_P
 import type { PaymentMethod as PaymentMethodType } from '../lib/types';
 import { useSupabaseSync } from '../hooks/useSupabaseSync';
 import { useLazyCryptoPrice } from '../hooks/useLazyCryptoPrice';
+import { useRaffleStore } from '../stores/raffle-store';
 
 // ============================================================================
 // INTERFACES AND TYPES
@@ -327,7 +328,10 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
   // ============================================================================
   // STATE MANAGEMENT
   // ============================================================================
-  
+
+  // Obtener precio fijo del store (para cards principales)
+  const { fixedPrice } = useRaffleStore();
+
   // Calculate if tickets are selected (this will update reactively)
   const hasTicketsSelected = selectedTickets.length >= MIN_TICKETS_PER_PURCHASE;
   
@@ -402,21 +406,29 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
     return hasTicketsSelected ? baseSteps.slice(1) : baseSteps;
   }, [hasTicketsSelected]);
 
-  // Calcular precio total con descuentos aplicados
+  // Calcular precio total - priorizar precio fijo de cards principales
   const totalPrice = useMemo(() => {
     const ticketCount = selectedTickets.length;
-    
-    // Buscar la opción que corresponde al número de tickets seleccionados
-    const matchingOption = QUICK_SELECT_OPTIONS.find(option => option.tickets === ticketCount);
-    
-    if (matchingOption) {
-      // Si hay una opción exacta, usar el precio con descuento
-      return matchingOption.price;
-    } else {
-      // Si no hay opción exacta (selección manual), calcular precio base
-      return ticketCount * 250;
+
+    // 1. Si hay precio fijo (cards principales), usar ese precio
+    if (fixedPrice !== null) {
+      console.log('💰 PRECIO FIJO desde cards principales:', fixedPrice);
+      return fixedPrice;
     }
-  }, [selectedTickets.length]);
+
+    // 2. Si viene del modal wizard, buscar precio con descuento
+    const matchingOption = QUICK_SELECT_OPTIONS.find(option => option.tickets === ticketCount);
+
+    if (matchingOption) {
+      console.log('💰 PRECIO CON DESCUENTO desde modal wizard:', matchingOption.price);
+      return matchingOption.price;
+    }
+
+    // 3. Selección manual - precio base sin descuentos
+    const basePrice = ticketCount * 250;
+    console.log('💰 PRECIO BASE selección manual:', basePrice);
+    return basePrice;
+  }, [selectedTickets.length, fixedPrice]);
 
   // Filter main payment methods (4 methods in 2x2 grid)
   const mainPaymentMethods = PAYMENT_METHODS.filter(method => 
@@ -447,7 +459,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
       setCopiedField('');
       setPaymentScreenshot(null);
       setPreviewUrl('');
-      setIsSelectingTickets(false); // Reset selecting state
+      setIsSelectingTickets(false); // Reset click blocking state
       
       console.log('🔄 WIZARD RESET:', {
         isOpen,
@@ -702,7 +714,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
     // Clear any previous errors
     setValidationErrors({});
     setIsSelectingTickets(true);
-    
+
     // Validate minimum tickets
     if (ticketCount < MIN_TICKETS_PER_PURCHASE) {
       setValidationErrors({
@@ -716,19 +728,20 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
       // Optimized: Skip availability check for instant UX
       // The store will handle conflicts automatically
       console.log('🚀 WIZARD: Instant quick select with count:', ticketCount);
-      
+
       // Call the parent's onQuickSelect function instantly
       onQuickSelect(ticketCount);
-      
+
       // Clear errors immediately
       setValidationErrors({});
-      setIsSelectingTickets(false);
-      
+
     } catch (error) {
       console.error('Error in quick select:', error);
       setValidationErrors({
         quickSelect: 'Error al seleccionar boletos. Intenta de nuevo.'
       });
+    } finally {
+      // Always reset selection state
       setIsSelectingTickets(false);
     }
   }, [onQuickSelect]);
@@ -894,7 +907,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
         <div className="fixed inset-0 z-50 overflow-y-auto">
           {/* ✅ SOLID BACKDROP: No transparency issues */}
           <motion.div 
-            className="fixed inset-0 bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-sm" 
+            className="fixed inset-0 bg-slate-900" 
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

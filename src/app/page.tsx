@@ -145,8 +145,8 @@ export default function NewRaffePage() {
     }
   }, []);
   
-  // Acceder al store para obtener los tickets seleccionados y la acción de selección rápida
-  const { selectedTickets, quickSelect } = useRaffleStore()
+  // Acceder al store para obtener los tickets seleccionados y las acciones de selección
+  const { selectedTickets, quickSelect, quickSelectMainCard } = useRaffleStore()
 
   // 🎭 USAR DATOS DE DISPLAY CON FOMO - PARA UI PÚBLICA
   const soldCount = masterCounters.soldTickets           // Display sold (already with FOMO applied)
