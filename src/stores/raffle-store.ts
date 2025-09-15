@@ -342,12 +342,53 @@ export const useRaffleStore = create<RaffleStore>()(
             
             // Select the first 'count' tickets and sort them for display
             const selected = shuffled.slice(0, count).sort((a, b) => a - b);
-            
+
+            // CRITICAL: Verify selected tickets are NOT in sold or reserved lists
+            const conflicting = selected.filter(ticket =>
+              soldTickets.includes(ticket) || reservedTickets.includes(ticket)
+            );
+
+            if (conflicting.length > 0) {
+              console.error('❌ Quick select generated conflicting tickets', {
+                conflicting,
+                sold: soldTickets.length,
+                reserved: reservedTickets.length
+              });
+
+              // Try to find alternative tickets
+              const remaining = availableTickets.filter(ticket =>
+                !soldTickets.includes(ticket) &&
+                !reservedTickets.includes(ticket)
+              );
+
+              if (remaining.length >= count) {
+                const alternativeShuffled = [...remaining];
+                for (let i = alternativeShuffled.length - 1; i > 0; i--) {
+                  const j = Math.floor(Math.random() * (i + 1));
+                  [alternativeShuffled[i], alternativeShuffled[j]] = [alternativeShuffled[j], alternativeShuffled[i]];
+                }
+                const alternative = alternativeShuffled.slice(0, count).sort((a, b) => a - b);
+                console.log('✅ Using alternative tickets:', alternative);
+
+                return {
+                  ...state,
+                  selectedTickets: alternative,
+                  currentStep: 'payment' as RaffleStep,
+                  errors: []
+                };
+              } else {
+                return {
+                  ...state,
+                  errors: [...state.errors, `No hay suficientes tickets disponibles (${remaining.length} disponibles, ${count} solicitados)`]
+                };
+              }
+            }
+
             // Final validation: Ensure we have exactly 'count' unique tickets
             const uniqueSelected = [...new Set(selected)];
             if (uniqueSelected.length !== count || selected.length !== count) {
-              console.error('❌ Quick select failed to generate correct number of unique tickets', { 
-                requested: count, 
+              console.error('❌ Quick select failed to generate correct number of unique tickets', {
+                requested: count,
                 generated: selected.length,
                 unique: uniqueSelected.length,
                 available: availableTickets.length,
