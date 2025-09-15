@@ -293,9 +293,14 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
 
   // ✅ Handlers optimizados con useCallback para mejor performance
   const handleTicketSelect = useCallback((amount: number) => {
+    console.log(`✅ Selecting ${amount} tickets`);
     setTickets(amount);
     setCustomTickets('');
     setErrors(prev => ({ ...prev, tickets: '' }));
+    // Forzar actualización inmediata
+    setTimeout(() => {
+      setTickets(amount);
+    }, 0);
   }, []);
   
   // ✅ Optimización adicional para handlers de pago
@@ -800,7 +805,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-gradient-to-br from-blue-900/30 via-purple-900/40 to-emerald-900/30 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-white/85 backdrop-blur-sm">
       <div className="relative w-full sm:max-w-3xl h-[100vh] sm:h-auto sm:max-h-[95vh] overflow-hidden bg-white sm:rounded-xl shadow-2xl animate-bounce-in sm:m-2">
         {/* Header - Optimizado móvil */}
         <div className="flex items-center justify-between p-3 sm:p-6 border-b border-emerald-200/30 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600">
@@ -894,21 +899,25 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                 return (
                   <button
                     key={amount}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
+                    onClick={() => {
+                      console.log(`Card clicked: ${amount} tickets`);
                       handleTicketSelect(amount);
                     }}
-                    className={`p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 font-bold transition-all duration-200 text-center hover:scale-105 hover:shadow-lg group relative overflow-hidden cursor-pointer z-10 ${
+                    onTouchStart={() => {
+                      console.log(`Card touched: ${amount} tickets`);
+                      handleTicketSelect(amount);
+                    }}
+                    className={`p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 font-bold transition-all duration-200 text-center hover:scale-105 hover:shadow-lg group relative overflow-hidden cursor-pointer select-none ${
                       tickets === amount
                         ? 'border-emerald-500 bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-800 shadow-lg scale-105'
                         : 'border-gray-300/60 bg-gradient-to-br from-white to-gray-50 text-gray-700 hover:border-emerald-400 hover:bg-gradient-to-br hover:from-emerald-50 hover:to-emerald-100 hover:text-emerald-700'
                     }`}
                     type="button"
+                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                   >
                     {/* Badge de descuento si aplica */}
                     {hasDiscountCard && (
-                      <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full shadow-md animate-pulse">
+                      <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full shadow-md animate-pulse pointer-events-none">
                         -{discount}%
                       </div>
                     )}
