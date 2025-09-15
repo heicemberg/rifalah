@@ -253,9 +253,9 @@ const OptimizedPaymentMethodCard: React.FC<OptimizedPaymentMethodCardProps> = Re
 
   // ✅ PERFORMANCE: Memoized converted amount for Binance
   const convertedAmount = useMemo(() => {
-    if (method.id !== 'binance' || !convertedAmounts.total) return null;
+    if (method.id !== 'binance' || !convertedAmounts || !convertedAmounts.total) return null;
     return convertedAmounts.total;
-  }, [method.id, convertedAmounts.total]);
+  }, [method.id, convertedAmounts?.total]);
 
   return (
     <button
@@ -1614,7 +1614,7 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                                 <span className="text-lg">Cargando...</span>
                               </div>
                             ) : (
-                              `${convertedAmounts.BTC.toFixed(8)} BTC`
+                              `${convertedAmounts?.BTC?.toFixed(8) || '...'} BTC`
                             )}
                           </div>
                           <div className="text-sm text-orange-700 font-bold mt-1">
@@ -1622,7 +1622,7 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                           </div>
                         </div>
                         <button
-                          onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.BTC.toString())}
+                          onClick={() => convertedAmounts?.BTC && navigator.clipboard.writeText(convertedAmounts.BTC.toString())}
                           className="w-full px-5 py-3 rounded-2xl text-sm font-black transition-all duration-300 ring-2 shadow-xl active:scale-95 bg-gradient-to-r from-orange-200 to-yellow-200 text-orange-900 hover:from-orange-300 hover:to-yellow-300 ring-orange-400/60 hover:shadow-2xl hover:scale-105 border border-orange-300/50"
                         >
                           <Copy size={14} className="inline mr-2" />
@@ -1663,7 +1663,7 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                                 <span className="text-lg">Cargando...</span>
                               </div>
                             ) : (
-                              `${convertedAmounts.SOL.toFixed(4)} SOL`
+                              `${convertedAmounts?.SOL?.toFixed(4) || '...'} SOL`
                             )}
                           </div>
                           <div className="text-sm text-violet-700 font-bold mt-1">
@@ -1671,7 +1671,7 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                           </div>
                         </div>
                         <button
-                          onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.SOL.toString())}
+                          onClick={() => convertedAmounts?.SOL && navigator.clipboard.writeText(convertedAmounts.SOL.toString())}
                           className="w-full px-5 py-3 rounded-2xl text-sm font-black transition-all duration-300 ring-2 shadow-xl active:scale-95 bg-gradient-to-r from-violet-200 to-purple-200 text-violet-900 hover:from-violet-300 hover:to-purple-300 ring-violet-400/60 hover:shadow-2xl hover:scale-105 border border-violet-300/50"
                         >
                           <Copy size={14} className="inline mr-2" />
@@ -1709,14 +1709,14 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                       <div className="text-right space-y-2">
                         <div className="bg-green-100/60 p-2 rounded-xl border border-green-200/50">
                           <div className="font-mono font-black text-green-800 text-lg">
-                            {cryptoLoading || !convertedAmounts ? '...' : `${convertedAmounts.USDT.toFixed(2)} USDT`}
+                            {cryptoLoading || !convertedAmounts ? '...' : `${convertedAmounts?.USDT?.toFixed(2) || '...'} USDT`}
                           </div>
                           <div className="text-xs text-green-600 font-bold">
                             ≈ ${selectedTickets.length * 250} MXN
                           </div>
                         </div>
                         <button
-                          onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.USDT.toString())}
+                          onClick={() => convertedAmounts?.USDT && navigator.clipboard.writeText(convertedAmounts.USDT.toString())}
                           className="px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ring-2 shadow-lg active:scale-95 bg-gradient-to-r from-green-200 to-emerald-200 text-green-800 hover:from-green-300 hover:to-emerald-300 ring-green-300/50 hover:shadow-xl"
                         >
                           <Copy size={12} className="inline mr-2" />
@@ -1742,14 +1742,14 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                       <div className="text-right space-y-2">
                         <div className="bg-blue-100/60 p-2 rounded-xl border border-blue-200/50">
                           <div className="font-mono font-black text-blue-800 text-lg">
-                            {cryptoLoading || !convertedAmounts ? '...' : `${convertedAmounts.USDC.toFixed(2)} USDC`}
+                            {cryptoLoading || !convertedAmounts ? '...' : `${convertedAmounts?.USDC?.toFixed(2) || '...'} USDC`}
                           </div>
                           <div className="text-xs text-blue-600 font-bold">
                             ≈ ${selectedTickets.length * 250} MXN
                           </div>
                         </div>
                         <button
-                          onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.USDC.toString())}
+                          onClick={() => convertedAmounts?.USDC && navigator.clipboard.writeText(convertedAmounts.USDC.toString())}
                           className="px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ring-2 shadow-lg active:scale-95 bg-gradient-to-r from-blue-200 to-cyan-200 text-blue-800 hover:from-blue-300 hover:to-cyan-300 ring-blue-300/50 hover:shadow-xl"
                         >
                           <Copy size={12} className="inline mr-2" />
@@ -1775,14 +1775,14 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                       <div className="text-right space-y-2">
                         <div className="bg-purple-100/60 p-2 rounded-xl border border-purple-200/50">
                           <div className="font-mono font-black text-purple-800 text-lg">
-                            {cryptoLoading || !convertedAmounts ? '...' : `${convertedAmounts.ETH.toFixed(6)} ETH`}
+                            {cryptoLoading || !convertedAmounts ? '...' : `${convertedAmounts?.ETH?.toFixed(6) || '...'} ETH`}
                           </div>
                           <div className="text-xs text-purple-600 font-bold">
                             ≈ ${selectedTickets.length * 250} MXN
                           </div>
                         </div>
                         <button
-                          onClick={() => convertedAmounts && navigator.clipboard.writeText(convertedAmounts.ETH.toString())}
+                          onClick={() => convertedAmounts?.ETH && navigator.clipboard.writeText(convertedAmounts.ETH.toString())}
                           className="px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ring-2 shadow-lg active:scale-95 bg-gradient-to-r from-purple-200 to-indigo-200 text-purple-800 hover:from-purple-300 hover:to-indigo-300 ring-purple-300/50 hover:shadow-xl"
                         >
                           <Copy size={12} className="inline mr-2" />
