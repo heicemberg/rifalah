@@ -251,11 +251,11 @@ const OptimizedPaymentMethodCard: React.FC<OptimizedPaymentMethodCardProps> = Re
     return cn(base, 'px-4 py-6 min-h-[120px] border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-md');
   }, [expanded, isSelected]);
 
-  // ✅ PERFORMANCE: Memoized converted amount for Binance
-  const convertedAmount = useMemo(() => {
-    if (method.id !== 'binance' || !convertedAmounts || !convertedAmounts.total) return null;
-    return convertedAmounts.total;
-  }, [method.id, convertedAmounts?.total]);
+  // ✅ PERFORMANCE: Memoized crypto prices for Binance
+  const cryptoPricesAvailable = useMemo(() => {
+    return method.id === 'binance' && convertedAmounts &&
+           convertedAmounts.USDT && convertedAmounts.BTC;
+  }, [method.id, convertedAmounts?.USDT, convertedAmounts?.BTC]);
 
   return (
     <button
@@ -311,11 +311,54 @@ const OptimizedPaymentMethodCard: React.FC<OptimizedPaymentMethodCardProps> = Re
           </div>
           
           {/* Binance Price Display - Optimized */}
-          {method.id === 'binance' && convertedAmount && (
+          {method.id === 'binance' && (
             <div className="mt-2 space-y-1">
-              <div className="text-lg font-bold text-emerald-700">
-                {cryptoLoading ? 'Calculando...' : `$${convertedAmount.toFixed(2)} MXN`}
-              </div>
+              {cryptoLoading ? (
+                <div className="text-sm font-medium text-blue-600">
+                  Calculando precios...
+                </div>
+              ) : convertedAmounts ? (
+                expanded ? (
+                  // Expanded view - more crypto details
+                  <div className="space-y-2 bg-gradient-to-r from-emerald-50 to-blue-50 p-3 rounded-xl border border-emerald-200/50">
+                    <div className="text-xs font-bold text-emerald-800 mb-2">
+                      💰 Equivalencias en criptomonedas:
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-white/80 p-2 rounded-lg">
+                        <div className="font-bold text-emerald-700">≈ {convertedAmounts.USDT?.toFixed(2)}</div>
+                        <div className="text-slate-600">USDT</div>
+                      </div>
+                      <div className="bg-white/80 p-2 rounded-lg">
+                        <div className="font-bold text-orange-600">≈ {convertedAmounts.BTC?.toFixed(6)}</div>
+                        <div className="text-slate-600">BTC</div>
+                      </div>
+                      <div className="bg-white/80 p-2 rounded-lg">
+                        <div className="font-bold text-blue-600">≈ {convertedAmounts.ETH?.toFixed(4)}</div>
+                        <div className="text-slate-600">ETH</div>
+                      </div>
+                      <div className="bg-white/80 p-2 rounded-lg">
+                        <div className="font-bold text-purple-600">≈ {convertedAmounts.SOL?.toFixed(2)}</div>
+                        <div className="text-slate-600">SOL</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  // Compact view - main cryptos only
+                  <div className="space-y-1">
+                    <div className="text-xs font-bold text-emerald-700">
+                      ≈ {convertedAmounts.USDT?.toFixed(2)} USDT
+                    </div>
+                    <div className="text-xs text-slate-600">
+                      ≈ {convertedAmounts.BTC?.toFixed(6)} BTC
+                    </div>
+                  </div>
+                )
+              ) : (
+                <div className="text-xs text-amber-600 font-medium">
+                  Precios no disponibles
+                </div>
+              )}
               {lastUpdate && (
                 <div className="text-xs text-slate-500">
                   Actualizado: {lastUpdate.toLocaleTimeString()}
@@ -2341,6 +2384,93 @@ const PaymentProofStep: React.FC<PaymentProofStepProps> = ({
       </div>
     </div>
 
+    {/* Payment Account Information */}
+    {(() => {
+      const selectedMethod = mainPaymentMethods.find(m => m.id === selectedPaymentMethod);
+      if (!selectedMethod) return null;
+
+      return (
+        <div className="relative bg-gradient-to-br from-emerald-50 to-emerald-100/80 backdrop-blur-sm border border-emerald-200/60 rounded-2xl p-6 ring-1 ring-emerald-200/30 shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent rounded-2xl" />
+          <div className="relative">
+            <h4 className="font-bold text-emerald-900 mb-6 flex items-center gap-3 text-lg">
+              <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg shadow-emerald-500/25">
+                <CreditCard size={18} className="text-white" />
+              </div>
+              <span className="bg-gradient-to-r from-emerald-900 to-emerald-700 bg-clip-text text-transparent">
+                Datos para tu transferencia - {selectedMethod.name}
+              </span>
+            </h4>
+
+            <div className="bg-white/90 backdrop-blur-sm p-5 rounded-2xl space-y-4 ring-1 ring-emerald-200/50 shadow-md">
+              {selectedMethod.id === 'binance' ? (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center group">
+                    <span className="text-emerald-700 font-semibold flex items-center gap-2">
+                      <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                      Email Binance Pay:
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-slate-900 bg-slate-100 px-3 py-1 rounded-lg">
+                        {selectedMethod.account}
+                      </span>
+                      <button
+                        onClick={() => onCopyToClipboard(selectedMethod.account, 'binance-email')}
+                        className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95"
+                      >
+                        {copiedField === 'binance-email' ? <CheckCircle size={16} /> : <Copy size={16} />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                    <p className="text-sm text-emerald-800 font-medium">
+                      💡 <strong>Importante:</strong> Transfiere exactamente <strong className="text-emerald-900">{formatPrice(totalPrice)}</strong>
+                      al email de Binance Pay mostrado arriba.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {selectedMethod.accountDetails?.split('\n').map((line: string, index: number) => {
+                    const [label, ...valueParts] = line.split(':');
+                    const value = valueParts.join(':').trim();
+
+                    if (!value) return null;
+
+                    return (
+                      <div key={index} className="flex justify-between items-center group">
+                        <span className="text-emerald-700 font-semibold flex items-center gap-2">
+                          <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                          {label.trim()}:
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-slate-900 bg-slate-100 px-3 py-1 rounded-lg">
+                            {value}
+                          </span>
+                          <button
+                            onClick={() => onCopyToClipboard(value, `${selectedMethod.id}-${index}`)}
+                            className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95"
+                          >
+                            {copiedField === `${selectedMethod.id}-${index}` ? <CheckCircle size={16} /> : <Copy size={16} />}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                    <p className="text-sm text-emerald-800 font-medium">
+                      💡 <strong>Importante:</strong> Transfiere exactamente <strong className="text-emerald-900">{formatPrice(totalPrice)}</strong>
+                      a la cuenta mostrada arriba.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    })()}
+
     {/* Final Instructions */}
     <div className="relative bg-gradient-to-r from-blue-50 to-blue-100/80 backdrop-blur-sm border border-blue-200/60 rounded-2xl p-6 ring-1 ring-blue-200/30 shadow-lg">
       <div className="absolute inset-0 bg-gradient-to-r from-white/30 to-transparent rounded-2xl" />
@@ -2351,7 +2481,7 @@ const PaymentProofStep: React.FC<PaymentProofStepProps> = ({
         <div className="text-blue-800 space-y-2">
           <p className="font-bold text-lg">¿Qué sigue?</p>
           <p className="text-sm font-medium leading-relaxed">
-            Recibirás confirmación por email. Revisaremos tu comprobante en máximo 24 horas 
+            Recibirás confirmación por email. Revisaremos tu comprobante en máximo 24 horas
             y te contactaremos para confirmar tus números.
           </p>
         </div>
