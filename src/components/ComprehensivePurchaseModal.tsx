@@ -805,7 +805,7 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-50">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-white">
       <div className="relative w-full sm:max-w-3xl h-[100vh] sm:h-auto sm:max-h-[95vh] overflow-hidden bg-white sm:rounded-xl shadow-2xl animate-bounce-in sm:m-2">
         {/* Header - Optimizado móvil */}
         <div className="flex items-center justify-between p-3 sm:p-6 border-b border-emerald-200/30 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600">
@@ -902,10 +902,9 @@ export default function ComprehensivePurchaseModal({ isOpen, onClose, initialTic
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
+                      e.preventDefault();
                       console.log(`✅ CLICK CARD: ${amount} boletos`);
-                      setTickets(amount);
-                      setCustomTickets('');
-                      setErrors(prev => ({ ...prev, tickets: '' }));
+                      handleTicketSelect(amount);
                     }}
                     className={`p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 font-bold transition-all duration-200 text-center hover:scale-105 hover:shadow-lg relative overflow-hidden cursor-pointer ${
                       tickets === amount
