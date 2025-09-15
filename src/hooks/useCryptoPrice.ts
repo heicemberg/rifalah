@@ -24,6 +24,7 @@ interface ConvertedAmounts {
   BTC: number;
   ETH: number;
   SOL: number;
+  total: number; // Monto total en MXN para compatibilidad
 }
 
 interface CacheData {
@@ -208,7 +209,8 @@ export const useCryptoPrice = (mxnAmount: number = 250) => {
       USDC: parseFloat((amount / prices.USDC.price).toFixed(DECIMAL_PRECISION.USDC)),
       BTC: parseFloat((amount / prices.BTC.price).toFixed(DECIMAL_PRECISION.BTC)),
       ETH: parseFloat((amount / prices.ETH.price).toFixed(DECIMAL_PRECISION.ETH)),
-      SOL: parseFloat((amount / prices.SOL.price).toFixed(DECIMAL_PRECISION.SOL))
+      SOL: parseFloat((amount / prices.SOL.price).toFixed(DECIMAL_PRECISION.SOL)),
+      total: amount // Monto original en MXN para compatibilidad
     };
   }, []);
 
