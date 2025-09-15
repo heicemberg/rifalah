@@ -89,12 +89,13 @@ const OptimizedQuickSelectCard: React.FC<OptimizedQuickSelectCardProps> = React.
   disabled = false
 }) => {
   // ✅ PERFORMANCE: Ultra-robust event handler with multiple event types
-  const handleClick = useCallback((e: React.MouseEvent) => {
+  const handleClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (!disabled) {
-      console.log(`🎯 CARD CLICKED: ${option.tickets} boletos`, { disabled, option });
+      console.log(`🎯 CARD CLICKED: ${option.tickets} boletos`);
+      // Ejecutar inmediatamente
       onSelect();
     }
   }, [onSelect, disabled, option.tickets]);
@@ -125,14 +126,9 @@ const OptimizedQuickSelectCard: React.FC<OptimizedQuickSelectCardProps> = React.
   return (
     <button
       onClick={handleClick}
-      onTouchStart={handleTouchStart}
       disabled={disabled}
       className={baseStyles.base}
-      style={{
-        userSelect: 'none',
-        WebkitTapHighlightColor: 'transparent',
-        touchAction: 'manipulation'
-      }}
+      type="button"
       aria-label={`Seleccionar ${option.tickets} boletos por $${option.price.toLocaleString('es-MX')}`}
     >
       {/* Popular Badge - Simple and efficient */}
@@ -925,7 +921,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
         <div className="fixed inset-0 z-50 overflow-y-auto">
           {/* ✅ SOLID BACKDROP: Light background overlay */}
           <motion.div
-            className="fixed inset-0 bg-white backdrop-blur-none"
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm"
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
