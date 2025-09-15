@@ -93,10 +93,19 @@ const OptimizedQuickSelectCard: React.FC<OptimizedQuickSelectCardProps> = React.
     e.preventDefault();
     e.stopPropagation();
 
-    if (!disabled) {
-      console.log(`🎯 CARD CLICKED: ${option.tickets} boletos`);
-      // Ejecutar inmediatamente
+    if (disabled) {
+      console.log(`⚠️ CARD DISABLED: ${option.tickets} boletos`);
+      return;
+    }
+
+    console.log(`🎯 CARD CLICKED: ${option.tickets} boletos - EJECUTANDO onSelect`);
+
+    // Ejecutar inmediatamente sin condiciones
+    try {
       onSelect();
+      console.log(`✅ onSelect ejecutado para ${option.tickets} boletos`);
+    } catch (error) {
+      console.error(`❌ Error ejecutando onSelect:`, error);
     }
   }, [onSelect, disabled, option.tickets]);
 
@@ -921,7 +930,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
         <div className="fixed inset-0 z-50 overflow-y-auto">
           {/* ✅ SOLID BACKDROP: Light background overlay */}
           <motion.div
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm"
+            className="fixed inset-0 bg-gray-100/80 backdrop-blur-sm"
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
