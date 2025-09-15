@@ -923,9 +923,9 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          {/* ✅ SOLID BACKDROP: No transparency issues */}
-          <motion.div 
-            className="fixed inset-0 bg-slate-900" 
+          {/* ✅ SOLID BACKDROP: Light background overlay */}
+          <motion.div
+            className="fixed inset-0 bg-white backdrop-blur-none"
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
