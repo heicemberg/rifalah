@@ -1271,10 +1271,49 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
                         />
                       </motion.div>
 
+                      {/* Selected Tickets Summary */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.25, delay: 0.15 }}
+                        className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-2xl p-4"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                            <h4 className="font-bold text-blue-900 text-sm">Tus números seleccionados</h4>
+                          </div>
+                          <span className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                            {selectedTickets.length} número{selectedTickets.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1 mb-3 max-h-20 overflow-y-auto">
+                          {selectedTickets.slice(0, 20).map((ticket, index) => (
+                            <span
+                              key={ticket}
+                              className="text-xs font-mono bg-white border border-blue-200 px-2 py-1 rounded-md text-blue-700"
+                            >
+                              {formatTicketNumber(ticket)}
+                            </span>
+                          ))}
+                          {selectedTickets.length > 20 && (
+                            <span className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-md">
+                              +{selectedTickets.length - 20} más
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-blue-700 font-medium">Total a pagar:</span>
+                          <span className="text-blue-900 font-black text-lg">{formatPrice(totalPrice)}</span>
+                        </div>
+                      </motion.div>
+
                       <motion.div
                         initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: 0.15 }}
+                        transition={{ duration: 0.3, delay: 0.2 }}
                       >
                         {renderPaymentMethodAnimation()}
                       </motion.div>
@@ -1338,17 +1377,31 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
                                             {/* Stablecoins Section */}
                                             {(newConversions || stablecoins) && (
                                               <>
-                                                <div className="text-xs font-semibold text-emerald-700 mb-2">💵 Stablecoins (Recomendado):</div>
+                                                <div className="text-xs font-semibold text-emerald-700 mb-2 flex items-center gap-2">
+                                                  💵 Stablecoins (Recomendado - Precio estable):
+                                                </div>
                                                 <div className="grid grid-cols-2 gap-2 mb-4">
-                                                  <div className="bg-white/90 p-3 rounded-lg border border-green-200 shadow-sm">
+                                                  <div className="bg-white/90 p-3 rounded-lg border border-green-200 shadow-sm hover:shadow-md transition-shadow">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                                        <span className="text-white text-xs font-bold">₮</span>
+                                                      </div>
+                                                      <span className="font-bold text-green-700 text-sm">USDT</span>
+                                                    </div>
                                                     <div className="font-bold text-green-700">
-                                                      ≈ {(newConversions?.USDT?.amount || convertedAmounts?.USDT)?.toFixed(2)} USDT
+                                                      ≈ {(newConversions?.USDT?.amount || convertedAmounts?.USDT)?.toFixed(2)}
                                                     </div>
                                                     <div className="text-xs text-slate-600">Tether (USD)</div>
                                                   </div>
-                                                  <div className="bg-white/90 p-3 rounded-lg border border-green-200 shadow-sm">
+                                                  <div className="bg-white/90 p-3 rounded-lg border border-green-200 shadow-sm hover:shadow-md transition-shadow">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                                        <span className="text-white text-xs font-bold">$</span>
+                                                      </div>
+                                                      <span className="font-bold text-green-700 text-sm">USDC</span>
+                                                    </div>
                                                     <div className="font-bold text-green-700">
-                                                      ≈ {(newConversions?.USDC?.amount || convertedAmounts?.USDC)?.toFixed(2)} USDC
+                                                      ≈ {(newConversions?.USDC?.amount || convertedAmounts?.USDC)?.toFixed(2)}
                                                     </div>
                                                     <div className="text-xs text-slate-600">USD Coin</div>
                                                   </div>
@@ -1359,28 +1412,52 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
                                             {/* Main Cryptos Section */}
                                             <div className="text-xs font-semibold text-purple-700 mb-2">🚀 Criptomonedas Principales:</div>
                                             <div className="grid grid-cols-2 gap-2">
-                                              <div className="bg-white/90 p-3 rounded-lg border border-orange-200 shadow-sm">
+                                              <div className="bg-white/90 p-3 rounded-lg border border-orange-200 shadow-sm hover:shadow-md transition-shadow">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                  <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                                                    <span className="text-white text-xs font-bold">₿</span>
+                                                  </div>
+                                                  <span className="font-bold text-orange-600 text-sm">BTC</span>
+                                                </div>
                                                 <div className="font-bold text-orange-600">
-                                                  ≈ {(newConversions?.BTC?.amount || convertedAmounts?.BTC)?.toFixed(6)} BTC
+                                                  ≈ {(newConversions?.BTC?.amount || convertedAmounts?.BTC)?.toFixed(6)}
                                                 </div>
                                                 <div className="text-xs text-slate-600">Bitcoin</div>
                                               </div>
-                                              <div className="bg-white/90 p-3 rounded-lg border border-blue-200 shadow-sm">
+                                              <div className="bg-white/90 p-3 rounded-lg border border-blue-200 shadow-sm hover:shadow-md transition-shadow">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                                    <span className="text-white text-xs font-bold">Ξ</span>
+                                                  </div>
+                                                  <span className="font-bold text-blue-600 text-sm">ETH</span>
+                                                </div>
                                                 <div className="font-bold text-blue-600">
-                                                  ≈ {(newConversions?.ETH?.amount || convertedAmounts?.ETH)?.toFixed(4)} ETH
+                                                  ≈ {(newConversions?.ETH?.amount || convertedAmounts?.ETH)?.toFixed(4)}
                                                 </div>
                                                 <div className="text-xs text-slate-600">Ethereum</div>
                                               </div>
-                                              <div className="bg-white/90 p-3 rounded-lg border border-purple-200 shadow-sm">
+                                              <div className="bg-white/90 p-3 rounded-lg border border-purple-200 shadow-sm hover:shadow-md transition-shadow">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                  <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                                                    <span className="text-white text-xs font-bold">◈</span>
+                                                  </div>
+                                                  <span className="font-bold text-purple-600 text-sm">SOL</span>
+                                                </div>
                                                 <div className="font-bold text-purple-600">
-                                                  ≈ {(newConversions?.SOL?.amount || convertedAmounts?.SOL)?.toFixed(2)} SOL
+                                                  ≈ {(newConversions?.SOL?.amount || convertedAmounts?.SOL)?.toFixed(2)}
                                                 </div>
                                                 <div className="text-xs text-slate-600">Solana</div>
                                               </div>
                                               {newConversions?.BNB && (
-                                                <div className="bg-white/90 p-3 rounded-lg border border-yellow-200 shadow-sm">
+                                                <div className="bg-white/90 p-3 rounded-lg border border-yellow-200 shadow-sm hover:shadow-md transition-shadow">
+                                                  <div className="flex items-center gap-2 mb-1">
+                                                    <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                                                      <span className="text-white text-xs font-bold">B</span>
+                                                    </div>
+                                                    <span className="font-bold text-yellow-600 text-sm">BNB</span>
+                                                  </div>
                                                   <div className="font-bold text-yellow-600">
-                                                    ≈ {newConversions.BNB.amount.toFixed(4)} BNB
+                                                    ≈ {newConversions.BNB.amount.toFixed(4)}
                                                   </div>
                                                   <div className="text-xs text-slate-600">Binance Coin</div>
                                                 </div>
@@ -1499,8 +1576,8 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
                                           </div>
                                         </div>
 
-                                        {/* Validation Warning for Production */}
-                                        {!paymentValidation.valid && paymentValidation.missing.length > 0 && (
+                                        {/* Validation Warning for Production - Only show in production */}
+                                        {process.env.NODE_ENV === 'production' && !paymentValidation.valid && paymentValidation.missing.length > 0 && (
                                           <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl">
                                             <div className="flex items-start gap-3">
                                               <div className="p-1 bg-amber-500 rounded-lg">
@@ -1855,10 +1932,10 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ selectedTickets, to
         </div>
       </motion.div>
 
-      {/* Enhanced Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Enhanced Stats Grid - Mobile Optimized */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         {/* Tickets Count */}
-        <div className="group relative bg-gradient-to-br from-slate-50 to-slate-100/80 backdrop-blur-sm rounded-2xl p-6 text-center ring-1 ring-slate-200/50 hover:ring-slate-300/60 hover:shadow-lg transition-all duration-300">
+        <div className="group relative bg-gradient-to-br from-slate-50 to-slate-100/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 text-center ring-1 ring-slate-200/50 hover:ring-slate-300/60 hover:shadow-lg transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="relative">
             <div className="text-3xl font-black bg-gradient-to-br from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2">
@@ -1871,7 +1948,7 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ selectedTickets, to
         </div>
 
         {/* Total Price */}
-        <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/80 backdrop-blur-sm rounded-2xl p-6 text-center ring-1 ring-blue-200/40 hover:ring-blue-300/50 hover:shadow-lg transition-all duration-300">
+        <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 text-center ring-1 ring-blue-200/40 hover:ring-blue-300/50 hover:shadow-lg transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="relative">
             <div className="text-3xl font-black bg-gradient-to-br from-slate-700 to-slate-600 bg-clip-text text-transparent mb-2">
@@ -1889,7 +1966,7 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ selectedTickets, to
         </div>
 
         {/* Win Probability */}
-        <div className="group relative bg-gradient-to-br from-orange-50 to-yellow-50 backdrop-blur-sm rounded-2xl p-6 text-center ring-1 ring-orange-200/40 hover:ring-orange-300/50 hover:shadow-lg transition-all duration-300">
+        <div className="group relative bg-gradient-to-br from-orange-50 to-yellow-50 backdrop-blur-sm rounded-2xl p-4 sm:p-6 text-center ring-1 ring-orange-200/40 hover:ring-orange-300/50 hover:shadow-lg transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="relative">
             <div className="text-3xl font-black bg-gradient-to-br from-orange-700 to-yellow-600 bg-clip-text text-transparent mb-2">
@@ -2537,7 +2614,7 @@ const CustomerDataStep: React.FC<CustomerDataStepProps> = ({
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
       <StepHeader
         icon={<Users size={28} />}
         title="Tus datos de contacto"
@@ -2573,7 +2650,7 @@ const CustomerDataStep: React.FC<CustomerDataStepProps> = ({
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-5 sm:gap-6">
         {/* Full Name Field - Enhanced */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
