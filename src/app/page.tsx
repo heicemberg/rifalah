@@ -27,6 +27,7 @@ import TicketGrid from '@/components/TicketGrid'
 import OrganicNotifications from '@/components/OrganicNotifications'
 import MathDebugger from '@/components/MathDebugger'
 import FloatingPurchaseButton from '@/components/FloatingPurchaseButton'
+import { analytics } from '@/lib/analytics'
 
 export default function NewRaffePage() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
@@ -44,6 +45,9 @@ export default function NewRaffePage() {
   const { setSoldTicketsFromDB, setReservedTicketsFromDB } = useRaffleStore()
   
   useEffect(() => {
+    // Track page view analytics
+    analytics.trackPageView('homepage');
+
     const syncStoreWithSupabase = async () => {
       try {
         console.log('🔄 PAGE: Iniciando sincronización store con Supabase...');
@@ -277,7 +281,10 @@ export default function NewRaffePage() {
 
             {/* CTA Principal Prominente */}
             <button
-              onClick={() => setShowPurchaseModal(true)}
+              onClick={() => {
+                analytics.trackModalInteraction('opened');
+                setShowPurchaseModal(true);
+              }}
               className="inline-flex items-center gap-4 bg-gradient-to-r from-red-600 via-red-500 to-red-600 hover:from-red-500 hover:to-red-700 text-white px-12 py-6 rounded-2xl font-black text-xl shadow-2xl shadow-red-500/30 transition-all duration-300 hover:scale-105 hover:shadow-red-500/50 border-2 border-red-400/50 mb-8"
             >
               <Gift className="w-8 h-8" />
@@ -840,7 +847,10 @@ export default function NewRaffePage() {
       {/* Modales */}
       <PurchaseWizard
         isOpen={showPurchaseModal}
-        onClose={() => setShowPurchaseModal(false)}
+        onClose={() => {
+          analytics.trackModalInteraction('closed');
+          setShowPurchaseModal(false);
+        }}
         selectedTickets={selectedTickets}
         onQuickSelect={(count) => quickSelect(count)}
         onConfirmPurchase={async (customerData, paymentMethod) => {

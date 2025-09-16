@@ -270,3 +270,217 @@ export const startTimeTracking = () => {
     timeTrackingActive = false;
   }, 30 * 60 * 1000);
 };
+
+// ============================================================================
+// COMPREHENSIVE ANALYTICS SYSTEM - For Admin Dashboard
+// ============================================================================
+
+// Types for comprehensive analytics data
+export interface AnalyticsEvent {
+  id?: string;
+  event_type: string;
+  event_data: Record<string, any>;
+  user_id?: string;
+  session_id: string;
+  timestamp: string;
+  user_agent?: string;
+  referrer?: string;
+  page_url: string;
+  device_type: 'mobile' | 'desktop' | 'tablet';
+}
+
+// Analytics Class for comprehensive tracking
+class ComprehensiveAnalyticsTracker {
+  private sessionId: string;
+  private startTime: number;
+
+  constructor() {
+    this.sessionId = this.generateSessionId();
+    this.startTime = Date.now();
+  }
+
+  private generateSessionId(): string {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  private getDeviceType(): 'mobile' | 'desktop' | 'tablet' {
+    if (typeof window === 'undefined') return 'desktop';
+
+    const userAgent = navigator.userAgent.toLowerCase();
+
+    if (/tablet|ipad|playbook|silk/i.test(userAgent)) {
+      return 'tablet';
+    }
+
+    if (/mobile|iphone|ipod|android|blackberry|opera|mini|windows\sce|palm|smartphone|iemobile/i.test(userAgent)) {
+      return 'mobile';
+    }
+
+    return 'desktop';
+  }
+
+  private async saveEvent(analyticsEvent: AnalyticsEvent): Promise<void> {
+    try {
+      // Save to localStorage for development/demo
+      const events = this.getStoredEvents();
+      events.push(analyticsEvent);
+      localStorage.setItem('raffle_analytics', JSON.stringify(events.slice(-1000))); // Keep last 1000 events
+    } catch (error) {
+      console.error('Analytics tracking error:', error);
+    }
+  }
+
+  private getStoredEvents(): AnalyticsEvent[] {
+    try {
+      const stored = localStorage.getItem('raffle_analytics');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  // Public tracking methods
+  async trackPageView(page: string): Promise<void> {
+    const analyticsEvent: AnalyticsEvent = {
+      event_type: 'page_view',
+      event_data: { page },
+      session_id: this.sessionId,
+      timestamp: new Date().toISOString(),
+      user_agent: typeof window !== 'undefined' ? navigator.userAgent : '',
+      referrer: typeof window !== 'undefined' ? document.referrer : '',
+      page_url: typeof window !== 'undefined' ? window.location.href : '',
+      device_type: this.getDeviceType(),
+    };
+
+    await this.saveEvent(analyticsEvent);
+
+    // Also track with Google Analytics
+    pageview(page);
+  }
+
+  async trackTicketSelection(tickets: number[], method: 'quick' | 'manual'): Promise<void> {
+    const analyticsEvent: AnalyticsEvent = {
+      event_type: 'ticket_selection',
+      event_data: {
+        ticketCount: tickets.length,
+        selectionMethod: method,
+        ticketNumbers: tickets.slice(0, 10), // Store first 10 for analysis
+      },
+      session_id: this.sessionId,
+      timestamp: new Date().toISOString(),
+      page_url: typeof window !== 'undefined' ? window.location.href : '',
+      device_type: this.getDeviceType(),
+    };
+
+    await this.saveEvent(analyticsEvent);
+
+    // Also track with Google Analytics
+    raffleEvents.ticketSelected(tickets[0] || 0, tickets.length);
+  }
+
+  async trackPaymentMethodSelected(method: string): Promise<void> {
+    const analyticsEvent: AnalyticsEvent = {
+      event_type: 'payment_method_selected',
+      event_data: { paymentMethod: method },
+      session_id: this.sessionId,
+      timestamp: new Date().toISOString(),
+      page_url: typeof window !== 'undefined' ? window.location.href : '',
+      device_type: this.getDeviceType(),
+    };
+
+    await this.saveEvent(analyticsEvent);
+
+    // Also track with Google Analytics
+    raffleEvents.paymentMethodSelected(method, 0);
+  }
+
+  async trackPurchaseAttempt(ticketCount: number, paymentMethod: string, totalAmount: number): Promise<void> {
+    const analyticsEvent: AnalyticsEvent = {
+      event_type: 'purchase_attempt',
+      event_data: {
+        ticketCount,
+        paymentMethod,
+        totalAmount,
+      },
+      session_id: this.sessionId,
+      timestamp: new Date().toISOString(),
+      page_url: typeof window !== 'undefined' ? window.location.href : '',
+      device_type: this.getDeviceType(),
+    };
+
+    await this.saveEvent(analyticsEvent);
+
+    // Also track with Google Analytics
+    raffleEvents.startPurchase(ticketCount, totalAmount);
+  }
+
+  async trackPurchaseCompleted(ticketCount: number, paymentMethod: string, totalAmount: number): Promise<void> {
+    const analyticsEvent: AnalyticsEvent = {
+      event_type: 'purchase_completed',
+      event_data: {
+        ticketCount,
+        paymentMethod,
+        totalAmount,
+      },
+      session_id: this.sessionId,
+      timestamp: new Date().toISOString(),
+      page_url: typeof window !== 'undefined' ? window.location.href : '',
+      device_type: this.getDeviceType(),
+    };
+
+    await this.saveEvent(analyticsEvent);
+
+    // Also track with Google Analytics
+    raffleEvents.purchaseCompleted(`order_${Date.now()}`, ticketCount, totalAmount);
+  }
+
+  async trackModalInteraction(action: 'opened' | 'closed' | 'step_advanced' | 'abandoned', step?: number): Promise<void> {
+    const analyticsEvent: AnalyticsEvent = {
+      event_type: 'modal_interaction',
+      event_data: {
+        action,
+        step,
+        timeInModal: Date.now() - this.startTime,
+      },
+      session_id: this.sessionId,
+      timestamp: new Date().toISOString(),
+      page_url: typeof window !== 'undefined' ? window.location.href : '',
+      device_type: this.getDeviceType(),
+    };
+
+    await this.saveEvent(analyticsEvent);
+
+    // Also track with Google Analytics
+    event({
+      action: `modal_${action}`,
+      category: 'user_interaction',
+      label: step ? `step_${step}` : action,
+    });
+  }
+
+  async trackCryptoInteraction(action: string, currency?: string): Promise<void> {
+    const analyticsEvent: AnalyticsEvent = {
+      event_type: 'crypto_interaction',
+      event_data: {
+        action,
+        currency,
+      },
+      session_id: this.sessionId,
+      timestamp: new Date().toISOString(),
+      page_url: typeof window !== 'undefined' ? window.location.href : '',
+      device_type: this.getDeviceType(),
+    };
+
+    await this.saveEvent(analyticsEvent);
+
+    // Also track with Google Analytics
+    event({
+      action: 'crypto_interaction',
+      category: 'payment',
+      label: `${action}_${currency || 'unknown'}`,
+    });
+  }
+}
+
+// Global comprehensive analytics instance
+export const analytics = new ComprehensiveAnalyticsTracker();

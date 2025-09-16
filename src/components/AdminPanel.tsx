@@ -9,12 +9,12 @@ import toast from 'react-hot-toast';
 // Importar test utilities para verificación matemática
 import '../utils/testCounters';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  CheckCircle2, 
-  XCircle, 
-  RefreshCw, 
-  Eye, 
-  ChevronDown, 
+import {
+  CheckCircle2,
+  XCircle,
+  RefreshCw,
+  Eye,
+  ChevronDown,
   CheckSquare,
   Square,
   Zap,
@@ -27,6 +27,7 @@ import {
   Shield,
   Calculator
 } from 'lucide-react';
+import AnalyticsDashboard from './AnalyticsDashboard';
 
 // ============================================================================
 // TIPOS LOCALES
@@ -1587,6 +1588,28 @@ export default function AdminPanel() {
               <p className="text-slate-500">Ajusta los filtros o agrega datos de prueba</p>
             </div>
           )}
+        </motion.div>
+
+        {/* 📊 ANALYTICS DASHBOARD - Comprehensive Business Intelligence */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 rounded-2xl p-6 text-white shadow-2xl border border-blue-800"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-3 bg-blue-500 rounded-xl">
+              <DollarSign className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white">📊 Business Analytics & Intelligence</h2>
+              <p className="text-blue-200 text-sm">Análisis completo de métricas, conversiones y comportamiento del usuario</p>
+            </div>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-1">
+            <AnalyticsDashboard />
+          </div>
         </motion.div>
       </div>
     </div>
