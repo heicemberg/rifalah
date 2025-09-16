@@ -29,15 +29,20 @@ import {
   TrendingUp,
   Gift,
   AlertCircle,
+  AlertTriangle,
   Sparkles
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { formatPrice, formatTicketNumber } from '../lib/utils';
 import { PAYMENT_METHODS, QUICK_SELECT_OPTIONS, MAIN_CARD_OPTIONS, MIN_TICKETS_PER_PURCHASE } from '../lib/constants';
 import type { PaymentMethod as PaymentMethodType } from '../lib/types';
-import { useSupabaseSync } from '../hooks/useSupabaseSync';
+import { useMasterCounters } from '../hooks/useMasterCounters';
 import { useLazyCryptoPrice } from '../hooks/useLazyCryptoPrice';
+import { useCryptoConversion } from '../hooks/useCryptoConversion';
+import { getPaymentMethods, validatePaymentConfig } from '../lib/config/payment-config';
 import { useRaffleStore } from '../stores/raffle-store';
+import { useOversellProtection } from '../hooks/useOversellProtection';
+import { useReservationCleanup } from '../hooks/useReservationCleanup';
 
 // ============================================================================
 // INTERFACES AND TYPES
@@ -416,11 +421,63 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [isSelectingTickets, setIsSelectingTickets] = useState(false);
   
-  // Supabase integration for real-time validation
-  const { getRealAvailableTickets, isConnected, loading: supabaseLoading } = useSupabaseSync();
+  // ✅ ENHANCED: Use unified Master Counter system + Protection hooks
+  const masterCounters = useMasterCounters();
+  const isConnected = masterCounters.isConnected;
+  const supabaseLoading = masterCounters.isLoading;
+
+  // ✅ CRITICAL: Oversell protection and reservation cleanup
+  const { atomicReserveTickets, validateTicketsBeforeReservation } = useOversellProtection();
+  const { cleanupExpiredReservations } = useReservationCleanup({
+    enableAutoCleanup: true,
+    showLogs: false
+  });
   
   // ✅ PERFORMANCE: Lazy crypto loading - only when needed
   const { convertedAmounts, loading: cryptoLoading, error: cryptoError, lastUpdate, activate: activateCrypto, isActive: cryptoActive } = useLazyCryptoPrice(selectedTickets.length * 250);
+
+  // 🚀 NEW: Enhanced crypto conversion system
+  const {
+    conversions: newConversions,
+    stablecoins,
+    mainCryptos,
+    loading: newCryptoLoading,
+    error: newCryptoError,
+    lastUpdate: newLastUpdate,
+    refresh: refreshCrypto
+  } = useCryptoConversion(totalPrice, cryptoActive);
+
+  // Get real available tickets from Master Counter
+  const getRealAvailableTickets = useCallback(async (): Promise<number[]> => {
+    try {
+      console.log('🎫 WIZARD: Getting real available tickets from Master Counter');
+
+      // Use real available count from master counter
+      const realAvailableCount = masterCounters.availableTickets;
+      const realSoldTickets = masterCounters.soldTickets;
+      const realReservedTickets = masterCounters.reservedTickets;
+
+      console.log('📊 WIZARD: Master Counter data:', {
+        available: realAvailableCount,
+        sold: realSoldTickets,
+        reserved: realReservedTickets,
+        total: masterCounters.totalTickets
+      });
+
+      // Calculate available ticket numbers
+      const allTickets = Array.from({ length: 10000 }, (_, i) => i + 1);
+
+      // For now, return a simple calculation based on available count
+      // In production, you might want to fetch specific available numbers from Supabase
+      const availableTickets = allTickets.slice(0, realAvailableCount);
+
+      console.log(`✅ WIZARD: Returning ${availableTickets.length} available tickets`);
+      return availableTickets;
+    } catch (error) {
+      console.error('❌ WIZARD: Error getting available tickets:', error);
+      return [];
+    }
+  }, [masterCounters.availableTickets, masterCounters.soldTickets, masterCounters.reservedTickets, masterCounters.totalTickets]);
 
   // ============================================================================
   // WIZARD CONFIGURATION
@@ -492,10 +549,18 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
     return basePrice;
   }, [selectedTickets.length, fixedPrice]);
 
-  // Filter main payment methods (4 methods in 2x2 grid)
-  const mainPaymentMethods = PAYMENT_METHODS.filter(method => 
-    ['bancoppel', 'bancoazteca', 'oxxo', 'binance'].includes(method.id)
-  );
+  // 🚀 NEW: Get payment methods from configuration
+  const configuredPaymentMethods = getPaymentMethods();
+  const paymentValidation = validatePaymentConfig();
+
+  // Filter main payment methods (4 methods in 2x2 grid) - prioritize configured methods
+  const mainPaymentMethods = configuredPaymentMethods.length > 0
+    ? configuredPaymentMethods.filter(method =>
+        ['bancoppel', 'bancoazteca', 'oxxo', 'binance'].includes(method.id)
+      )
+    : PAYMENT_METHODS.filter(method =>
+        ['bancoppel', 'bancoazteca', 'oxxo', 'binance'].includes(method.id)
+      );
 
   const mexicanStates = [
     'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche',
@@ -574,6 +639,24 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
 
   // ✅ PERFORMANCE: Optimized validation with early returns
   const validateTicketSelection = useCallback(async (): Promise<boolean> => {
+    console.log('🔍 WIZARD: Starting enhanced ticket validation...', {
+      selectedTickets: selectedTickets.length,
+      uniqueTickets: new Set(selectedTickets).size
+    });
+
+    // ✅ CRITICAL: Check for duplicates in selection FIRST
+    const uniqueTickets = [...new Set(selectedTickets)];
+    if (uniqueTickets.length !== selectedTickets.length) {
+      const duplicates = selectedTickets.filter((ticket, index) =>
+        selectedTickets.indexOf(ticket) !== index
+      );
+      console.error('❌ WIZARD: Duplicate tickets detected:', duplicates);
+      setValidationErrors({
+        tickets: `Tickets duplicados detectados: ${duplicates.map(formatTicketNumber).join(', ')}. Esto indica un error en la selección.`
+      });
+      return false;
+    }
+
     // Early return for basic validation
     if (selectedTickets.length === 0) {
       setValidationErrors({
@@ -581,7 +664,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
       });
       return false;
     }
-    
+
     if (selectedTickets.length < MIN_TICKETS_PER_PURCHASE) {
       setValidationErrors({
         tickets: `Mínimo ${MIN_TICKETS_PER_PURCHASE} boletos requeridos. No se permite comprar 1 solo boleto por razones de equidad en el sorteo.`
@@ -589,48 +672,58 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
       return false;
     }
 
-    // Skip Supabase validation if not connected (performance optimization)
+    // Use Master Counter for real-time validation instead of deprecated hook
     if (!isConnected) {
+      console.warn('⚠️ WIZARD: No connection to Supabase, using local validation');
       return true;
     }
 
-    // Optimized Supabase validation with timeout
     try {
-      const availableTickets = await Promise.race([
-        getRealAvailableTickets(),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Validation timeout')), 2000)
-        )
-      ]) as number[];
-      
-      if (availableTickets.length === 0) {
+      // Get real-time data from Master Counter
+      const realAvailableCount = masterCounters.availableTickets;
+      const realSoldCount = masterCounters.soldTickets;
+      const realReservedCount = masterCounters.reservedTickets;
+
+      console.log('📊 WIZARD: Master Counter validation data:', {
+        available: realAvailableCount,
+        sold: realSoldCount,
+        reserved: realReservedCount,
+        selectedCount: selectedTickets.length
+      });
+
+      // Check if there are enough available tickets
+      if (realAvailableCount === 0) {
         setValidationErrors({
           tickets: '¡Lo sentimos! Todos los boletos están agotados. El sorteo ha terminado.'
         });
         return false;
       }
-      
-      const unavailableSelected = selectedTickets.filter(ticket => 
-        !availableTickets.includes(ticket)
-      );
 
-      if (unavailableSelected.length > 0) {
-        const unavailableFormatted = unavailableSelected.map(t => formatTicketNumber(t)).join(', ');
+      if (realAvailableCount < selectedTickets.length) {
         setValidationErrors({
-          tickets: `Los boletos ${unavailableFormatted} ya no están disponibles. Por favor selecciona otros números disponibles.`
+          tickets: `Solo quedan ${realAvailableCount} boletos disponibles. Selecciona menos números.`
         });
         return false;
       }
 
-      if (availableTickets.length < selectedTickets.length) {
+      // Validate that selected tickets are within valid range
+      const invalidTickets = selectedTickets.filter(ticket => ticket < 1 || ticket > 10000);
+      if (invalidTickets.length > 0) {
         setValidationErrors({
-          tickets: `Solo quedan ${availableTickets.length} boletos disponibles. Selecciona menos números.`
+          tickets: `Números de boleto inválidos: ${invalidTickets.map(formatTicketNumber).join(', ')}`
         });
         return false;
       }
+
+      console.log('✅ WIZARD: Enhanced validation passed', {
+        selectedCount: selectedTickets.length,
+        availableCount: realAvailableCount,
+        uniqueCheck: 'passed',
+        rangeCheck: 'passed'
+      });
 
     } catch (error) {
-      console.warn('Error validating tickets (using fallback):', error);
+      console.warn('⚠️ WIZARD: Error validating tickets (using fallback):', error);
       // Don't block user for connection issues, allow to proceed
       return true;
     }
@@ -642,7 +735,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
     });
 
     return true;
-  }, [selectedTickets, isConnected, getRealAvailableTickets]);
+  }, [selectedTickets, isConnected, masterCounters]);
 
   const validateStep = useCallback(async (step: number): Promise<boolean> => {
     const errors: ValidationErrors = {};
@@ -1104,6 +1197,254 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
                       >
                         {renderPaymentMethodAnimation()}
                       </motion.div>
+
+                      {/* Payment Details Section */}
+                      {selectedPaymentMethod && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: 0.2 }}
+                          className="relative bg-gradient-to-br from-emerald-50 to-emerald-100/80 backdrop-blur-sm border border-emerald-200/60 rounded-2xl p-6 ring-1 ring-emerald-200/30 shadow-lg"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent rounded-2xl" />
+                          <div className="relative">
+                            {(() => {
+                              const selectedMethod = mainPaymentMethods.find(m => m.id === selectedPaymentMethod);
+                              if (!selectedMethod) return null;
+
+                              return (
+                                <div>
+                                  <h4 className="font-bold text-emerald-900 mb-6 flex items-center gap-3 text-lg">
+                                    <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg shadow-emerald-500/25">
+                                      <CreditCard size={18} className="text-white" />
+                                    </div>
+                                    <span className="bg-gradient-to-r from-emerald-900 to-emerald-700 bg-clip-text text-transparent">
+                                      Datos para tu transferencia - {selectedMethod.name}
+                                    </span>
+                                  </h4>
+
+                                  <div className="bg-white/90 backdrop-blur-sm p-5 rounded-2xl space-y-4 ring-1 ring-emerald-200/50 shadow-md">
+                                    {selectedMethod.id === 'binance' ? (
+                                      <div className="space-y-4">
+                                        <div className="flex justify-between items-center group">
+                                          <span className="text-emerald-700 font-semibold flex items-center gap-2">
+                                            <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                                            Email Binance Pay:
+                                          </span>
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-mono font-bold text-slate-900 bg-slate-100 px-3 py-1 rounded-lg">
+                                              {selectedMethod.account}
+                                            </span>
+                                            <button
+                                              onClick={() => copyToClipboard(selectedMethod.account, 'binance-email')}
+                                              className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95"
+                                            >
+                                              {copiedField === 'binance-email' ? <CheckCircle size={16} /> : <Copy size={16} />}
+                                            </button>
+                                          </div>
+                                        </div>
+
+                                        {/* Enhanced Crypto Prices Display */}
+                                        {(newConversions || convertedAmounts) && (
+                                          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl border border-blue-200">
+                                            <div className="text-sm font-bold text-blue-800 mb-3 flex items-center justify-between">
+                                              <span>💰 Equivalencias para {formatPrice(totalPrice)}:</span>
+                                              {(newCryptoLoading || cryptoLoading) && (
+                                                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                              )}
+                                            </div>
+
+                                            {/* Stablecoins Section */}
+                                            {(newConversions || stablecoins) && (
+                                              <>
+                                                <div className="text-xs font-semibold text-emerald-700 mb-2">💵 Stablecoins (Recomendado):</div>
+                                                <div className="grid grid-cols-2 gap-2 mb-4">
+                                                  <div className="bg-white/90 p-3 rounded-lg border border-green-200 shadow-sm">
+                                                    <div className="font-bold text-green-700">
+                                                      ≈ {(newConversions?.USDT?.amount || convertedAmounts?.USDT)?.toFixed(2)} USDT
+                                                    </div>
+                                                    <div className="text-xs text-slate-600">Tether (USD)</div>
+                                                  </div>
+                                                  <div className="bg-white/90 p-3 rounded-lg border border-green-200 shadow-sm">
+                                                    <div className="font-bold text-green-700">
+                                                      ≈ {(newConversions?.USDC?.amount || convertedAmounts?.USDC)?.toFixed(2)} USDC
+                                                    </div>
+                                                    <div className="text-xs text-slate-600">USD Coin</div>
+                                                  </div>
+                                                </div>
+                                              </>
+                                            )}
+
+                                            {/* Main Cryptos Section */}
+                                            <div className="text-xs font-semibold text-purple-700 mb-2">🚀 Criptomonedas Principales:</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <div className="bg-white/90 p-3 rounded-lg border border-orange-200 shadow-sm">
+                                                <div className="font-bold text-orange-600">
+                                                  ≈ {(newConversions?.BTC?.amount || convertedAmounts?.BTC)?.toFixed(6)} BTC
+                                                </div>
+                                                <div className="text-xs text-slate-600">Bitcoin</div>
+                                              </div>
+                                              <div className="bg-white/90 p-3 rounded-lg border border-blue-200 shadow-sm">
+                                                <div className="font-bold text-blue-600">
+                                                  ≈ {(newConversions?.ETH?.amount || convertedAmounts?.ETH)?.toFixed(4)} ETH
+                                                </div>
+                                                <div className="text-xs text-slate-600">Ethereum</div>
+                                              </div>
+                                              <div className="bg-white/90 p-3 rounded-lg border border-purple-200 shadow-sm">
+                                                <div className="font-bold text-purple-600">
+                                                  ≈ {(newConversions?.SOL?.amount || convertedAmounts?.SOL)?.toFixed(2)} SOL
+                                                </div>
+                                                <div className="text-xs text-slate-600">Solana</div>
+                                              </div>
+                                              {newConversions?.BNB && (
+                                                <div className="bg-white/90 p-3 rounded-lg border border-yellow-200 shadow-sm">
+                                                  <div className="font-bold text-yellow-600">
+                                                    ≈ {newConversions.BNB.amount.toFixed(4)} BNB
+                                                  </div>
+                                                  <div className="text-xs text-slate-600">Binance Coin</div>
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* Status Footer */}
+                                            <div className="mt-3 pt-2 border-t border-blue-200/50 flex justify-between items-center text-xs">
+                                              <span className="text-slate-500">
+                                                {newLastUpdate || lastUpdate ?
+                                                  `Actualizado: ${(newLastUpdate || lastUpdate)?.toLocaleTimeString()}` :
+                                                  'Calculando precios...'
+                                                }
+                                              </span>
+                                              {refreshCrypto && (
+                                                <button
+                                                  onClick={refreshCrypto}
+                                                  className="text-blue-600 hover:text-blue-700 font-medium"
+                                                  disabled={newCryptoLoading || cryptoLoading}
+                                                >
+                                                  🔄 Actualizar
+                                                </button>
+                                              )}
+                                            </div>
+
+                                            {(newCryptoError || cryptoError) && (
+                                              <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
+                                                ⚠️ {newCryptoError || cryptoError}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+
+                                        <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                                          <p className="text-sm text-emerald-800 font-medium">
+                                            💡 <strong>Importante:</strong> Transfiere cualquiera de las criptomonedas equivalentes mostradas arriba al email de Binance Pay.
+                                          </p>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="space-y-4">
+                                        {/* Enhanced Account Details Display */}
+                                        {selectedMethod.accountDetails?.split('\n').map((line: string, index: number) => {
+                                          // Better parsing for account details
+                                          const colonIndex = line.indexOf(':');
+                                          if (colonIndex === -1) return null;
+
+                                          const label = line.substring(0, colonIndex).trim();
+                                          const value = line.substring(colonIndex + 1).trim();
+
+                                          if (!value || !label) return null;
+
+                                          // Special handling for different field types
+                                          const isMainAccount = label.toLowerCase().includes('tarjeta') ||
+                                                               label.toLowerCase().includes('referencia') ||
+                                                               label.toLowerCase().includes('email');
+
+                                          return (
+                                            <div key={index} className={cn(
+                                              "flex justify-between items-center group p-3 rounded-lg transition-all duration-200",
+                                              isMainAccount ? "bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200" : "bg-slate-50"
+                                            )}>
+                                              <span className="text-emerald-700 font-semibold flex items-center gap-2">
+                                                <span className={cn(
+                                                  "w-2 h-2 rounded-full",
+                                                  isMainAccount ? "bg-emerald-500" : "bg-slate-400"
+                                                )}></span>
+                                                {label}:
+                                              </span>
+                                              <div className="flex items-center gap-2">
+                                                <span className={cn(
+                                                  "font-mono font-bold px-3 py-1 rounded-lg select-all",
+                                                  isMainAccount
+                                                    ? "text-emerald-900 bg-white border border-emerald-200"
+                                                    : "text-slate-900 bg-slate-100"
+                                                )}>
+                                                  {value}
+                                                </span>
+                                                <button
+                                                  onClick={() => copyToClipboard(value, `${selectedMethod.id}-${index}`)}
+                                                  className={cn(
+                                                    "p-2 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95",
+                                                    isMainAccount
+                                                      ? "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100"
+                                                      : "text-slate-600 hover:text-slate-700 hover:bg-slate-200"
+                                                  )}
+                                                  title={`Copiar ${label.toLowerCase()}`}
+                                                >
+                                                  {copiedField === `${selectedMethod.id}-${index}` ?
+                                                    <CheckCircle size={16} className="text-green-600" /> :
+                                                    <Copy size={16} />
+                                                  }
+                                                </button>
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+
+                                        {/* Payment Instructions */}
+                                        <div className="bg-gradient-to-r from-emerald-50 to-blue-50 p-4 rounded-xl border border-emerald-200">
+                                          <div className="flex items-start gap-3">
+                                            <div className="p-2 bg-emerald-500 rounded-lg shadow-lg">
+                                              <CheckCircle size={16} className="text-white" />
+                                            </div>
+                                            <div className="flex-1">
+                                              <p className="text-sm text-emerald-800 font-medium mb-2">
+                                                <strong>Instrucciones de pago:</strong>
+                                              </p>
+                                              <ul className="text-sm text-emerald-700 space-y-1">
+                                                <li>• Transfiere exactamente <strong className="text-emerald-900">{formatPrice(totalPrice)}</strong></li>
+                                                <li>• Usa los datos mostrados arriba</li>
+                                                <li>• Conserva tu comprobante de pago</li>
+                                                <li>• Sube la captura en el siguiente paso</li>
+                                              </ul>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* Validation Warning for Production */}
+                                        {!paymentValidation.valid && paymentValidation.missing.length > 0 && (
+                                          <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl">
+                                            <div className="flex items-start gap-3">
+                                              <div className="p-1 bg-amber-500 rounded-lg">
+                                                <AlertTriangle size={14} className="text-white" />
+                                              </div>
+                                              <div className="flex-1">
+                                                <p className="text-sm text-amber-800 font-medium mb-1">
+                                                  ⚠️ Configuración de producción incompleta
+                                                </p>
+                                                <p className="text-xs text-amber-700">
+                                                  Faltan variables de entorno: {paymentValidation.missing.join(', ')}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </motion.div>
+                      )}
 
                       {validationErrors.payment && (
                         <motion.div

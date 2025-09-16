@@ -114,6 +114,9 @@ export const QUICK_SELECT_OPTIONS: QuickSelectOption[] = [
 // MÉTODOS DE PAGO DISPONIBLES EN MÉXICO
 // ============================================================================
 
+// ⚠️ DEPRECATED: Los métodos de pago ahora se obtienen dinámicamente desde payment-config.ts
+// Esta constante se mantiene para compatibilidad pero se recomienda usar getPaymentMethods()
+
 export const PAYMENT_METHODS: PaymentMethod[] = [
   {
     id: 'binance' as PaymentMethodType,
