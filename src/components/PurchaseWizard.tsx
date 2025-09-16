@@ -1271,42 +1271,56 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
                         />
                       </motion.div>
 
-                      {/* Selected Tickets Summary */}
+                      {/* Selected Tickets Summary - Enhanced Visibility */}
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.25, delay: 0.15 }}
-                        className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-2xl p-4"
+                        className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-300 rounded-2xl p-5 shadow-lg shadow-blue-200/30"
                       >
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                            <h4 className="font-bold text-blue-900 text-sm">Tus números seleccionados</h4>
+                            <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                            <h4 className="font-bold text-blue-900 text-base">Tus números seleccionados</h4>
                           </div>
-                          <span className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                          <span className="text-xs font-bold text-white bg-blue-600 px-3 py-1.5 rounded-full">
                             {selectedTickets.length} número{selectedTickets.length !== 1 ? 's' : ''}
                           </span>
                         </div>
 
-                        <div className="flex flex-wrap gap-1 mb-3 max-h-20 overflow-y-auto">
-                          {selectedTickets.slice(0, 20).map((ticket, index) => (
-                            <span
-                              key={ticket}
-                              className="text-xs font-mono bg-white border border-blue-200 px-2 py-1 rounded-md text-blue-700"
-                            >
-                              {formatTicketNumber(ticket)}
-                            </span>
-                          ))}
-                          {selectedTickets.length > 20 && (
-                            <span className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-md">
-                              +{selectedTickets.length - 20} más
-                            </span>
-                          )}
-                        </div>
+                        {/* Numbers Display - Always Visible */}
+                        {selectedTickets.length > 0 ? (
+                          <div className="mb-4">
+                            <div className="flex flex-wrap gap-2 mb-3 max-h-24 overflow-y-auto p-2 bg-white/80 rounded-xl">
+                              {selectedTickets.slice(0, 20).map((ticket, index) => (
+                                <span
+                                  key={ticket}
+                                  className="text-sm font-mono font-bold bg-blue-600 text-white border border-blue-700 px-3 py-1.5 rounded-lg shadow-sm"
+                                >
+                                  {formatTicketNumber(ticket)}
+                                </span>
+                              ))}
+                              {selectedTickets.length > 20 && (
+                                <span className="text-sm font-bold text-blue-600 bg-blue-100 px-3 py-1.5 rounded-lg">
+                                  +{selectedTickets.length - 20} más
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mb-4 text-center py-4">
+                            <div className="text-amber-600 font-bold text-sm">
+                              ⚠️ No hay números seleccionados
+                            </div>
+                            <div className="text-xs text-amber-500 mt-1">
+                              Regresa al paso anterior para seleccionar tus números
+                            </div>
+                          </div>
+                        )}
 
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-blue-700 font-medium">Total a pagar:</span>
-                          <span className="text-blue-900 font-black text-lg">{formatPrice(totalPrice)}</span>
+                        <div className="flex items-center justify-between text-sm bg-white/60 rounded-lg p-3">
+                          <span className="text-blue-700 font-bold">Total a pagar:</span>
+                          <span className="text-blue-900 font-black text-xl">{formatPrice(totalPrice)}</span>
                         </div>
                       </motion.div>
 
@@ -1576,8 +1590,8 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
                                           </div>
                                         </div>
 
-                                        {/* Validation Warning for Production - Only show in production */}
-                                        {process.env.NODE_ENV === 'production' && !paymentValidation.valid && paymentValidation.missing.length > 0 && (
+                                        {/* Validation Warning for Production - Hidden for better UX */}
+                                        {false && process.env.NODE_ENV === 'production' && !paymentValidation.valid && paymentValidation.missing.length > 0 && (
                                           <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl">
                                             <div className="flex items-start gap-3">
                                               <div className="p-1 bg-amber-500 rounded-lg">
@@ -1932,29 +1946,27 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ selectedTickets, to
         </div>
       </motion.div>
 
-      {/* Enhanced Stats Grid - Mobile Optimized */}
+      {/* Enhanced Stats Grid - Mobile Optimized with Fixed Overlapping */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         {/* Tickets Count */}
-        <div className="group relative bg-gradient-to-br from-slate-50 to-slate-100/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 text-center ring-1 ring-slate-200/50 hover:ring-slate-300/60 hover:shadow-lg transition-all duration-300">
-          <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative">
-            <div className="text-3xl font-black bg-gradient-to-br from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2">
+        <div className="group relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 text-center ring-1 ring-slate-200/50 hover:ring-slate-300/60 hover:shadow-lg transition-all duration-300">
+          <div className="relative z-10">
+            <div className="text-2xl sm:text-3xl font-black bg-gradient-to-br from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2 leading-none">
               {selectedTickets.length}
             </div>
-            <div className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
+            <div className="text-xs sm:text-sm font-semibold text-slate-600 uppercase tracking-wider">
               Números
             </div>
           </div>
         </div>
 
         {/* Total Price */}
-        <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 text-center ring-1 ring-blue-200/40 hover:ring-blue-300/50 hover:shadow-lg transition-all duration-300">
-          <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative">
-            <div className="text-3xl font-black bg-gradient-to-br from-slate-700 to-slate-600 bg-clip-text text-transparent mb-2">
+        <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 text-center ring-1 ring-blue-200/40 hover:ring-blue-300/50 hover:shadow-lg transition-all duration-300">
+          <div className="relative z-10">
+            <div className="text-xl sm:text-2xl lg:text-3xl font-black bg-gradient-to-br from-slate-700 to-slate-600 bg-clip-text text-transparent mb-2 leading-none">
               {formatPrice(totalPrice)}
             </div>
-            <div className="text-sm font-semibold text-emerald-700 uppercase tracking-wider">
+            <div className="text-xs sm:text-sm font-semibold text-emerald-700 uppercase tracking-wider">
               Total a Pagar
             </div>
             {savingsAmount > 0 && (
@@ -1966,13 +1978,12 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ selectedTickets, to
         </div>
 
         {/* Win Probability */}
-        <div className="group relative bg-gradient-to-br from-orange-50 to-yellow-50 backdrop-blur-sm rounded-2xl p-4 sm:p-6 text-center ring-1 ring-orange-200/40 hover:ring-orange-300/50 hover:shadow-lg transition-all duration-300">
-          <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative">
-            <div className="text-3xl font-black bg-gradient-to-br from-orange-700 to-yellow-600 bg-clip-text text-transparent mb-2">
+        <div className="group relative overflow-hidden bg-gradient-to-br from-orange-50 to-yellow-50 backdrop-blur-sm rounded-2xl p-4 sm:p-6 text-center ring-1 ring-orange-200/40 hover:ring-orange-300/50 hover:shadow-lg transition-all duration-300">
+          <div className="relative z-10">
+            <div className="text-2xl sm:text-3xl font-black bg-gradient-to-br from-orange-700 to-yellow-600 bg-clip-text text-transparent mb-2 leading-none">
               {winProbability}%
             </div>
-            <div className="text-sm font-semibold text-orange-700 uppercase tracking-wider">
+            <div className="text-xs sm:text-sm font-semibold text-orange-700 uppercase tracking-wider">
               Probabilidad
             </div>
           </div>
@@ -2669,7 +2680,7 @@ const CustomerDataStep: React.FC<CustomerDataStepProps> = ({
               onFocus={() => setFieldFocus('name')}
               onBlur={() => setFieldFocus('')}
               className={cn(
-                'w-full px-5 py-4 rounded-2xl border-2 text-sm transition-all duration-300',
+                'w-full pl-5 pr-12 py-4 rounded-2xl border-2 text-sm transition-all duration-300',
                 'bg-gradient-to-r from-white to-slate-50/50 backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
                 'focus:outline-none focus:ring-4 hover:shadow-lg touch-manipulation',
                 validationErrors.name
@@ -2683,9 +2694,9 @@ const CustomerDataStep: React.FC<CustomerDataStepProps> = ({
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
               >
-                <CheckCircle size={20} className="text-emerald-500" />
+                <CheckCircle size={18} className="text-emerald-500" />
               </motion.div>
             )}
           </div>
@@ -2745,9 +2756,9 @@ const CustomerDataStep: React.FC<CustomerDataStepProps> = ({
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
               >
-                <CheckCircle size={20} className="text-emerald-500" />
+                <CheckCircle size={18} className="text-emerald-500" />
               </motion.div>
             )}
           </div>
@@ -2806,9 +2817,9 @@ const CustomerDataStep: React.FC<CustomerDataStepProps> = ({
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
                 >
-                  <CheckCircle size={20} className="text-emerald-500" />
+                  <CheckCircle size={18} className="text-emerald-500" />
                 </motion.div>
               )}
             </div>
@@ -2865,9 +2876,9 @@ const CustomerDataStep: React.FC<CustomerDataStepProps> = ({
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
                 >
-                  <CheckCircle size={20} className="text-emerald-500" />
+                  <CheckCircle size={18} className="text-emerald-500" />
                 </motion.div>
               )}
             </div>
