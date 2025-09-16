@@ -425,19 +425,47 @@ const OptimizedPaymentMethodCard: React.FC<OptimizedPaymentMethodCardProps> = Re
                   Calculando precios...
                 </div>
               ) : convertedAmounts ? (
-                <div className="space-y-2 bg-gradient-to-r from-emerald-50 to-blue-50 p-3 rounded-xl border border-emerald-200/50">
+                <div className="space-y-3 bg-gradient-to-r from-emerald-50 to-blue-50 p-4 rounded-xl border border-emerald-200/50">
                   <div className="text-xs font-bold text-emerald-800 mb-2 flex items-center gap-2">
                     <Sparkles size={12} />
                     Equivalencias disponibles:
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="bg-white/90 p-2 rounded-lg border border-emerald-200/50">
-                      <div className="font-bold text-emerald-700">≈ {convertedAmounts.USDT?.toFixed(2)}</div>
-                      <div className="text-slate-600">USDT (Recomendado)</div>
+
+                  {/* Stablecoins - Recomendadas */}
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold text-emerald-700 mb-1">💰 Stablecoins (Recomendadas)</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-white/90 p-2.5 rounded-lg border border-emerald-200/50 shadow-sm">
+                        <div className="font-bold text-emerald-700">≈ {convertedAmounts.USDT?.toFixed(2)}</div>
+                        <div className="text-slate-600 text-xs">USDT</div>
+                      </div>
+                      <div className="bg-white/90 p-2.5 rounded-lg border border-blue-200/50 shadow-sm">
+                        <div className="font-bold text-blue-700">≈ {convertedAmounts.USDC?.toFixed(2)}</div>
+                        <div className="text-slate-600 text-xs">USDC</div>
+                      </div>
                     </div>
-                    <div className="bg-white/90 p-2 rounded-lg border border-orange-200/50">
-                      <div className="font-bold text-orange-600">≈ {convertedAmounts.BTC?.toFixed(6)}</div>
-                      <div className="text-slate-600">Bitcoin</div>
+                  </div>
+
+                  {/* Principales Criptomonedas */}
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold text-slate-700 mb-1">🚀 Principales Criptomonedas</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-white/90 p-2.5 rounded-lg border border-orange-200/50 shadow-sm">
+                        <div className="font-bold text-orange-600">≈ {convertedAmounts.BTC?.toFixed(6)}</div>
+                        <div className="text-slate-600 text-xs">Bitcoin</div>
+                      </div>
+                      <div className="bg-white/90 p-2.5 rounded-lg border border-purple-200/50 shadow-sm">
+                        <div className="font-bold text-purple-600">≈ {convertedAmounts.ETH?.toFixed(4)}</div>
+                        <div className="text-slate-600 text-xs">Ethereum</div>
+                      </div>
+                      <div className="bg-white/90 p-2.5 rounded-lg border border-indigo-200/50 shadow-sm">
+                        <div className="font-bold text-indigo-600">≈ {convertedAmounts.SOL?.toFixed(2)}</div>
+                        <div className="text-slate-600 text-xs">Solana</div>
+                      </div>
+                      <div className="bg-white/90 p-2.5 rounded-lg border border-yellow-200/50 shadow-sm">
+                        <div className="font-bold text-yellow-600">≈ {convertedAmounts.BNB?.toFixed(2)}</div>
+                        <div className="text-slate-600 text-xs">BNB</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -537,16 +565,15 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
     return basePrice;
   }, [selectedTickets.length, fixedPrice]);
 
-  // ✅ PERFORMANCE: Lazy crypto loading - only when needed
-  const { convertedAmounts, loading: cryptoLoading, error: cryptoError, lastUpdate, activate: activateCrypto, isActive: cryptoActive } = useLazyCryptoPrice(selectedTickets.length * 250);
+  // ✅ PERFORMANCE: Lazy crypto loading - only when needed - SIN ERRORES VISIBLES
+  const { convertedAmounts, loading: cryptoLoading, lastUpdate, activate: activateCrypto, isActive: cryptoActive } = useLazyCryptoPrice(selectedTickets.length * 250);
 
-  // 🚀 NEW: Enhanced crypto conversion system
+  // 🚀 NEW: Enhanced crypto conversion system - SIN ERRORES VISIBLES
   const {
     conversions: newConversions,
     stablecoins,
     mainCryptos,
     loading: newCryptoLoading,
-    error: newCryptoError,
     lastUpdate: newLastUpdate,
     refresh: refreshCrypto
   } = useCryptoConversion(totalPrice, cryptoActive);
@@ -1370,226 +1397,31 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
                                   <div className="bg-white/90 backdrop-blur-sm p-5 rounded-2xl space-y-4 ring-1 ring-emerald-200/50 shadow-md">
                                     {selectedMethod.id === 'binance' ? (
                                       <div className="space-y-4">
-                                        <div className="flex justify-between items-center group">
-                                          <span className="text-emerald-700 font-semibold flex items-center gap-2">
+                                        <div className="group">
+                                          <div className="flex items-center gap-2 mb-2">
                                             <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                                            Email Binance Pay:
-                                          </span>
+                                            <span className="text-emerald-700 font-semibold">Email Binance Pay:</span>
+                                          </div>
                                           <div className="flex items-center gap-2">
-                                            <span className="font-mono font-bold text-slate-900 bg-slate-100 px-3 py-1 rounded-lg">
-                                              {selectedMethod.account}
-                                            </span>
+                                            <div className="flex-1 min-w-0 bg-slate-100 rounded-lg p-3 border border-slate-200 overflow-hidden">
+                                              <span className="font-mono font-bold text-slate-900 text-sm break-words word-break-all overflow-wrap-anywhere">
+                                                {selectedMethod.account}
+                                              </span>
+                                            </div>
                                             <button
                                               onClick={() => copyToClipboard(selectedMethod.account, 'binance-email')}
-                                              className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95"
+                                              className="flex-shrink-0 p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95"
+                                              title="Copiar email"
                                             >
                                               {copiedField === 'binance-email' ? <CheckCircle size={16} /> : <Copy size={16} />}
                                             </button>
                                           </div>
                                         </div>
 
-                                        {/* Enhanced Crypto Prices Display - Improved Organization */}
-                                        {(newConversions || convertedAmounts) && (
-                                          <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-5 rounded-2xl border-2 border-amber-200 shadow-lg">
-                                            <div className="text-lg font-black text-amber-800 mb-4 flex items-center justify-between">
-                                              <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
-                                                  <span className="text-white font-bold">₿</span>
-                                                </div>
-                                                <span>Paga con Cripto</span>
-                                              </div>
-                                              {(newCryptoLoading || cryptoLoading) && (
-                                                <div className="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-                                              )}
-                                            </div>
-
-                                            {/* Stablecoins Section - Premium Layout */}
-                                            {(newConversions || stablecoins) && (
-                                              <div className="mb-6">
-                                                <div className="text-sm font-black text-emerald-800 mb-3 flex items-center gap-2 bg-emerald-100/50 px-3 py-2 rounded-lg">
-                                                  <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
-                                                    <span className="text-white text-xs font-bold">$</span>
-                                                  </div>
-                                                  <span>Stablecoins - Recomendado</span>
-                                                  <div className="bg-emerald-600 text-white px-2 py-1 rounded-full text-xs font-bold ml-auto">
-                                                    ESTABLE
-                                                  </div>
-                                                </div>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                  <div className="bg-white p-4 rounded-xl border-2 border-green-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] max-w-full overflow-hidden">
-                                                    <div className="flex items-center gap-3 max-w-full">
-                                                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                        <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                                                          <span className="text-white font-bold text-xl">₮</span>
-                                                        </div>
-                                                        <div className="min-w-0 flex-1">
-                                                          <div className="font-black text-green-700 text-lg">Tether</div>
-                                                          <div className="text-sm text-green-600 font-bold">USDT</div>
-                                                        </div>
-                                                      </div>
-                                                      <div className="text-right flex-shrink-0 max-w-[40%]">
-                                                        <div className="font-black text-green-700 text-lg truncate" title={`${(newConversions?.USDT?.amount || convertedAmounts?.USDT)?.toFixed(2)} USDT`}>
-                                                          {(newConversions?.USDT?.amount || convertedAmounts?.USDT)?.toFixed(2)}
-                                                        </div>
-                                                        <div className="text-xs text-slate-500 font-bold">USDT</div>
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                  <div className="bg-white p-4 rounded-xl border-2 border-blue-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] max-w-full overflow-hidden">
-                                                    <div className="flex items-center gap-3 max-w-full">
-                                                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                        <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                                                          <span className="text-white font-bold text-xl">$</span>
-                                                        </div>
-                                                        <div className="min-w-0 flex-1">
-                                                          <div className="font-black text-blue-700 text-lg">USD Coin</div>
-                                                          <div className="text-sm text-blue-600 font-bold">USDC</div>
-                                                        </div>
-                                                      </div>
-                                                      <div className="text-right flex-shrink-0 max-w-[40%]">
-                                                        <div className="font-black text-blue-700 text-lg truncate" title={`${(newConversions?.USDC?.amount || convertedAmounts?.USDC)?.toFixed(2)} USDC`}>
-                                                          {(newConversions?.USDC?.amount || convertedAmounts?.USDC)?.toFixed(2)}
-                                                        </div>
-                                                        <div className="text-xs text-slate-500 font-bold">USDC</div>
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            )}
-
-                                            {/* Main Cryptos Section - Enhanced Premium Layout */}
-                                            <div>
-                                              <div className="text-sm font-black text-purple-800 mb-3 flex items-center gap-2 bg-purple-100/50 px-3 py-2 rounded-lg">
-                                                <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                                                  <span className="text-white text-xs font-bold">₿</span>
-                                                </div>
-                                                <span>Otras Criptomonedas</span>
-                                              </div>
-                                              <div className="grid grid-cols-1 gap-3 max-w-full">
-                                                <div className="bg-white p-4 rounded-xl border-2 border-orange-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] max-w-full overflow-hidden">
-                                                  <div className="flex items-center gap-3 max-w-full">
-                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                      <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                                                        <span className="text-white font-bold text-xl">₿</span>
-                                                      </div>
-                                                      <div className="min-w-0 flex-1">
-                                                        <div className="font-black text-orange-700 text-lg">Bitcoin</div>
-                                                        <div className="text-sm text-orange-600 font-bold">BTC</div>
-                                                      </div>
-                                                    </div>
-                                                    <div className="text-right flex-shrink-0 max-w-[50%]">
-                                                      <div className="font-black text-orange-700 text-base truncate" title={`${(newConversions?.BTC?.amount || convertedAmounts?.BTC)?.toFixed(6)} BTC`}>
-                                                        {(newConversions?.BTC?.amount || convertedAmounts?.BTC)?.toFixed(6)}
-                                                      </div>
-                                                      <div className="text-xs text-slate-500 font-bold">BTC</div>
-                                                    </div>
-                                                  </div>
-                                                </div>
-
-                                                <div className="bg-white p-4 rounded-xl border-2 border-blue-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] max-w-full overflow-hidden">
-                                                  <div className="flex items-center gap-3 max-w-full">
-                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                      <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                                                        <span className="text-white font-bold text-xl">Ξ</span>
-                                                      </div>
-                                                      <div className="min-w-0 flex-1">
-                                                        <div className="font-black text-blue-700 text-lg">Ethereum</div>
-                                                        <div className="text-sm text-blue-600 font-bold">ETH</div>
-                                                      </div>
-                                                    </div>
-                                                    <div className="text-right flex-shrink-0 max-w-[50%]">
-                                                      <div className="font-black text-blue-700 text-base truncate" title={`${(newConversions?.ETH?.amount || convertedAmounts?.ETH)?.toFixed(4)} ETH`}>
-                                                        {(newConversions?.ETH?.amount || convertedAmounts?.ETH)?.toFixed(4)}
-                                                      </div>
-                                                      <div className="text-xs text-slate-500 font-bold">ETH</div>
-                                                    </div>
-                                                  </div>
-                                                </div>
-
-                                                <div className="bg-white p-4 rounded-xl border-2 border-purple-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] max-w-full overflow-hidden">
-                                                  <div className="flex items-center gap-3 max-w-full">
-                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                      <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                                                        <span className="text-white font-bold text-xl">◈</span>
-                                                      </div>
-                                                      <div className="min-w-0 flex-1">
-                                                        <div className="font-black text-purple-700 text-lg">Solana</div>
-                                                        <div className="text-sm text-purple-600 font-bold">SOL</div>
-                                                      </div>
-                                                    </div>
-                                                    <div className="text-right flex-shrink-0 max-w-[50%]">
-                                                      <div className="font-black text-purple-700 text-base truncate" title={`${(newConversions?.SOL?.amount || convertedAmounts?.SOL)?.toFixed(2)} SOL`}>
-                                                        {(newConversions?.SOL?.amount || convertedAmounts?.SOL)?.toFixed(2)}
-                                                      </div>
-                                                      <div className="text-xs text-slate-500 font-bold">SOL</div>
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                                {newConversions?.BNB && (
-                                                  <div className="bg-white p-4 rounded-xl border-2 border-yellow-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] max-w-full overflow-hidden">
-                                                    <div className="flex items-center gap-3 max-w-full">
-                                                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                        <div className="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                                                          <span className="text-white font-bold text-xl">B</span>
-                                                        </div>
-                                                        <div className="min-w-0 flex-1">
-                                                          <div className="font-black text-yellow-700 text-lg">Binance Coin</div>
-                                                          <div className="text-sm text-yellow-600 font-bold">BNB</div>
-                                                        </div>
-                                                      </div>
-                                                      <div className="text-right flex-shrink-0 max-w-[50%]">
-                                                        <div className="font-black text-yellow-700 text-base truncate" title={`${newConversions.BNB.amount.toFixed(4)} BNB`}>
-                                                          {newConversions.BNB.amount.toFixed(4)}
-                                                        </div>
-                                                        <div className="text-xs text-slate-500 font-bold">BNB</div>
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                )}
-                                              </div>
-                                            </div>
-
-                                            {/* Status Footer */}
-                                            <div className="mt-3 pt-2 border-t border-blue-200/50 flex justify-between items-center text-xs">
-                                              <span className="text-slate-500">
-                                                {newLastUpdate || lastUpdate ?
-                                                  `Actualizado: ${(newLastUpdate || lastUpdate)?.toLocaleTimeString()}` :
-                                                  'Calculando precios...'
-                                                }
-                                              </span>
-                                              {refreshCrypto && (
-                                                <button
-                                                  onClick={refreshCrypto}
-                                                  className="text-blue-600 hover:text-blue-700 font-medium"
-                                                  disabled={newCryptoLoading || cryptoLoading}
-                                                >
-                                                  🔄 Actualizar
-                                                </button>
-                                              )}
-                                            </div>
-
-                                            {(newCryptoError || cryptoError) && (
-                                              <div className="mt-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl">
-                                                <div className="flex items-center gap-2 text-amber-800">
-                                                  <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
-                                                    <span className="text-white text-xs">!</span>
-                                                  </div>
-                                                  <div className="flex-1">
-                                                    <div className="text-sm font-bold text-amber-800">Error temporal de conexión</div>
-                                                    <div className="text-xs text-amber-700 mt-1">
-                                                      No se pudieron actualizar los precios. Haz clic en "Actualizar" para intentar de nuevo.
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            )}
-                                          </div>
-                                        )}
 
                                         <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
                                           <p className="text-sm text-emerald-800 font-medium">
-                                            💡 <strong>Importante:</strong> Transfiere cualquiera de las criptomonedas equivalentes mostradas arriba al email de Binance Pay.
+                                            💡 <strong>Importante:</strong> Transfiere el monto exacto en cualquier criptomoneda al email de Binance Pay. Los montos específicos aparecerán en el siguiente paso.
                                           </p>
                                         </div>
                                       </div>

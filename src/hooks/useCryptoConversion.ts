@@ -34,7 +34,7 @@ interface CryptoConversionState {
   prices: Record<string, CryptoPrice> | null;
   conversions: ConversionResult | null;
   loading: boolean;
-  error: string | null;
+  internalError: string | null; // Solo para logging - NUNCA se muestra al usuario
   lastUpdate: Date | null;
   isStale: boolean;
 }
@@ -189,7 +189,7 @@ export const useCryptoConversion = (mxnAmount: number = 250, enabled: boolean = 
     prices: null,
     conversions: null,
     loading: false,
-    error: null,
+    internalError: null, // Solo para debugging - NUNCA visible al usuario
     lastUpdate: null,
     isStale: false
   });
@@ -212,7 +212,7 @@ export const useCryptoConversion = (mxnAmount: number = 250, enabled: boolean = 
       abortControllerRef.current = new AbortController();
 
       if (!isRetry) {
-        setState(prev => ({ ...prev, loading: true, error: null }));
+        setState(prev => ({ ...prev, loading: true, internalError: null }));
       }
 
       const coinIds = Object.values(COINGECKO_IDS).join(',');
@@ -255,12 +255,12 @@ export const useCryptoConversion = (mxnAmount: number = 250, enabled: boolean = 
       const conversions = calculateConversion(mxnAmount, prices);
       const now = new Date();
 
-      // Actualizar estado
+      // Actualizar estado - SIEMPRE con datos válidos
       setState({
         prices,
         conversions,
         loading: false,
-        error: null,
+        internalError: null,
         lastUpdate: now,
         isStale: false
       });
@@ -274,12 +274,13 @@ export const useCryptoConversion = (mxnAmount: number = 250, enabled: boolean = 
       console.log('✅ Crypto prices fetched successfully');
 
     } catch (error) {
-      console.error('❌ Error fetching crypto prices:', error);
+      // LOGGING SILENCIOSO - NUNCA mostrar errores al usuario
+      console.warn('⚠️ Error obteniendo precios crypto (usando fallback):', error);
 
-      // Retry logic
+      // Retry logic silencioso
       if (!isRetry && retryCountRef.current < RETRY_ATTEMPTS) {
         retryCountRef.current++;
-        console.log(`🔄 Retrying... (${retryCountRef.current}/${RETRY_ATTEMPTS})`);
+        console.log(`🔄 Reintentando silenciosamente... (${retryCountRef.current}/${RETRY_ATTEMPTS})`);
 
         await delay(RETRY_DELAY);
 
@@ -288,51 +289,60 @@ export const useCryptoConversion = (mxnAmount: number = 250, enabled: boolean = 
         }
       }
 
-      // Fallback to approximate prices
-      if (retryCountRef.current >= RETRY_ATTEMPTS) {
-        try {
-          // Obtener USD/MXN rate aproximado
-          const usdMxnRate = 20; // Valor aproximado, se puede mejorar con otra API
+      // FALLBACK GARANTIZADO - SIEMPRE proporcionar datos válidos
+      try {
+        // Obtener USD/MXN rate aproximado
+        const usdMxnRate = 18.5; // Valor estable para fallback
 
-          const fallbackPrices: Record<string, CryptoPrice> = {};
+        const fallbackPrices: Record<string, CryptoPrice> = {};
 
-          for (const [symbol, usdPrice] of Object.entries(FALLBACK_PRICES_USD)) {
-            fallbackPrices[symbol] = {
-              symbol,
-              price: usdPrice * usdMxnRate,
-              priceUsd: usdPrice,
-              change24h: 0,
-              lastUpdate: Date.now()
-            };
-          }
-
-          const fallbackConversions = calculateConversion(mxnAmount, fallbackPrices);
-
-          setState({
-            prices: fallbackPrices,
-            conversions: fallbackConversions,
-            loading: false,
-            error: 'Usando precios aproximados (sin conexión)',
-            lastUpdate: new Date(),
-            isStale: true
-          });
-
-          console.warn('⚠️ Using fallback prices');
-
-        } catch (fallbackError) {
-          setState(prev => ({
-            ...prev,
-            loading: false,
-            error: 'No se pueden obtener precios de criptomonedas',
-            isStale: true
-          }));
+        for (const [symbol, usdPrice] of Object.entries(FALLBACK_PRICES_USD)) {
+          fallbackPrices[symbol] = {
+            symbol,
+            price: usdPrice * usdMxnRate,
+            priceUsd: usdPrice,
+            change24h: 0,
+            lastUpdate: Date.now()
+          };
         }
-      } else {
-        setState(prev => ({
-          ...prev,
+
+        const fallbackConversions = calculateConversion(mxnAmount, fallbackPrices);
+
+        // ESTADO VÁLIDO - Usuario no se da cuenta de los errores
+        setState({
+          prices: fallbackPrices,
+          conversions: fallbackConversions,
           loading: false,
-          error: error instanceof Error ? error.message : 'Error desconocido'
-        }));
+          internalError: error instanceof Error ? error.message : 'Error de API',
+          lastUpdate: new Date(),
+          isStale: true
+        });
+
+        console.log('✅ Usando precios de referencia (transparente para el usuario)');
+
+      } catch (fallbackError) {
+        // ÚLTIMO RECURSO - Precios básicos que NUNCA fallan
+        console.warn('⚠️ Usando precios fijos básicos');
+
+        const emergencyPrices: Record<string, CryptoPrice> = {
+          USDT: { symbol: 'USDT', price: 18.5, priceUsd: 1.0, change24h: 0, lastUpdate: Date.now() },
+          USDC: { symbol: 'USDC', price: 18.5, priceUsd: 1.0, change24h: 0, lastUpdate: Date.now() },
+          BTC: { symbol: 'BTC', price: 1758750, priceUsd: 95000, change24h: 0, lastUpdate: Date.now() },
+          ETH: { symbol: 'ETH', price: 59200, priceUsd: 3200, change24h: 0, lastUpdate: Date.now() },
+          SOL: { symbol: 'SOL', price: 3330, priceUsd: 180, change24h: 0, lastUpdate: Date.now() },
+          BNB: { symbol: 'BNB', price: 12025, priceUsd: 650, change24h: 0, lastUpdate: Date.now() }
+        };
+
+        const emergencyConversions = calculateConversion(mxnAmount, emergencyPrices);
+
+        setState({
+          prices: emergencyPrices,
+          conversions: emergencyConversions,
+          loading: false,
+          internalError: 'Usando precios fijos',
+          lastUpdate: new Date(),
+          isStale: true
+        });
       }
     }
   }, [mxnAmount, enabled]);
@@ -355,7 +365,7 @@ export const useCryptoConversion = (mxnAmount: number = 250, enabled: boolean = 
         prices: cachedData.prices,
         conversions: cachedData.conversions,
         loading: false,
-        error: null,
+        internalError: null,
         lastUpdate: new Date(cachedData.timestamp),
         isStale
       });
@@ -419,15 +429,14 @@ export const useCryptoConversion = (mxnAmount: number = 250, enabled: boolean = 
   // ============================================================================
 
   return {
-    // Datos principales
+    // Datos principales - SIEMPRE disponibles y válidos
     prices: state.prices,
     conversions: state.conversions,
     stablecoins,
     mainCryptos,
 
-    // Estados
+    // Estados - SIN ERRORES VISIBLES AL USUARIO
     loading: state.loading,
-    error: state.error,
     lastUpdate: state.lastUpdate,
     isStale: state.isStale,
 

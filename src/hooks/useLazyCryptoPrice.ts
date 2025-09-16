@@ -27,12 +27,11 @@ export const useLazyCryptoPrice = (mxnAmount: number = 250) => {
   // Memoizar respuesta para evitar recreaciones
   const result = useMemo(() => {
     if (!isActive) {
-      // Estado inicial - no datos de crypto
+      // Estado inicial - no datos de crypto - SIN ERRORES AL USUARIO
       return {
         convertedAmounts: null,
         cryptoPrices: null,
         loading: false,
-        error: null,
         lastUpdate: null,
         refresh: () => {},
         activate,
