@@ -1416,41 +1416,41 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
                                                   </div>
                                                 </div>
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                  <div className="bg-white p-4 rounded-xl border-2 border-green-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                      <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                                                          <span className="text-white font-bold text-lg">₮</span>
+                                                  <div className="bg-white p-4 rounded-xl border-2 border-green-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] max-w-full overflow-hidden">
+                                                    <div className="flex items-center gap-3 max-w-full">
+                                                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                        <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                                                          <span className="text-white font-bold text-xl">₮</span>
                                                         </div>
-                                                        <div>
-                                                          <div className="font-black text-green-700 text-lg">USDT</div>
-                                                          <div className="text-xs text-green-600">Tether USD</div>
+                                                        <div className="min-w-0 flex-1">
+                                                          <div className="font-black text-green-700 text-lg">Tether</div>
+                                                          <div className="text-sm text-green-600 font-bold">USDT</div>
                                                         </div>
                                                       </div>
-                                                      <div className="text-right">
-                                                        <div className="font-black text-green-700 text-xl">
+                                                      <div className="text-right flex-shrink-0 max-w-[40%]">
+                                                        <div className="font-black text-green-700 text-lg truncate" title={`${(newConversions?.USDT?.amount || convertedAmounts?.USDT)?.toFixed(2)} USDT`}>
                                                           {(newConversions?.USDT?.amount || convertedAmounts?.USDT)?.toFixed(2)}
                                                         </div>
-                                                        <div className="text-xs text-slate-500">USDT</div>
+                                                        <div className="text-xs text-slate-500 font-bold">USDT</div>
                                                       </div>
                                                     </div>
                                                   </div>
-                                                  <div className="bg-white p-4 rounded-xl border-2 border-blue-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                      <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
-                                                          <span className="text-white font-bold text-lg">$</span>
+                                                  <div className="bg-white p-4 rounded-xl border-2 border-blue-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] max-w-full overflow-hidden">
+                                                    <div className="flex items-center gap-3 max-w-full">
+                                                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                        <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                                                          <span className="text-white font-bold text-xl">$</span>
                                                         </div>
-                                                        <div>
-                                                          <div className="font-black text-blue-700 text-lg">USDC</div>
-                                                          <div className="text-xs text-blue-600">USD Coin</div>
+                                                        <div className="min-w-0 flex-1">
+                                                          <div className="font-black text-blue-700 text-lg">USD Coin</div>
+                                                          <div className="text-sm text-blue-600 font-bold">USDC</div>
                                                         </div>
                                                       </div>
-                                                      <div className="text-right">
-                                                        <div className="font-black text-blue-700 text-xl">
+                                                      <div className="text-right flex-shrink-0 max-w-[40%]">
+                                                        <div className="font-black text-blue-700 text-lg truncate" title={`${(newConversions?.USDC?.amount || convertedAmounts?.USDC)?.toFixed(2)} USDC`}>
                                                           {(newConversions?.USDC?.amount || convertedAmounts?.USDC)?.toFixed(2)}
                                                         </div>
-                                                        <div className="text-xs text-slate-500">USDC</div>
+                                                        <div className="text-xs text-slate-500 font-bold">USDC</div>
                                                       </div>
                                                     </div>
                                                   </div>
@@ -1466,81 +1466,83 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
                                                 </div>
                                                 <span>Otras Criptomonedas</span>
                                               </div>
-                                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                                <div className="bg-white p-4 rounded-xl border-2 border-orange-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-                                                  <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex items-center gap-3">
-                                                      <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                                                        <span className="text-white font-bold text-lg">₿</span>
+                                              <div className="grid grid-cols-1 gap-3 max-w-full">
+                                                <div className="bg-white p-4 rounded-xl border-2 border-orange-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] max-w-full overflow-hidden">
+                                                  <div className="flex items-center gap-3 max-w-full">
+                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                      <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                                                        <span className="text-white font-bold text-xl">₿</span>
                                                       </div>
-                                                      <div>
-                                                        <div className="font-black text-orange-700 text-lg">BTC</div>
-                                                        <div className="text-xs text-orange-600">Bitcoin</div>
+                                                      <div className="min-w-0 flex-1">
+                                                        <div className="font-black text-orange-700 text-lg">Bitcoin</div>
+                                                        <div className="text-sm text-orange-600 font-bold">BTC</div>
                                                       </div>
                                                     </div>
-                                                    <div className="text-right">
-                                                      <div className="font-black text-orange-700 text-lg">
+                                                    <div className="text-right flex-shrink-0 max-w-[50%]">
+                                                      <div className="font-black text-orange-700 text-base truncate" title={`${(newConversions?.BTC?.amount || convertedAmounts?.BTC)?.toFixed(6)} BTC`}>
                                                         {(newConversions?.BTC?.amount || convertedAmounts?.BTC)?.toFixed(6)}
                                                       </div>
-                                                      <div className="text-xs text-slate-500">BTC</div>
+                                                      <div className="text-xs text-slate-500 font-bold">BTC</div>
                                                     </div>
                                                   </div>
                                                 </div>
-                                                <div className="bg-white p-4 rounded-xl border-2 border-blue-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-                                                  <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex items-center gap-3">
-                                                      <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
-                                                        <span className="text-white font-bold text-lg">Ξ</span>
+
+                                                <div className="bg-white p-4 rounded-xl border-2 border-blue-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] max-w-full overflow-hidden">
+                                                  <div className="flex items-center gap-3 max-w-full">
+                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                      <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                                                        <span className="text-white font-bold text-xl">Ξ</span>
                                                       </div>
-                                                      <div>
-                                                        <div className="font-black text-blue-700 text-lg">ETH</div>
-                                                        <div className="text-xs text-blue-600">Ethereum</div>
+                                                      <div className="min-w-0 flex-1">
+                                                        <div className="font-black text-blue-700 text-lg">Ethereum</div>
+                                                        <div className="text-sm text-blue-600 font-bold">ETH</div>
                                                       </div>
                                                     </div>
-                                                    <div className="text-right">
-                                                      <div className="font-black text-blue-700 text-lg">
+                                                    <div className="text-right flex-shrink-0 max-w-[50%]">
+                                                      <div className="font-black text-blue-700 text-base truncate" title={`${(newConversions?.ETH?.amount || convertedAmounts?.ETH)?.toFixed(4)} ETH`}>
                                                         {(newConversions?.ETH?.amount || convertedAmounts?.ETH)?.toFixed(4)}
                                                       </div>
-                                                      <div className="text-xs text-slate-500">ETH</div>
+                                                      <div className="text-xs text-slate-500 font-bold">ETH</div>
                                                     </div>
                                                   </div>
                                                 </div>
-                                                <div className="bg-white p-4 rounded-xl border-2 border-purple-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-                                                  <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex items-center gap-3">
-                                                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
-                                                        <span className="text-white font-bold text-lg">◈</span>
+
+                                                <div className="bg-white p-4 rounded-xl border-2 border-purple-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] max-w-full overflow-hidden">
+                                                  <div className="flex items-center gap-3 max-w-full">
+                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                      <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                                                        <span className="text-white font-bold text-xl">◈</span>
                                                       </div>
-                                                      <div>
-                                                        <div className="font-black text-purple-700 text-lg">SOL</div>
-                                                        <div className="text-xs text-purple-600">Solana</div>
+                                                      <div className="min-w-0 flex-1">
+                                                        <div className="font-black text-purple-700 text-lg">Solana</div>
+                                                        <div className="text-sm text-purple-600 font-bold">SOL</div>
                                                       </div>
                                                     </div>
-                                                    <div className="text-right">
-                                                      <div className="font-black text-purple-700 text-lg">
+                                                    <div className="text-right flex-shrink-0 max-w-[50%]">
+                                                      <div className="font-black text-purple-700 text-base truncate" title={`${(newConversions?.SOL?.amount || convertedAmounts?.SOL)?.toFixed(2)} SOL`}>
                                                         {(newConversions?.SOL?.amount || convertedAmounts?.SOL)?.toFixed(2)}
                                                       </div>
-                                                      <div className="text-xs text-slate-500">SOL</div>
+                                                      <div className="text-xs text-slate-500 font-bold">SOL</div>
                                                     </div>
                                                   </div>
                                                 </div>
                                                 {newConversions?.BNB && (
-                                                  <div className="bg-white p-4 rounded-xl border-2 border-yellow-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                      <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg">
-                                                          <span className="text-white font-bold text-lg">B</span>
+                                                  <div className="bg-white p-4 rounded-xl border-2 border-yellow-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] max-w-full overflow-hidden">
+                                                    <div className="flex items-center gap-3 max-w-full">
+                                                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                        <div className="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                                                          <span className="text-white font-bold text-xl">B</span>
                                                         </div>
-                                                        <div>
-                                                          <div className="font-black text-yellow-700 text-lg">BNB</div>
-                                                          <div className="text-xs text-yellow-600">Binance Coin</div>
+                                                        <div className="min-w-0 flex-1">
+                                                          <div className="font-black text-yellow-700 text-lg">Binance Coin</div>
+                                                          <div className="text-sm text-yellow-600 font-bold">BNB</div>
                                                         </div>
                                                       </div>
-                                                      <div className="text-right">
-                                                        <div className="font-black text-yellow-700 text-lg">
+                                                      <div className="text-right flex-shrink-0 max-w-[50%]">
+                                                        <div className="font-black text-yellow-700 text-base truncate" title={`${newConversions.BNB.amount.toFixed(4)} BNB`}>
                                                           {newConversions.BNB.amount.toFixed(4)}
                                                         </div>
-                                                        <div className="text-xs text-slate-500">BNB</div>
+                                                        <div className="text-xs text-slate-500 font-bold">BNB</div>
                                                       </div>
                                                     </div>
                                                   </div>
@@ -1568,8 +1570,18 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
                                             </div>
 
                                             {(newCryptoError || cryptoError) && (
-                                              <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
-                                                ⚠️ {newCryptoError || cryptoError}
+                                              <div className="mt-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl">
+                                                <div className="flex items-center gap-2 text-amber-800">
+                                                  <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
+                                                    <span className="text-white text-xs">!</span>
+                                                  </div>
+                                                  <div className="flex-1">
+                                                    <div className="text-sm font-bold text-amber-800">Error temporal de conexión</div>
+                                                    <div className="text-xs text-amber-700 mt-1">
+                                                      No se pudieron actualizar los precios. Haz clic en "Actualizar" para intentar de nuevo.
+                                                    </div>
+                                                  </div>
+                                                </div>
                                               </div>
                                             )}
                                           </div>
