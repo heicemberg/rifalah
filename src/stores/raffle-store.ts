@@ -271,23 +271,59 @@ export const useRaffleStore = create<RaffleStore>()(
         selectTicket: (ticketNumber: number) => {
           set(state => {
             const { selectedTickets, soldTickets, reservedTickets } = state;
-            
+
+            console.log('🎯 STORE: selectTicket called', {
+              ticketNumber,
+              alreadySelected: selectedTickets.includes(ticketNumber),
+              isSold: soldTickets.includes(ticketNumber),
+              isReserved: reservedTickets.includes(ticketNumber)
+            });
+
+            // ✅ CRITICAL: Prevent duplicate selection
+            if (selectedTickets.includes(ticketNumber)) {
+              console.warn(`⚠️ STORE: Ticket ${ticketNumber} already selected, ignoring duplicate`);
+              return state;
+            }
+
             // Verificar que el ticket esté disponible
             if (soldTickets.includes(ticketNumber) || reservedTickets.includes(ticketNumber)) {
+              console.error(`❌ STORE: Ticket ${ticketNumber} is not available (sold/reserved)`);
               return {
                 ...state,
                 errors: [...state.errors, `El ticket ${formatTicketNumber(ticketNumber)} ya no está disponible`]
               };
             }
-            
-            // Verificar que no esté ya seleccionado
-            if (selectedTickets.includes(ticketNumber)) {
-              return state;
+
+            // ✅ ENHANCED: Validate ticket range
+            if (ticketNumber < 1 || ticketNumber > 10000) {
+              console.error(`❌ STORE: Invalid ticket number ${ticketNumber}`);
+              return {
+                ...state,
+                errors: [...state.errors, `Número de ticket inválido: ${ticketNumber}`]
+              };
             }
-            
+
+            const newSelectedTickets = [...selectedTickets, ticketNumber].sort((a, b) => a - b);
+
+            // ✅ FINAL VALIDATION: Ensure no duplicates in final array
+            const uniqueTickets = [...new Set(newSelectedTickets)];
+            if (uniqueTickets.length !== newSelectedTickets.length) {
+              console.error('❌ STORE: Duplicate detected in final selection, filtering');
+              return {
+                ...state,
+                selectedTickets: uniqueTickets.sort((a, b) => a - b),
+                errors: state.errors.filter(error => !error.includes('ya no está disponible'))
+              };
+            }
+
+            console.log('✅ STORE: Ticket selected successfully', {
+              newTicket: ticketNumber,
+              totalSelected: newSelectedTickets.length
+            });
+
             return {
               ...state,
-              selectedTickets: [...selectedTickets, ticketNumber].sort((a, b) => a - b),
+              selectedTickets: newSelectedTickets,
               errors: state.errors.filter(error => !error.includes('ya no está disponible'))
             };
           });
@@ -303,135 +339,87 @@ export const useRaffleStore = create<RaffleStore>()(
         quickSelect: (count: number) => {
           console.log('🎯 STORE: quickSelect called with count:', count);
           set(state => {
-            // Get current local state for fallback
-            const { availableTickets: localAvailable, soldTickets, reservedTickets } = get();
-            console.log('🎯 STORE: Current state in quickSelect:', { 
-              localAvailableTicketsCount: localAvailable.length, 
-              soldCount: soldTickets.length, 
+            // ✅ CRITICAL FIX: Get fresh state to prevent stale data
+            const freshState = get();
+            const { availableTickets, soldTickets, reservedTickets } = freshState;
+
+            console.log('🎯 STORE: Fresh state validation:', {
+              availableCount: availableTickets.length,
+              soldCount: soldTickets.length,
               reservedCount: reservedTickets.length,
-              currentSelectedCount: state.selectedTickets.length
+              mathCheck: availableTickets.length + soldTickets.length + reservedTickets.length === TOTAL_TICKETS
             });
-            
-            // Use local available tickets (they should be synchronized by useSupabaseSync)
-            const availableTickets = localAvailable;
-            
-            // Validation: Check if we have enough available tickets
-            if (availableTickets.length < count) {
-              console.warn(`❌ Quick select failed: Not enough tickets available. Requested: ${count}, Available: ${availableTickets.length}`);
-              return {
-                ...state,
-                errors: [...state.errors, `Solo hay ${availableTickets.length} tickets disponibles`]
-              };
-            }
-            
-            // Additional validation: Ensure availableTickets array is valid
+
+            // ✅ VALIDATION: Enhanced availability check
             if (!Array.isArray(availableTickets) || availableTickets.length === 0) {
-              console.error('❌ Available tickets array is invalid or empty', { availableTickets, soldTickets: soldTickets.length, reservedTickets: reservedTickets.length });
-              return {
-                ...state,
-                errors: [...state.errors, `Error: No hay tickets disponibles para seleccionar`]
-              };
-            }
-            
-            // Proper Fisher-Yates shuffle algorithm to prevent duplicates
-            const shuffled = [...availableTickets];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-              const j = Math.floor(Math.random() * (i + 1));
-              [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
-            
-            // Select the first 'count' tickets and sort them for display
-            const selected = shuffled.slice(0, count).sort((a, b) => a - b);
-
-            // CRITICAL: Verify selected tickets are NOT in sold or reserved lists
-            const conflicting = selected.filter(ticket =>
-              soldTickets.includes(ticket) || reservedTickets.includes(ticket)
-            );
-
-            if (conflicting.length > 0) {
-              console.error('❌ Quick select generated conflicting tickets', {
-                conflicting,
-                sold: soldTickets.length,
-                reserved: reservedTickets.length
-              });
-
-              // Try to find alternative tickets
-              const remaining = availableTickets.filter(ticket =>
-                !soldTickets.includes(ticket) &&
-                !reservedTickets.includes(ticket)
-              );
-
-              if (remaining.length >= count) {
-                const alternativeShuffled = [...remaining];
-                for (let i = alternativeShuffled.length - 1; i > 0; i--) {
-                  const j = Math.floor(Math.random() * (i + 1));
-                  [alternativeShuffled[i], alternativeShuffled[j]] = [alternativeShuffled[j], alternativeShuffled[i]];
-                }
-                const alternative = alternativeShuffled.slice(0, count).sort((a, b) => a - b);
-                console.log('✅ Using alternative tickets:', alternative);
-
-                return {
-                  ...state,
-                  selectedTickets: alternative,
-                  currentStep: 'payment' as RaffleStep,
-                  errors: []
-                };
-              } else {
-                return {
-                  ...state,
-                  errors: [...state.errors, `No hay suficientes tickets disponibles (${remaining.length} disponibles, ${count} solicitados)`]
-                };
-              }
-            }
-
-            // Final validation: Ensure we have exactly 'count' unique tickets
-            const uniqueSelected = [...new Set(selected)];
-            if (uniqueSelected.length !== count || selected.length !== count) {
-              console.error('❌ Quick select failed to generate correct number of unique tickets', {
-                requested: count,
-                generated: selected.length,
-                unique: uniqueSelected.length,
-                available: availableTickets.length,
-                selected
+              console.error('❌ CRITICAL: No available tickets in store', {
+                type: typeof availableTickets,
+                length: availableTickets?.length || 0
               });
               return {
                 ...state,
-                errors: [...state.errors, `Error al seleccionar tickets únicos. Intenta de nuevo.`]
+                errors: [...state.errors, 'Sistema no disponible temporalmente. Intenta de nuevo.']
               };
             }
-            
-            // Double-check that none of the selected tickets are in sold/reserved lists
-            const conflictingTickets = selected.filter(ticket => 
-              soldTickets.includes(ticket) || reservedTickets.includes(ticket)
-            );
-            
-            if (conflictingTickets.length > 0) {
-              console.error('❌ Quick select generated conflicting tickets', { 
-                conflicting: conflictingTickets, 
-                sold: soldTickets.length, 
-                reserved: reservedTickets.length 
-              });
+
+            if (availableTickets.length < count) {
+              console.warn(`❌ Insufficient tickets: Requested ${count}, Available ${availableTickets.length}`);
               return {
                 ...state,
-                errors: [...state.errors, `Algunos tickets seleccionados ya no están disponibles. Intenta de nuevo.`]
+                errors: [...state.errors, `Solo quedan ${availableTickets.length} boletos disponibles`]
               };
             }
-            
-            console.log('✅ Quick select successful:', { 
-              requested: count, 
-              generated: selected.length, 
+
+            // ✅ PREVENTION: Advanced duplicate prevention with Set-based validation
+            const unavailableSet = new Set([...soldTickets, ...reservedTickets]);
+            const trulyAvailable = availableTickets.filter(ticket => !unavailableSet.has(ticket));
+
+            if (trulyAvailable.length < count) {
+              console.warn(`❌ RACE CONDITION: Sync issue detected. True available: ${trulyAvailable.length}, Requested: ${count}`);
+              return {
+                ...state,
+                errors: [...state.errors, `Solo ${trulyAvailable.length} boletos disponibles tras sincronización`]
+              };
+            }
+
+            // ✅ ALGORITHM: Cryptographically secure random selection
+            const selected: number[] = [];
+            const poolCopy = [...trulyAvailable];
+
+            for (let i = 0; i < count; i++) {
+              if (poolCopy.length === 0) break;
+
+              // Use crypto.getRandomValues for true randomness
+              const randomIndex = typeof window !== 'undefined' && window.crypto
+                ? Math.floor((crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296) * poolCopy.length)
+                : Math.floor(Math.random() * poolCopy.length);
+
+              const selectedTicket = poolCopy.splice(randomIndex, 1)[0];
+              selected.push(selectedTicket);
+            }
+
+            // ✅ VERIFICATION: Final conflict check
+            const finalConflicts = selected.filter(ticket => unavailableSet.has(ticket));
+            if (finalConflicts.length > 0) {
+              console.error('🚨 CRITICAL: Final conflict detected!', { conflicts: finalConflicts });
+              return {
+                ...state,
+                errors: [...state.errors, 'Error de sincronización. Por favor recarga la página.']
+              };
+            }
+
+            console.log('✅ STORE: Perfect quickSelect execution', {
+              requested: count,
+              selected: selected.length,
               tickets: selected,
-              availableTotal: availableTickets.length 
+              verified: selected.every(t => !unavailableSet.has(t))
             });
-            
+
             return {
               ...state,
               selectedTickets: selected,
-              errors: state.errors.filter(error => 
-                !error.includes('tickets disponibles') && 
-                !error.includes('Error al seleccionar') &&
-                !error.includes('ya no están disponibles')
-              )
+              currentStep: 'payment' as RaffleStep,
+              errors: state.errors.filter(e => !e.includes('boletos disponibles') && !e.includes('Sistema no disponible'))
             };
           });
         },

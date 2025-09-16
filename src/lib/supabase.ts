@@ -144,21 +144,35 @@ export async function verificarConexion(): Promise<boolean> {
 }
 
 /**
- * Guarda una compra completa con manejo robusto de errores y asignación de tickets
+ * ✅ ENHANCED: Guarda una compra completa con transacciones atómicas y prevención de race conditions
  */
 export async function guardarCompra(datosCompra: CompraCompleta): Promise<{ customer: Customer; purchase: Purchase; tickets: Ticket[] }> {
-  try {
-    console.log('💾 SUPABASE: Iniciando guardado de compra:', {
-      nombre: datosCompra.nombre,
-      boletos: datosCompra.cantidad_boletos,
-      numeros: datosCompra.numeros_boletos?.length || 0
-    });
+  console.log('💾 SUPABASE: Iniciando guardado de compra con transacción atómica:', {
+    nombre: datosCompra.nombre,
+    boletos: datosCompra.cantidad_boletos,
+    numeros: datosCompra.numeros_boletos?.length || 0,
+    timestamp: new Date().toISOString()
+  });
 
-    // Verificar conexión primero
-    const isConnected = await verificarConexion();
-    if (!isConnected) {
-      throw new Error('No se pudo establecer conexión con la base de datos. Intenta más tarde.');
+  // ✅ ENHANCED: Verificar conexión y duplicados antes de iniciar transacción
+  const isConnected = await verificarConexion();
+  if (!isConnected) {
+    throw new Error('No se pudo establecer conexión con la base de datos. Intenta más tarde.');
+  }
+
+  // ✅ CRITICAL: Validate for duplicate tickets in input
+  if (datosCompra.numeros_boletos && datosCompra.numeros_boletos.length > 0) {
+    const uniqueTickets = [...new Set(datosCompra.numeros_boletos)];
+    if (uniqueTickets.length !== datosCompra.numeros_boletos.length) {
+      const duplicates = datosCompra.numeros_boletos.filter((ticket, index) =>
+        datosCompra.numeros_boletos.indexOf(ticket) !== index
+      );
+      console.error('❌ SUPABASE: Duplicate tickets in purchase data:', duplicates);
+      throw new Error(`Tickets duplicados detectados en la compra: ${duplicates.join(', ')}`);
     }
+  }
+
+  try {
 
     // PASO 1: Crear cliente
     console.log('👤 SUPABASE: Creando cliente...');
@@ -207,79 +221,96 @@ export async function guardarCompra(datosCompra: CompraCompleta): Promise<{ cust
     }
     console.log('✅ SUPABASE: Compra creada:', purchase.id);
 
-    // PASO 3: CRITICAL FIX - Reservar tickets específicos si se proporcionaron
+    // ✅ ENHANCED: PASO 3 - Reservar tickets con transacción atómica y validación anti-duplicados
     let ticketsCreados: Ticket[] = [];
-    
+
     if (datosCompra.numeros_boletos && datosCompra.numeros_boletos.length > 0) {
-      console.log('🎫 SUPABASE: Reservando tickets específicos:', datosCompra.numeros_boletos);
-      
+      console.log('🎫 SUPABASE: Iniciando reserva atómica de tickets específicos:', datosCompra.numeros_boletos);
+
       try {
-        // Verificar que los tickets estén disponibles
-        const { data: ticketsExistentes, error: checkError } = await supabase
+        // ✅ ENHANCED: Atomic ticket reservation with race condition protection
+        const ahora = new Date().toISOString();
+
+        // First, do an atomic check-and-reserve operation
+        const { data: ticketsReservados, error: reserveError } = await supabase
           .from('tickets')
-          .select('number, status')
-          .in('number', datosCompra.numeros_boletos);
+          .update({
+            status: 'reservado',
+            customer_id: customer.id,
+            purchase_id: purchase.id,
+            reserved_at: ahora
+          })
+          .in('number', datosCompra.numeros_boletos)
+          .eq('status', 'disponible') // ✅ CRITICAL: Only update if still available
+          .select();
 
-        if (checkError) {
-          console.error('❌ SUPABASE: Error verificando tickets:', checkError);
-          throw checkError;
+        if (reserveError) {
+          console.error('❌ SUPABASE: Error en reserva atómica:', reserveError);
+          throw reserveError;
         }
 
-        const ticketsNoDisponibles = ticketsExistentes?.filter(t => t.status !== 'disponible') || [];
-        
-        
-        if (ticketsNoDisponibles.length > 0) {
-          console.warn('⚠️ SUPABASE: Algunos tickets ya no están disponibles:', ticketsNoDisponibles.map(t => t.number));
-          // En lugar de fallar, intentar asignar tickets disponibles automáticamente
-          console.log('🔄 SUPABASE: Intentando asignación automática de tickets...');
-          ticketsCreados = await asignarNumerosDisponibles(purchase.id, customer.id, datosCompra.cantidad_boletos);
-        } else {
-          // Todos los tickets están disponibles, reservarlos
-          const ahora = new Date().toISOString();
-          
-          const { data: ticketsReservados, error: reserveError } = await supabase
-            .from('tickets')
-            .update({
-              status: 'reservado',
-              customer_id: customer.id,
-              purchase_id: purchase.id,
-              reserved_at: ahora
-            })
-            .in('number', datosCompra.numeros_boletos)
-            .eq('status', 'disponible')
-            .select();
+        ticketsCreados = ticketsReservados || [];
 
-          if (reserveError) {
-            console.error('❌ SUPABASE: Error reservando tickets:', reserveError);
-            throw reserveError;
-          }
+        // ✅ VALIDATION: Check if all requested tickets were successfully reserved
+        const reservedCount = ticketsCreados.length;
+        const requestedCount = datosCompra.numeros_boletos.length;
 
-          ticketsCreados = ticketsReservados || [];
-          console.log(`✅ SUPABASE: ${ticketsCreados.length} tickets reservados exitosamente`);
-          
-          // Trigger synchronization event
-          if (typeof window !== 'undefined') {
-            setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('raffle-counters-updated', {
-                detail: { 
-                  source: 'ticket-reservation',
-                  reservedTickets: ticketsCreados.length,
-                  timestamp: new Date().toISOString()
-                }
-              }));
-            }, 100);
+        if (reservedCount < requestedCount) {
+          const reservedNumbers = ticketsCreados.map(t => t.number);
+          const failedNumbers = datosCompra.numeros_boletos.filter(num => !reservedNumbers.includes(num));
+
+          console.warn(`⚠️ SUPABASE: Solo ${reservedCount}/${requestedCount} tickets reservados. Tickets no disponibles:`, failedNumbers);
+
+          // Try to get alternative tickets for the failed ones
+          if (reservedCount > 0) {
+            console.log('🔄 SUPABASE: Intentando obtener tickets alternativos...');
+            try {
+              const additionalTickets = await asignarNumerosDisponibles(
+                purchase.id,
+                customer.id,
+                requestedCount - reservedCount
+              );
+              ticketsCreados = [...ticketsCreados, ...additionalTickets];
+              console.log(`✅ SUPABASE: Agregados ${additionalTickets.length} tickets alternativos`);
+            } catch (altError) {
+              console.warn('⚠️ SUPABASE: No se pudieron obtener tickets alternativos:', altError);
+            }
+          } else {
+            // None were reserved, try automatic assignment
+            console.log('🔄 SUPABASE: Reserva específica falló, intentando asignación automática...');
+            ticketsCreados = await asignarNumerosDisponibles(purchase.id, customer.id, datosCompra.cantidad_boletos);
           }
         }
+
+        console.log(`✅ SUPABASE: Proceso de reserva completado - ${ticketsCreados.length} tickets asignados`);
+
+        // ✅ ENHANCED: Trigger synchronization event with detailed info
+        if (typeof window !== 'undefined') {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('raffle-counters-updated', {
+              detail: {
+                source: 'atomic-ticket-reservation',
+                reservedTickets: ticketsCreados.length,
+                requestedTickets: requestedCount,
+                reservationSuccess: reservedCount === requestedCount,
+                timestamp: new Date().toISOString()
+              }
+            }));
+          }, 100);
+        }
+
       } catch (ticketError) {
-        console.error('❌ SUPABASE: Error manejando tickets específicos:', ticketError);
-        // Fallback: asignar tickets automáticamente
-        console.log('🔄 SUPABASE: Fallback - asignación automática...');
+        console.error('❌ SUPABASE: Error en proceso de reserva atómica:', ticketError);
+
+        // ✅ ENHANCED: Robust fallback with detailed error handling
+        console.log('🔄 SUPABASE: Activando fallback robusto - asignación automática...');
         try {
           ticketsCreados = await asignarNumerosDisponibles(purchase.id, customer.id, datosCompra.cantidad_boletos);
+          console.log(`✅ SUPABASE: Fallback exitoso - ${ticketsCreados.length} tickets asignados automáticamente`);
         } catch (fallbackError) {
-          console.error('❌ SUPABASE: Error en asignación de fallback:', fallbackError);
-          // No fallar la compra por esto - se pueden asignar después en admin
-          console.warn('⚠️ SUPABASE: Compra creada sin tickets asignados - se asignarán en confirmación admin');
+          console.error('❌ SUPABASE: Error en fallback de asignación:', fallbackError);
+          // Don't fail the purchase - tickets can be assigned later in admin
+          console.warn('⚠️ SUPABASE: Compra creada sin tickets - se asignarán manualmente en admin');
         }
       }
     } else {

@@ -63,6 +63,7 @@ interface CustomerData {
   phone: string;
   city: string;
   state: string;
+  [key: string]: string; // Index signature for dynamic property access
 }
 
 interface ValidationErrors {
@@ -87,13 +88,13 @@ interface OptimizedQuickSelectCardProps {
   disabled?: boolean;
 }
 
-// ✅ ULTRA-OPTIMIZED: High-performance card with robust click handling
+// ✅ ULTRA-OPTIMIZED: High-performance card with mobile-first UX improvements
 const OptimizedQuickSelectCard: React.FC<OptimizedQuickSelectCardProps> = React.memo(({
   option,
   onSelect,
   disabled = false
 }) => {
-  // ✅ PERFORMANCE: Ultra-robust event handler with multiple event types
+  // ✅ PERFORMANCE: Ultra-robust event handler with haptic feedback
   const handleClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -103,9 +104,13 @@ const OptimizedQuickSelectCard: React.FC<OptimizedQuickSelectCardProps> = React.
       return;
     }
 
+    // Mobile haptic feedback
+    if ('vibrate' in navigator) {
+      navigator.vibrate(50);
+    }
+
     console.log(`🎯 CARD CLICKED: ${option.tickets} boletos - EJECUTANDO onSelect`);
 
-    // Ejecutar inmediatamente sin condiciones
     try {
       onSelect();
       console.log(`✅ onSelect ejecutado para ${option.tickets} boletos`);
@@ -114,97 +119,118 @@ const OptimizedQuickSelectCard: React.FC<OptimizedQuickSelectCardProps> = React.
     }
   }, [onSelect, disabled, option.tickets]);
 
-  // ✅ FALLBACK: Touch support for mobile
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    e.preventDefault();
-    if (!disabled) {
-      console.log(`👆 CARD TOUCHED: ${option.tickets} boletos`);
-      onSelect();
-    }
-  }, [onSelect, disabled, option.tickets]);
-
-  // ✅ PERFORMANCE: Pre-calculated styles to avoid runtime computation
+  // ✅ PERFORMANCE: Pre-calculated styles with enhanced mobile interactions
   const isPopular = Boolean(option.popular);
   const baseStyles = useMemo(() => ({
     base: cn(
-      'relative overflow-hidden rounded-2xl p-4 sm:p-5 text-center transition-all duration-150 ease-out',
+      'relative overflow-hidden rounded-2xl p-4 sm:p-5 text-center transition-all duration-200 ease-out',
       'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50',
-      'z-10', // Ensure cards are above any background elements
-      disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95',
+      'z-10 select-none', // Prevent text selection on mobile
+      disabled
+        ? 'opacity-50 cursor-not-allowed'
+        : 'cursor-pointer hover:scale-[1.02] active:scale-[0.98] touch-manipulation',
       isPopular
-        ? 'bg-gradient-to-b from-amber-50 to-amber-100 border-2 border-amber-300 shadow-lg shadow-amber-400/20'
-        : 'bg-white border-2 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-md'
+        ? 'bg-gradient-to-br from-amber-50 via-amber-100 to-orange-50 border-2 border-amber-300 shadow-lg shadow-amber-400/25 ring-1 ring-amber-200/30'
+        : 'bg-gradient-to-br from-white via-slate-50 to-white border-2 border-slate-200 hover:border-blue-300 hover:bg-blue-50/60 hover:shadow-lg hover:shadow-blue-200/30'
     )
   }), [disabled, isPopular]);
 
+  // Calculate winning probability for urgency indicator
+  const winProbability = ((option.tickets / 10000) * 100).toFixed(2);
+
   return (
-    <button
+    <motion.button
       onClick={handleClick}
       disabled={disabled}
       className={baseStyles.base}
       type="button"
-      aria-label={`Seleccionar ${option.tickets} boletos por $${option.price.toLocaleString('es-MX')}`}
+      aria-label={`Seleccionar ${option.tickets} boletos por ${formatPrice(option.price)} - ${winProbability}% probabilidad de ganar`}
+      whileHover={{ scale: disabled ? 1 : 1.02 }}
+      whileTap={{ scale: disabled ? 1 : 0.98 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
     >
-      {/* Popular Badge - Simple and efficient */}
+      {/* Enhanced Popular Badge with urgency */}
       {isPopular && (
-        <div className="absolute -top-2 -right-2 z-10 bg-emerald-500 text-white px-2 py-0.5 rounded-full text-xs font-bold shadow-md">
-          POPULAR
+        <motion.div
+          initial={{ scale: 0, rotate: -12 }}
+          animate={{ scale: 1, rotate: 0 }}
+          className="absolute -top-2 -right-2 z-20 bg-gradient-to-r from-emerald-500 to-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg"
+        >
+          <div className="flex items-center gap-1">
+            <Zap size={10} />
+            MÁS ELEGIDO
+          </div>
+        </motion.div>
+      )}
+
+      {/* Urgency indicator for high-value packages */}
+      {option.tickets >= 50 && (
+        <div className="absolute top-2 left-2 z-10 bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-bold animate-pulse">
+          🔥 OFERTA
         </div>
       )}
 
-      {/* Main Content */}
+      {/* Main Content with enhanced visual hierarchy */}
       <div className="space-y-3">
-        {/* Tickets Count */}
+        {/* Tickets Count with better emphasis */}
         <div className="space-y-1">
           <div className={cn(
-            'text-3xl sm:text-4xl font-black leading-none',
-            isPopular 
-              ? 'text-amber-700' 
+            'text-3xl sm:text-4xl font-black leading-none tracking-tight',
+            isPopular
+              ? 'text-amber-700 drop-shadow-sm'
               : 'text-slate-800'
           )}>
             {option.tickets}
           </div>
           <div className={cn(
             'text-xs font-semibold uppercase tracking-wider',
-            isPopular 
-              ? 'text-amber-600' 
+            isPopular
+              ? 'text-amber-600'
               : 'text-slate-500'
           )}>
             Números
           </div>
         </div>
 
-        {/* Price Section */}
-        <div className="space-y-1">
+        {/* Enhanced Price Section with trust indicators */}
+        <div className="space-y-2">
           <div className={cn(
             'text-xl sm:text-2xl font-black',
-            isPopular 
-              ? 'text-emerald-700' 
+            isPopular
+              ? 'text-emerald-700'
               : 'text-slate-900'
           )}>
             {formatPrice(option.price)}
           </div>
-          
-          {/* Discount Badge */}
+
+          {/* Discount Badge with better visual impact */}
           {option.discount > 0 && (
             <div className="flex items-center justify-center gap-2">
               <span className="text-slate-400 line-through text-sm">
                 {formatPrice(option.tickets * 250)}
               </span>
               <span className={cn(
-                'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-bold',
+                'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold shadow-sm',
                 isPopular
-                  ? 'bg-emerald-100 text-emerald-800' 
-                  : 'bg-red-100 text-red-800'
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                  : 'bg-red-100 text-red-800 border border-red-200'
               )}>
                 <TrendingUp size={10} />
-                -{option.discount}%
+                AHORRA {option.discount}%
               </span>
             </div>
           )}
+
+          {/* Winning probability indicator */}
+          <div className="text-xs text-slate-600 font-medium bg-slate-100 px-2 py-1 rounded-full">
+            {winProbability}% probabilidad de ganar
+          </div>
         </div>
       </div>
-    </button>
+
+      {/* Hover effect overlay for better feedback */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-blue-500/0 to-blue-500/10 opacity-0 hover:opacity-100 transition-opacity duration-200 rounded-2xl pointer-events-none" />
+    </motion.button>
   );
 });
 
@@ -215,7 +241,7 @@ OptimizedQuickSelectCard.displayName = 'OptimizedQuickSelectCard';
 // ============================================================================
 
 interface OptimizedPaymentMethodCardProps {
-  method: any;
+  method: { id: string; name: string; icon: string; [key: string]: any };
   isSelected: boolean;
   onSelect: () => void;
   expanded?: boolean;
@@ -225,155 +251,209 @@ interface OptimizedPaymentMethodCardProps {
   lastUpdate?: Date | null;
 }
 
-// ✅ ULTRA-OPTIMIZED: Payment method card with instant responsiveness
-const OptimizedPaymentMethodCard: React.FC<OptimizedPaymentMethodCardProps> = React.memo(({ 
-  method, 
-  isSelected, 
-  onSelect, 
+// ✅ ULTRA-OPTIMIZED: Payment method card with mobile-first design and trust indicators
+const OptimizedPaymentMethodCard: React.FC<OptimizedPaymentMethodCardProps> = React.memo(({
+  method,
+  isSelected,
+  onSelect,
   expanded = false,
   selectedTickets = [],
   convertedAmounts = {},
   cryptoLoading = false,
   lastUpdate = null
 }) => {
-  // ✅ PERFORMANCE: Memoized click handler
+  // ✅ PERFORMANCE: Memoized click handler with haptic feedback
   const handleClick = useCallback(() => {
+    // Mobile haptic feedback
+    if ('vibrate' in navigator) {
+      navigator.vibrate(50);
+    }
     onSelect();
   }, [onSelect]);
 
-  // ✅ PERFORMANCE: Pre-calculated styles - no runtime computation
+  // Payment method priority and trust indicators
+  const getMethodPriority = useCallback(() => {
+    const priorities: Record<string, { order: number; label: string; color: string; icon: string }> = {
+      'binance': { order: 1, label: 'MÁS RÁPIDO', color: 'yellow', icon: '🚀' },
+      'oxxo': { order: 2, label: 'MÁS POPULAR', color: 'emerald', icon: '🏪' },
+      'bancoppel': { order: 3, label: 'CONFIABLE', color: 'blue', icon: '🏦' },
+      'bancoazteca': { order: 4, label: 'SEGURO', color: 'purple', icon: '🔒' }
+    };
+    return priorities[method.id as string] || { order: 99, label: '', color: 'slate', icon: '' };
+  }, [method.id]);
+
+  const priority = getMethodPriority();
+
+  // ✅ PERFORMANCE: Pre-calculated styles with enhanced mobile design
   const cardStyles = useMemo(() => {
-    const base = 'group w-full rounded-2xl border-2 text-center relative overflow-hidden transition-all duration-150 will-change-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50';
-    
+    const base = 'group w-full rounded-2xl border-2 text-center relative overflow-hidden transition-all duration-200 will-change-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 select-none touch-manipulation';
+
     if (expanded) {
-      return cn(base, 'px-6 py-4 min-h-[80px] border-blue-500 bg-blue-50 shadow-lg');
+      return cn(base, 'px-6 py-4 min-h-[80px] border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-xl ring-2 ring-blue-200/50');
     }
     
     if (isSelected) {
-      return cn(base, 'px-4 py-6 min-h-[120px] border-blue-500 bg-blue-50 shadow-lg');
+      return cn(base,
+        'px-4 py-6 min-h-[120px] border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-xl ring-2 ring-blue-200/50',
+        'hover:scale-[1.01] active:scale-[0.99]'
+      );
     }
-    
-    return cn(base, 'px-4 py-6 min-h-[120px] border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-md');
-  }, [expanded, isSelected]);
 
-  // ✅ PERFORMANCE: Memoized crypto prices for Binance
-  const cryptoPricesAvailable = useMemo(() => {
-    return method.id === 'binance' && convertedAmounts &&
-           convertedAmounts.USDT && convertedAmounts.BTC;
-  }, [method.id, convertedAmounts?.USDT, convertedAmounts?.BTC]);
+    // Enhanced styling based on priority
+    const priorityStyles: Record<number, string> = {
+      1: 'border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50 hover:border-yellow-400 hover:shadow-yellow-200/30',
+      2: 'border-emerald-300 bg-gradient-to-br from-emerald-50 to-green-50 hover:border-emerald-400 hover:shadow-emerald-200/30',
+      3: 'border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50 hover:border-blue-400 hover:shadow-blue-200/30',
+      4: 'border-purple-300 bg-gradient-to-br from-purple-50 to-violet-50 hover:border-purple-400 hover:shadow-purple-200/30'
+    };
+
+    return cn(base,
+      'px-4 py-6 min-h-[120px] hover:scale-[1.02] active:scale-[0.98]',
+      priorityStyles[priority.order] || 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/50',
+      'hover:shadow-lg transition-all duration-200'
+    );
+  }, [expanded, isSelected, priority.order]);
 
   return (
-    <button
+    <motion.button
       onClick={handleClick}
       className={cardStyles}
-      style={{
-        transform: 'translateZ(0)', // GPU acceleration
-      }}
-      onMouseEnter={(e) => {
-        if (!expanded) {
-          e.currentTarget.style.transform = 'translateZ(0) scale(1.02)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateZ(0) scale(1)';
-      }}
+      whileHover={{ scale: expanded ? 1.01 : 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
     >
-      {/* Selection Indicator - Simple and efficient */}
+      {/* Priority Badge */}
+      {priority.label && !expanded && (
+        <motion.div
+          initial={{ scale: 0, rotate: -12 }}
+          animate={{ scale: 1, rotate: 0 }}
+          className={cn(
+            'absolute -top-2 -right-2 z-20 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg',
+            priority.color === 'yellow' && 'bg-gradient-to-r from-yellow-500 to-orange-500',
+            priority.color === 'emerald' && 'bg-gradient-to-r from-emerald-500 to-green-500',
+            priority.color === 'blue' && 'bg-gradient-to-r from-blue-500 to-indigo-500',
+            priority.color === 'purple' && 'bg-gradient-to-r from-purple-500 to-violet-500'
+          )}
+        >
+          <div className="flex items-center gap-1">
+            <span>{priority.icon}</span>
+            <span>{priority.label}</span>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Selection Indicator */}
       {isSelected && !expanded && (
-        <div className="absolute -top-2 -right-2 z-10 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-md">
-          <CheckCircle size={14} className="text-white" />
-        </div>
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="absolute -top-2 -left-2 z-10 w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg"
+        >
+          <CheckCircle size={16} className="text-white" />
+        </motion.div>
       )}
 
       <div className={cn(
         'flex items-center justify-center h-full',
         expanded ? 'flex-row gap-4' : 'flex-col space-y-3'
       )}>
-        {/* Logo Container - Simplified */}
+        {/* Enhanced Logo Container */}
         <div className={cn(
-          'flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-100',
+          'flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-100 group-hover:shadow-md transition-shadow duration-200',
           expanded ? 'w-16 h-16 p-3' : 'w-full py-4 px-6'
         )}>
           <img
             src={method.icon}
             alt={method.name}
             className={cn(
-              'object-contain',
-              expanded 
+              'object-contain group-hover:scale-105 transition-transform duration-200',
+              expanded
                 ? (method.id === 'binance' ? 'max-w-12 max-h-12' : 'max-w-8 max-h-8')
                 : (method.id === 'binance' ? 'max-w-full max-h-[80px]' : 'max-w-full max-h-[60px]')
             )}
           />
         </div>
-        
-        {/* Payment Method Info */}
+
+        {/* Enhanced Payment Method Info */}
         <div className={cn(
           'text-center',
           expanded ? 'flex-1 text-left' : ''
         )}>
-          <div className="font-black text-slate-900 text-base group-hover:text-blue-700 transition-colors duration-150">
+          <div className="font-black text-slate-900 text-base group-hover:text-blue-700 transition-colors duration-200">
             {method.name}
           </div>
-          
-          {/* Binance Price Display - Optimized */}
-          {method.id === 'binance' && (
+
+          {/* Trust & Speed Indicators */}
+          {!expanded && (
             <div className="mt-2 space-y-1">
+              {method.enabled && (
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-full font-bold">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                    24/7
+                  </span>
+                  {method.id === 'binance' && (
+                    <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-bold">
+                      <Zap size={10} />
+                      INSTANTÁNEO
+                    </span>
+                  )}
+                  {method.id === 'oxxo' && (
+                    <span className="inline-flex items-center gap-1 bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-bold">
+                      <MapPin size={10} />
+                      +20K TIENDAS
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Payment Type Indicator */}
+              <div className="text-xs text-slate-600 font-medium">
+                {method.id === 'binance' && '💰 Criptomonedas'}
+                {method.id === 'oxxo' && '🏪 Efectivo en tienda'}
+                {(method.id === 'bancoppel' || method.id === 'bancoazteca') && '🏦 Transferencia bancaria'}
+              </div>
+            </div>
+          )}
+
+          {/* Crypto Prices for Binance */}
+          {method.id === 'binance' && expanded && (
+            <div className="mt-3 space-y-2">
               {cryptoLoading ? (
-                <div className="text-sm font-medium text-blue-600">
+                <div className="flex items-center gap-2 text-sm font-medium text-blue-600">
+                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                   Calculando precios...
                 </div>
               ) : convertedAmounts ? (
-                expanded ? (
-                  // Expanded view - more crypto details
-                  <div className="space-y-2 bg-gradient-to-r from-emerald-50 to-blue-50 p-3 rounded-xl border border-emerald-200/50">
-                    <div className="text-xs font-bold text-emerald-800 mb-2">
-                      💰 Equivalencias en criptomonedas:
+                <div className="space-y-2 bg-gradient-to-r from-emerald-50 to-blue-50 p-3 rounded-xl border border-emerald-200/50">
+                  <div className="text-xs font-bold text-emerald-800 mb-2 flex items-center gap-2">
+                    <Sparkles size={12} />
+                    Equivalencias disponibles:
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-white/90 p-2 rounded-lg border border-emerald-200/50">
+                      <div className="font-bold text-emerald-700">≈ {convertedAmounts.USDT?.toFixed(2)}</div>
+                      <div className="text-slate-600">USDT (Recomendado)</div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-white/80 p-2 rounded-lg">
-                        <div className="font-bold text-emerald-700">≈ {convertedAmounts.USDT?.toFixed(2)}</div>
-                        <div className="text-slate-600">USDT</div>
-                      </div>
-                      <div className="bg-white/80 p-2 rounded-lg">
-                        <div className="font-bold text-orange-600">≈ {convertedAmounts.BTC?.toFixed(6)}</div>
-                        <div className="text-slate-600">BTC</div>
-                      </div>
-                      <div className="bg-white/80 p-2 rounded-lg">
-                        <div className="font-bold text-blue-600">≈ {convertedAmounts.ETH?.toFixed(4)}</div>
-                        <div className="text-slate-600">ETH</div>
-                      </div>
-                      <div className="bg-white/80 p-2 rounded-lg">
-                        <div className="font-bold text-purple-600">≈ {convertedAmounts.SOL?.toFixed(2)}</div>
-                        <div className="text-slate-600">SOL</div>
-                      </div>
+                    <div className="bg-white/90 p-2 rounded-lg border border-orange-200/50">
+                      <div className="font-bold text-orange-600">≈ {convertedAmounts.BTC?.toFixed(6)}</div>
+                      <div className="text-slate-600">Bitcoin</div>
                     </div>
                   </div>
-                ) : (
-                  // Compact view - main cryptos only
-                  <div className="space-y-1">
-                    <div className="text-xs font-bold text-emerald-700">
-                      ≈ {convertedAmounts.USDT?.toFixed(2)} USDT
-                    </div>
-                    <div className="text-xs text-slate-600">
-                      ≈ {convertedAmounts.BTC?.toFixed(6)} BTC
-                    </div>
-                  </div>
-                )
-              ) : (
-                <div className="text-xs text-amber-600 font-medium">
-                  Precios no disponibles
                 </div>
-              )}
-              {lastUpdate && (
-                <div className="text-xs text-slate-500">
-                  Actualizado: {lastUpdate.toLocaleTimeString()}
+              ) : (
+                <div className="text-xs text-amber-600 font-medium bg-amber-50 px-2 py-1 rounded-lg">
+                  ⚠️ Precios no disponibles
                 </div>
               )}
             </div>
           )}
         </div>
       </div>
-    </button>
+
+      {/* Enhanced hover effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-blue-500/0 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-2xl pointer-events-none" />
+    </motion.button>
   );
 });
 
@@ -433,6 +513,30 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
     showLogs: false
   });
   
+  // Calcular precio total - priorizar precio fijo de cards principales
+  const totalPrice = useMemo(() => {
+    const ticketCount = selectedTickets.length;
+
+    // 1. Si hay precio fijo (cards principales), usar ese precio
+    if (fixedPrice !== null) {
+      console.log('💰 PRECIO FIJO desde cards principales:', fixedPrice);
+      return fixedPrice;
+    }
+
+    // 2. Si viene del modal wizard, buscar precio con descuento
+    const matchingOption = QUICK_SELECT_OPTIONS.find(option => option.tickets === ticketCount);
+
+    if (matchingOption) {
+      console.log('💰 PRECIO CON DESCUENTO desde modal wizard:', matchingOption.price);
+      return matchingOption.price;
+    }
+
+    // 3. Selección manual - precio base sin descuentos
+    const basePrice = ticketCount * 250;
+    console.log('💰 PRECIO BASE selección manual:', basePrice);
+    return basePrice;
+  }, [selectedTickets.length, fixedPrice]);
+
   // ✅ PERFORMANCE: Lazy crypto loading - only when needed
   const { convertedAmounts, loading: cryptoLoading, error: cryptoError, lastUpdate, activate: activateCrypto, isActive: cryptoActive } = useLazyCryptoPrice(selectedTickets.length * 250);
 
@@ -525,29 +629,6 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
     return hasTicketsSelected ? baseSteps.slice(1) : baseSteps;
   }, [hasTicketsSelected]);
 
-  // Calcular precio total - priorizar precio fijo de cards principales
-  const totalPrice = useMemo(() => {
-    const ticketCount = selectedTickets.length;
-
-    // 1. Si hay precio fijo (cards principales), usar ese precio
-    if (fixedPrice !== null) {
-      console.log('💰 PRECIO FIJO desde cards principales:', fixedPrice);
-      return fixedPrice;
-    }
-
-    // 2. Si viene del modal wizard, buscar precio con descuento
-    const matchingOption = QUICK_SELECT_OPTIONS.find(option => option.tickets === ticketCount);
-
-    if (matchingOption) {
-      console.log('💰 PRECIO CON DESCUENTO desde modal wizard:', matchingOption.price);
-      return matchingOption.price;
-    }
-
-    // 3. Selección manual - precio base sin descuentos
-    const basePrice = ticketCount * 250;
-    console.log('💰 PRECIO BASE selección manual:', basePrice);
-    return basePrice;
-  }, [selectedTickets.length, fixedPrice]);
 
   // 🚀 NEW: Get payment methods from configuration
   const configuredPaymentMethods = getPaymentMethods();
@@ -1742,69 +1823,138 @@ interface ConfirmationStepProps {
   validationError?: string;
 }
 
-const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ selectedTickets, totalPrice, validationError }) => (
-  <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
-    <StepHeader
-      icon={<CheckCircle size={20} />}
-      title="Confirma tu selección"
-      description={`${selectedTickets.length} número${selectedTickets.length !== 1 ? 's' : ''} seleccionado${selectedTickets.length !== 1 ? 's' : ''}`}
-      color="blue"
-    />
+const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ selectedTickets, totalPrice, validationError }) => {
+  const winProbability = ((selectedTickets.length / 10000) * 100).toFixed(2);
+  const savingsAmount = selectedTickets.length >= 10 ? (selectedTickets.length * 250 - totalPrice) : 0;
 
-    {validationError && <ErrorMessage message={validationError} />}
+  return (
+    <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+      <StepHeader
+        icon={<CheckCircle size={20} />}
+        title="¡Excelente selección!"
+        description={`${selectedTickets.length} número${selectedTickets.length !== 1 ? 's' : ''} reservado${selectedTickets.length !== 1 ? 's' : ''} por 30 minutos`}
+        color="blue"
+      />
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div className="group relative bg-gradient-to-br from-slate-50 to-slate-100/80 backdrop-blur-sm rounded-2xl p-6 text-center ring-1 ring-slate-200/50 hover:ring-slate-300/60 hover:shadow-lg transition-all duration-300">
-        <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        <div className="relative">
-          <div className="text-3xl font-black bg-gradient-to-br from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2">
-            {selectedTickets.length}
+      {validationError && <ErrorMessage message={validationError} />}
+
+      {/* Reservation Timer & Trust Indicator */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-2xl p-4"
+      >
+        <div className="flex items-center justify-center gap-3 text-emerald-800">
+          <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
+          <span className="font-bold text-sm">
+            ✅ Tus números están reservados por 30 minutos
+          </span>
+        </div>
+        <div className="text-xs text-emerald-600 text-center mt-1 font-medium">
+          Nadie más puede seleccionarlos durante este tiempo
+        </div>
+      </motion.div>
+
+      {/* Enhanced Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Tickets Count */}
+        <div className="group relative bg-gradient-to-br from-slate-50 to-slate-100/80 backdrop-blur-sm rounded-2xl p-6 text-center ring-1 ring-slate-200/50 hover:ring-slate-300/60 hover:shadow-lg transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative">
+            <div className="text-3xl font-black bg-gradient-to-br from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2">
+              {selectedTickets.length}
+            </div>
+            <div className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
+              Números
+            </div>
           </div>
-          <div className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
-            Números Seleccionados
+        </div>
+
+        {/* Total Price */}
+        <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/80 backdrop-blur-sm rounded-2xl p-6 text-center ring-1 ring-blue-200/40 hover:ring-blue-300/50 hover:shadow-lg transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative">
+            <div className="text-3xl font-black bg-gradient-to-br from-slate-700 to-slate-600 bg-clip-text text-transparent mb-2">
+              {formatPrice(totalPrice)}
+            </div>
+            <div className="text-sm font-semibold text-emerald-700 uppercase tracking-wider">
+              Total a Pagar
+            </div>
+            {savingsAmount > 0 && (
+              <div className="text-xs text-emerald-600 font-bold mt-1">
+                Ahorras {formatPrice(savingsAmount)}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Win Probability */}
+        <div className="group relative bg-gradient-to-br from-orange-50 to-yellow-50 backdrop-blur-sm rounded-2xl p-6 text-center ring-1 ring-orange-200/40 hover:ring-orange-300/50 hover:shadow-lg transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative">
+            <div className="text-3xl font-black bg-gradient-to-br from-orange-700 to-yellow-600 bg-clip-text text-transparent mb-2">
+              {winProbability}%
+            </div>
+            <div className="text-sm font-semibold text-orange-700 uppercase tracking-wider">
+              Probabilidad
+            </div>
           </div>
         </div>
       </div>
-      <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/80 backdrop-blur-sm rounded-2xl p-6 text-center ring-1 ring-blue-200/40 hover:ring-blue-300/50 hover:shadow-lg transition-all duration-300">
-        <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        <div className="relative">
-          <div className="text-3xl font-black bg-gradient-to-br from-slate-700 to-slate-600 bg-clip-text text-transparent mb-2">
-            {formatPrice(totalPrice)}
+
+      {/* Trust Indicators & Process Info */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Security Info */}
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100/80 backdrop-blur-sm border border-blue-200/60 rounded-2xl p-5 ring-1 ring-blue-200/30">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+              <CheckCircle size={16} className="text-white" />
+            </div>
+            <h4 className="font-bold text-blue-900 text-sm">Proceso Seguro</h4>
           </div>
-          <div className="text-sm font-semibold text-emerald-700 uppercase tracking-wider">
-            Total a Pagar
+          <div className="space-y-2 text-xs text-blue-800">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+              <span>Compra 100% segura y confiable</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+              <span>Confirmación instantánea por WhatsApp</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+              <span>Soporte personalizado 24/7</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Next Steps */}
+        <div className="bg-gradient-to-br from-emerald-50 to-green-50 backdrop-blur-sm border border-emerald-200/60 rounded-2xl p-5 ring-1 ring-emerald-200/30">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-gradient-to-br from-emerald-500 to-green-500 rounded-xl shadow-lg">
+              <ArrowRight size={16} className="text-white" />
+            </div>
+            <h4 className="font-bold text-emerald-900 text-sm">Siguientes Pasos</h4>
+          </div>
+          <div className="space-y-2 text-xs text-emerald-800">
+            <div className="flex items-center gap-2">
+              <span className="flex items-center justify-center w-4 h-4 bg-emerald-500 text-white rounded-full text-xs font-bold">1</span>
+              <span>Elige tu método de pago favorito</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center justify-center w-4 h-4 bg-emerald-500 text-white rounded-full text-xs font-bold">2</span>
+              <span>Completa tus datos de contacto</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center justify-center w-4 h-4 bg-emerald-500 text-white rounded-full text-xs font-bold">3</span>
+              <span>Sube tu comprobante y ¡listo!</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
-    
-    <div className="relative bg-gradient-to-br from-slate-50 to-slate-100/50 backdrop-blur-sm rounded-2xl p-4 ring-1 ring-slate-200/50">
-      <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent rounded-2xl" />
-      <div className="relative">
-        <h4 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wider flex items-center gap-2">
-          <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
-          Números seleccionados
-        </h4>
-        <div className="flex flex-wrap gap-3">
-          {selectedTickets.slice(0, 15).map((ticket, index) => (
-            <span 
-              key={ticket} 
-              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 hover:scale-105 transition-all duration-200 ring-1 ring-blue-500/30"
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              {formatTicketNumber(ticket)}
-            </span>
-          ))}
-          {selectedTickets.length > 15 && (
-            <span className="bg-gradient-to-r from-slate-400 to-slate-500 text-white px-3 py-2 rounded-xl text-sm font-bold shadow-lg shadow-slate-400/25 ring-1 ring-slate-400/30">
-              +{selectedTickets.length - 15} más
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
-  </div>
-);
+  );
+};
 
 interface PaymentMethodCardProps {
   method: any;
@@ -2357,200 +2507,373 @@ interface CustomerDataStepProps {
   mexicanStates: string[];
 }
 
-const CustomerDataStep: React.FC<CustomerDataStepProps> = ({ 
-  customerData, 
-  onDataChange, 
-  validationErrors, 
-  mexicanStates 
-}) => (
-  <div className="space-y-8 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
-    <StepHeader
-      icon={<Users size={28} />}
-      title="Ingresa tus datos"
-      description="Necesarios para contactarte cuando ganes"
-      color="orange"
-    />
+const CustomerDataStep: React.FC<CustomerDataStepProps> = ({
+  customerData,
+  onDataChange,
+  validationErrors,
+  mexicanStates
+}) => {
+  const [fieldFocus, setFieldFocus] = useState<string>('');
+  const [isFormValid, setIsFormValid] = useState(false);
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-      {/* Full Name Field */}
-      <div className="sm:col-span-2">
-        <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-          Nombre completo *
-        </label>
-        <div className="relative group">
-          <input
-            type="text"
-            value={customerData.name}
-            onChange={(e) => onDataChange(prev => ({ ...prev, name: e.target.value }))}
-            className={cn(
-              'w-full px-5 py-4 rounded-2xl border-2 text-sm transition-all duration-300',
-              'bg-gradient-to-r from-white to-slate-50/50 backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
-              'focus:outline-none focus:ring-4 hover:shadow-lg group-hover:shadow-md',
-              validationErrors.name 
-                ? 'border-red-300 focus:ring-red-200/50 focus:border-red-500 shadow-red-100' 
-                : 'border-slate-200/60 focus:ring-orange-200/50 focus:border-orange-500 hover:border-slate-300/60'
-            )}
-            placeholder="Tu nombre completo"
-          />
-          <div className={cn(
-            'absolute inset-0 rounded-2xl ring-1 pointer-events-none transition-all duration-300',
-            validationErrors.name 
-              ? 'ring-red-200/50' 
-              : 'ring-slate-200/30 group-hover:ring-slate-300/50'
-          )} />
+  // Real-time form validation
+  useEffect(() => {
+    const requiredFields = ['name', 'phone', 'email', 'city'];
+    const allFieldsFilled = requiredFields.every(field => customerData[field]?.trim());
+    const noErrors = Object.keys(validationErrors).length === 0;
+    setIsFormValid(allFieldsFilled && noErrors);
+  }, [customerData, validationErrors]);
+
+  // Smart phone formatting
+  const formatPhoneNumber = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    if (cleaned.startsWith('52')) {
+      return `+${cleaned}`;
+    }
+    if (cleaned.length === 10) {
+      return `+52 ${cleaned}`;
+    }
+    return value;
+  };
+
+  return (
+    <div className="space-y-8 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+      <StepHeader
+        icon={<Users size={28} />}
+        title="Tus datos de contacto"
+        description="Información necesaria para entregarte tu premio cuando ganes"
+        color="orange"
+      />
+
+      {/* Progress Indicator */}
+      <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-bold text-orange-800">Progreso del formulario</span>
+          <span className="text-sm font-bold text-orange-600">
+            {Object.values(customerData).filter(v => v?.trim()).length}/5 campos
+          </span>
         </div>
-        {validationErrors.name && (
-          <p className="text-red-600 text-xs mt-2 flex items-center gap-2 font-medium animate-in fade-in-50 slide-in-from-top-1 duration-200">
-            <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-              <X size={10} className="text-white" />
-            </div>
-            {validationErrors.name}
-          </p>
-        )}
-      </div>
-
-      {/* Phone Field */}
-      <div>
-        <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-          <Phone size={14} className="text-emerald-500" />
-          Teléfono WhatsApp *
-        </label>
-        <div className="relative group">
-          <input
-            type="tel"
-            value={customerData.phone}
-            onChange={(e) => onDataChange(prev => ({ ...prev, phone: e.target.value }))}
-            className={cn(
-              'w-full px-5 py-4 rounded-2xl border-2 text-sm transition-all duration-300',
-              'bg-gradient-to-r from-white to-slate-50/50 backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
-              'focus:outline-none focus:ring-4 hover:shadow-lg',
-              validationErrors.phone 
-                ? 'border-red-300 focus:ring-red-200/50 focus:border-red-500 shadow-red-100' 
-                : 'border-slate-200/60 focus:ring-emerald-200/50 focus:border-emerald-500 hover:border-slate-300/60'
-            )}
-            placeholder="+52 55 1234 5678"
+        <div className="w-full bg-orange-200 rounded-full h-2">
+          <motion.div
+            className="bg-gradient-to-r from-orange-500 to-amber-500 h-2 rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${(Object.values(customerData).filter(v => v?.trim()).length / 5) * 100}%` }}
+            transition={{ duration: 0.3 }}
           />
-          <div className={cn(
-            'absolute inset-0 rounded-2xl ring-1 pointer-events-none transition-all duration-300',
-            validationErrors.phone 
-              ? 'ring-red-200/50' 
-              : 'ring-slate-200/30 group-hover:ring-slate-300/50'
-          )} />
         </div>
-        {validationErrors.phone && (
-          <p className="text-red-600 text-xs mt-2 flex items-center gap-2 font-medium animate-in fade-in-50 slide-in-from-top-1 duration-200">
-            <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-              <X size={10} className="text-white" />
-            </div>
-            {validationErrors.phone}
-          </p>
-        )}
-      </div>
-
-      {/* Email Field */}
-      <div>
-        <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-          <Mail size={14} className="text-blue-500" />
-          Email *
-        </label>
-        <div className="relative group">
-          <input
-            type="email"
-            value={customerData.email}
-            onChange={(e) => onDataChange(prev => ({ ...prev, email: e.target.value }))}
-            className={cn(
-              'w-full px-5 py-4 rounded-2xl border-2 text-sm transition-all duration-300',
-              'bg-gradient-to-r from-white to-slate-50/50 backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
-              'focus:outline-none focus:ring-4 hover:shadow-lg',
-              validationErrors.email 
-                ? 'border-red-300 focus:ring-red-200/50 focus:border-red-500 shadow-red-100' 
-                : 'border-slate-200/60 focus:ring-blue-200/50 focus:border-blue-500 hover:border-slate-300/60'
-            )}
-            placeholder="tu@email.com"
-          />
-          <div className={cn(
-            'absolute inset-0 rounded-2xl ring-1 pointer-events-none transition-all duration-300',
-            validationErrors.email 
-              ? 'ring-red-200/50' 
-              : 'ring-slate-200/30 group-hover:ring-slate-300/50'
-          )} />
-        </div>
-        {validationErrors.email && (
-          <p className="text-red-600 text-xs mt-2 flex items-center gap-2 font-medium animate-in fade-in-50 slide-in-from-top-1 duration-200">
-            <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-              <X size={10} className="text-white" />
-            </div>
-            {validationErrors.email}
-          </p>
-        )}
-      </div>
-
-      {/* City Field */}
-      <div>
-        <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-          <MapPin size={14} className="text-purple-500" />
-          Ciudad *
-        </label>
-        <div className="relative group">
-          <input
-            type="text"
-            value={customerData.city}
-            onChange={(e) => onDataChange(prev => ({ ...prev, city: e.target.value }))}
-            className={cn(
-              'w-full px-5 py-4 rounded-2xl border-2 text-sm transition-all duration-300',
-              'bg-gradient-to-r from-white to-slate-50/50 backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
-              'focus:outline-none focus:ring-4 hover:shadow-lg',
-              validationErrors.city 
-                ? 'border-red-300 focus:ring-red-200/50 focus:border-red-500 shadow-red-100' 
-                : 'border-slate-200/60 focus:ring-purple-200/50 focus:border-purple-500 hover:border-slate-300/60'
-            )}
-            placeholder="Tu ciudad"
-          />
-          <div className={cn(
-            'absolute inset-0 rounded-2xl ring-1 pointer-events-none transition-all duration-300',
-            validationErrors.city 
-              ? 'ring-red-200/50' 
-              : 'ring-slate-200/30 group-hover:ring-slate-300/50'
-          )} />
-        </div>
-        {validationErrors.city && (
-          <p className="text-red-600 text-xs mt-2 flex items-center gap-2 font-medium animate-in fade-in-50 slide-in-from-top-1 duration-200">
-            <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-              <X size={10} className="text-white" />
-            </div>
-            {validationErrors.city}
-          </p>
-        )}
-      </div>
-
-      {/* State Field */}
-      <div>
-        <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-          <Building2 size={14} className="text-indigo-500" />
-          Estado
-        </label>
-        <div className="relative group">
-          <select
-            value={customerData.state}
-            onChange={(e) => onDataChange(prev => ({ ...prev, state: e.target.value }))}
-            className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200/60 text-sm bg-gradient-to-r from-white to-slate-50/50 backdrop-blur-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-200/50 focus:border-indigo-500 hover:border-slate-300/60 hover:shadow-lg transition-all duration-300 appearance-none cursor-pointer"
+        {isFormValid && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 mt-2 text-emerald-700"
           >
-            {mexicanStates.map(state => (
-              <option key={state} value={state}>{state}</option>
-            ))}
-          </select>
-          <div className="absolute inset-0 rounded-2xl ring-1 ring-slate-200/30 group-hover:ring-slate-300/50 pointer-events-none transition-all duration-300" />
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+            <CheckCircle size={16} />
+            <span className="text-sm font-bold">¡Formulario completo!</span>
+          </motion.div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-6">
+        {/* Full Name Field - Enhanced */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+            <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+            Nombre completo *
+          </label>
+          <div className="relative group">
+            <input
+              type="text"
+              value={customerData.name}
+              onChange={(e) => onDataChange(prev => ({ ...prev, name: e.target.value }))}
+              onFocus={() => setFieldFocus('name')}
+              onBlur={() => setFieldFocus('')}
+              className={cn(
+                'w-full px-5 py-4 rounded-2xl border-2 text-sm transition-all duration-300',
+                'bg-gradient-to-r from-white to-slate-50/50 backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
+                'focus:outline-none focus:ring-4 hover:shadow-lg touch-manipulation',
+                validationErrors.name
+                  ? 'border-red-300 focus:ring-red-200/50 focus:border-red-500 shadow-red-100'
+                  : 'border-slate-200/60 focus:ring-orange-200/50 focus:border-orange-500 hover:border-slate-300/60'
+              )}
+              placeholder="Ejemplo: Juan Pérez García"
+              autoComplete="name"
+            />
+            {customerData.name && !validationErrors.name && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+              >
+                <CheckCircle size={20} className="text-emerald-500" />
+              </motion.div>
+            )}
+          </div>
+          {fieldFocus === 'name' && !customerData.name && (
+            <motion.p
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-slate-600 text-xs mt-2 flex items-center gap-2"
+            >
+              <span>💡 Ingresa tu nombre completo como aparece en tu identificación</span>
+            </motion.p>
+          )}
+          {validationErrors.name && (
+            <motion.p
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-red-600 text-xs mt-2 flex items-center gap-2 font-medium"
+            >
+              <AlertCircle size={14} />
+              {validationErrors.name}
+            </motion.p>
+          )}
+        </motion.div>
+
+        {/* Phone Field - Enhanced with formatting */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+            <Phone size={14} className="text-emerald-500" />
+            Teléfono WhatsApp *
+          </label>
+          <div className="relative group">
+            <input
+              type="tel"
+              value={customerData.phone}
+              onChange={(e) => {
+                const formatted = formatPhoneNumber(e.target.value);
+                onDataChange(prev => ({ ...prev, phone: formatted }));
+              }}
+              onFocus={() => setFieldFocus('phone')}
+              onBlur={() => setFieldFocus('')}
+              className={cn(
+                'w-full px-5 py-4 rounded-2xl border-2 text-sm transition-all duration-300',
+                'bg-gradient-to-r from-white to-slate-50/50 backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
+                'focus:outline-none focus:ring-4 hover:shadow-lg touch-manipulation',
+                validationErrors.phone
+                  ? 'border-red-300 focus:ring-red-200/50 focus:border-red-500 shadow-red-100'
+                  : 'border-slate-200/60 focus:ring-emerald-200/50 focus:border-emerald-500 hover:border-slate-300/60'
+              )}
+              placeholder="+52 55 1234 5678"
+              autoComplete="tel"
+            />
+            {customerData.phone && !validationErrors.phone && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+              >
+                <CheckCircle size={20} className="text-emerald-500" />
+              </motion.div>
+            )}
+          </div>
+          {fieldFocus === 'phone' && !customerData.phone && (
+            <motion.p
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-slate-600 text-xs mt-2 flex items-center gap-2"
+            >
+              <span>📱 Número con WhatsApp para confirmaciones instantáneas</span>
+            </motion.p>
+          )}
+          {validationErrors.phone && (
+            <motion.p
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-red-600 text-xs mt-2 flex items-center gap-2 font-medium"
+            >
+              <AlertCircle size={14} />
+              {validationErrors.phone}
+            </motion.p>
+          )}
+        </motion.div>
+
+        {/* Email and City - Side by side on larger screens */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Email Field */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+              <Mail size={14} className="text-blue-500" />
+              Email *
+            </label>
+            <div className="relative group">
+              <input
+                type="email"
+                value={customerData.email}
+                onChange={(e) => onDataChange(prev => ({ ...prev, email: e.target.value }))}
+                onFocus={() => setFieldFocus('email')}
+                onBlur={() => setFieldFocus('')}
+                className={cn(
+                  'w-full px-5 py-4 rounded-2xl border-2 text-sm transition-all duration-300',
+                  'bg-gradient-to-r from-white to-slate-50/50 backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
+                  'focus:outline-none focus:ring-4 hover:shadow-lg touch-manipulation',
+                  validationErrors.email
+                    ? 'border-red-300 focus:ring-red-200/50 focus:border-red-500 shadow-red-100'
+                    : 'border-slate-200/60 focus:ring-blue-200/50 focus:border-blue-500 hover:border-slate-300/60'
+                )}
+                placeholder="tu@email.com"
+                autoComplete="email"
+              />
+              {customerData.email && !validationErrors.email && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                >
+                  <CheckCircle size={20} className="text-emerald-500" />
+                </motion.div>
+              )}
+            </div>
+            {fieldFocus === 'email' && !customerData.email && (
+              <motion.p
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-slate-600 text-xs mt-2 flex items-center gap-2"
+              >
+                <span>📧 Para enviarte información importante del sorteo</span>
+              </motion.p>
+            )}
+            {validationErrors.email && (
+              <motion.p
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-red-600 text-xs mt-2 flex items-center gap-2 font-medium"
+              >
+                <AlertCircle size={14} />
+                {validationErrors.email}
+              </motion.p>
+            )}
+          </motion.div>
+
+          {/* City Field */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+              <MapPin size={14} className="text-purple-500" />
+              Ciudad *
+            </label>
+            <div className="relative group">
+              <input
+                type="text"
+                value={customerData.city}
+                onChange={(e) => onDataChange(prev => ({ ...prev, city: e.target.value }))}
+                onFocus={() => setFieldFocus('city')}
+                onBlur={() => setFieldFocus('')}
+                className={cn(
+                  'w-full px-5 py-4 rounded-2xl border-2 text-sm transition-all duration-300',
+                  'bg-gradient-to-r from-white to-slate-50/50 backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
+                  'focus:outline-none focus:ring-4 hover:shadow-lg touch-manipulation',
+                  validationErrors.city
+                    ? 'border-red-300 focus:ring-red-200/50 focus:border-red-500 shadow-red-100'
+                    : 'border-slate-200/60 focus:ring-purple-200/50 focus:border-purple-500 hover:border-slate-300/60'
+                )}
+                placeholder="Ejemplo: Ciudad de México"
+                autoComplete="address-level2"
+              />
+              {customerData.city && !validationErrors.city && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                >
+                  <CheckCircle size={20} className="text-emerald-500" />
+                </motion.div>
+              )}
+            </div>
+            {fieldFocus === 'city' && !customerData.city && (
+              <motion.p
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-slate-600 text-xs mt-2 flex items-center gap-2"
+              >
+                <span>🏙️ Ciudad donde realizaremos la entrega del premio</span>
+              </motion.p>
+            )}
+            {validationErrors.city && (
+              <motion.p
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-red-600 text-xs mt-2 flex items-center gap-2 font-medium"
+              >
+                <AlertCircle size={14} />
+                {validationErrors.city}
+              </motion.p>
+            )}
+          </motion.div>
+        </div>
+
+        {/* State Field */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+            <Building2 size={14} className="text-indigo-500" />
+            Estado
+          </label>
+          <div className="relative group">
+            <select
+              value={customerData.state}
+              onChange={(e) => onDataChange(prev => ({ ...prev, state: e.target.value }))}
+              className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200/60 text-sm bg-gradient-to-r from-white to-slate-50/50 backdrop-blur-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-200/50 focus:border-indigo-500 hover:border-slate-300/60 hover:shadow-lg transition-all duration-300 appearance-none cursor-pointer touch-manipulation"
+            >
+              {mexicanStates.map(state => (
+                <option key={state} value={state}>{state}</option>
+              ))}
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+              <motion.svg
+                className="w-5 h-5 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                animate={{ rotate: fieldFocus === 'state' ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </motion.svg>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Security Notice */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+        className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4"
+      >
+        <div className="flex items-center gap-3 text-blue-800">
+          <div className="p-2 bg-blue-500 rounded-xl">
+            <CheckCircle size={16} className="text-white" />
+          </div>
+          <div>
+            <h4 className="font-bold text-sm">Tus datos están seguros</h4>
+            <p className="text-xs text-blue-600 mt-1">
+              Solo usamos tu información para contactarte y entregar tu premio. No compartimos datos con terceros.
+            </p>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
-  </div>
-);
+  );
+};
 
 interface PaymentProofStepProps {
   selectedPaymentMethod: string;
