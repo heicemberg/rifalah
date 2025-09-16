@@ -43,6 +43,7 @@ import { getPaymentMethods, validatePaymentConfig } from '../lib/config/payment-
 import { useRaffleStore } from '../stores/raffle-store';
 import { useOversellProtection } from '../hooks/useOversellProtection';
 import { useReservationCleanup } from '../hooks/useReservationCleanup';
+import CryptoIcon from './CryptoIcon';
 
 // ============================================================================
 // INTERFACES AND TYPES
@@ -436,11 +437,17 @@ const OptimizedPaymentMethodCard: React.FC<OptimizedPaymentMethodCardProps> = Re
                     <div className="text-xs font-semibold text-emerald-700 mb-1">💰 Stablecoins (Recomendadas)</div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="bg-white/90 p-2.5 rounded-lg border border-emerald-200/50 shadow-sm">
-                        <div className="font-bold text-emerald-700">≈ {convertedAmounts.USDT?.toFixed(2)}</div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <CryptoIcon symbol="USDT" size={16} />
+                          <div className="font-bold text-emerald-700">≈ {convertedAmounts.USDT?.toFixed(2)}</div>
+                        </div>
                         <div className="text-slate-600 text-xs">USDT</div>
                       </div>
                       <div className="bg-white/90 p-2.5 rounded-lg border border-blue-200/50 shadow-sm">
-                        <div className="font-bold text-blue-700">≈ {convertedAmounts.USDC?.toFixed(2)}</div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <CryptoIcon symbol="USDC" size={16} />
+                          <div className="font-bold text-blue-700">≈ {convertedAmounts.USDC?.toFixed(2)}</div>
+                        </div>
                         <div className="text-slate-600 text-xs">USDC</div>
                       </div>
                     </div>
@@ -451,19 +458,31 @@ const OptimizedPaymentMethodCard: React.FC<OptimizedPaymentMethodCardProps> = Re
                     <div className="text-xs font-semibold text-slate-700 mb-1">🚀 Principales Criptomonedas</div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="bg-white/90 p-2.5 rounded-lg border border-orange-200/50 shadow-sm">
-                        <div className="font-bold text-orange-600">≈ {convertedAmounts.BTC?.toFixed(6)}</div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <CryptoIcon symbol="BTC" size={16} />
+                          <div className="font-bold text-orange-600">≈ {convertedAmounts.BTC?.toFixed(6)}</div>
+                        </div>
                         <div className="text-slate-600 text-xs">Bitcoin</div>
                       </div>
                       <div className="bg-white/90 p-2.5 rounded-lg border border-purple-200/50 shadow-sm">
-                        <div className="font-bold text-purple-600">≈ {convertedAmounts.ETH?.toFixed(4)}</div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <CryptoIcon symbol="ETH" size={16} />
+                          <div className="font-bold text-purple-600">≈ {convertedAmounts.ETH?.toFixed(4)}</div>
+                        </div>
                         <div className="text-slate-600 text-xs">Ethereum</div>
                       </div>
                       <div className="bg-white/90 p-2.5 rounded-lg border border-indigo-200/50 shadow-sm">
-                        <div className="font-bold text-indigo-600">≈ {convertedAmounts.SOL?.toFixed(2)}</div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <CryptoIcon symbol="SOL" size={16} />
+                          <div className="font-bold text-indigo-600">≈ {convertedAmounts.SOL?.toFixed(2)}</div>
+                        </div>
                         <div className="text-slate-600 text-xs">Solana</div>
                       </div>
                       <div className="bg-white/90 p-2.5 rounded-lg border border-yellow-200/50 shadow-sm">
-                        <div className="font-bold text-yellow-600">≈ {convertedAmounts.BNB?.toFixed(2)}</div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <CryptoIcon symbol="BNB" size={16} />
+                          <div className="font-bold text-yellow-600">≈ {convertedAmounts.BNB?.toFixed(2)}</div>
+                        </div>
                         <div className="text-slate-600 text-xs">BNB</div>
                       </div>
                     </div>
@@ -2132,8 +2151,8 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                     <div className="absolute inset-0 bg-gradient-to-br from-orange-100/50 via-yellow-100/50 to-amber-100/50 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-5">
-                        <div className="w-16 h-16 bg-gradient-to-br from-orange-500 via-yellow-500 to-amber-500 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-xl ring-4 ring-orange-200/60 group-hover:ring-orange-300/80 transition-all duration-300">
-                          ₿
+                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-xl ring-4 ring-orange-200/60 group-hover:ring-orange-300/80 transition-all duration-300">
+                          <CryptoIcon symbol="BTC" size={64} />
                         </div>
                         <div>
                           <div className="font-black text-orange-900 text-2xl mb-1">Bitcoin</div>
@@ -2181,8 +2200,8 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                     <div className="absolute inset-0 bg-gradient-to-br from-violet-100/50 via-purple-100/50 to-indigo-100/50 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-5">
-                        <div className="w-16 h-16 bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-xl ring-4 ring-violet-200/60 group-hover:ring-violet-300/80 transition-all duration-300">
-                          ◎
+                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-xl ring-4 ring-violet-200/60 group-hover:ring-violet-300/80 transition-all duration-300">
+                          <CryptoIcon symbol="SOL" size={64} />
                         </div>
                         <div>
                           <div className="font-black text-violet-900 text-2xl mb-1">Solana</div>
@@ -2235,8 +2254,8 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                     <div className="absolute inset-0 bg-gradient-to-r from-green-100/30 to-emerald-100/30 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="relative flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg ring-3 ring-green-200/50">
-                          ₮
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ring-3 ring-green-200/50">
+                          <CryptoIcon symbol="USDT" size={48} />
                         </div>
                         <div>
                           <div className="font-black text-green-800 text-lg">USDT (Tether)</div>
@@ -2268,8 +2287,8 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-100/30 to-cyan-100/30 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="relative flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg ring-3 ring-blue-200/50">
-                          $
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ring-3 ring-blue-200/50">
+                          <CryptoIcon symbol="USDC" size={48} />
                         </div>
                         <div>
                           <div className="font-black text-blue-800 text-lg">USDC (USD Coin)</div>
@@ -2301,8 +2320,8 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-100/30 to-indigo-100/30 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="relative flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg ring-3 ring-purple-200/50">
-                          Ξ
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ring-3 ring-purple-200/50">
+                          <CryptoIcon symbol="ETH" size={48} />
                         </div>
                         <div>
                           <div className="font-black text-purple-800 text-lg">Ethereum</div>
