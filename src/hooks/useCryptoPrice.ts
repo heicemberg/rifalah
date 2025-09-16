@@ -564,6 +564,11 @@ class CryptoPriceService {
 // ============================================================================
 
 const getCachedData = (mxnAmount: number): CacheData | null => {
+  // Check if we're on the client side
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return null;
+  }
+
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (!cached) return null;
@@ -579,12 +584,20 @@ const getCachedData = (mxnAmount: number): CacheData | null => {
 
     return data;
   } catch {
-    localStorage.removeItem(CACHE_KEY);
+    // Safe to access localStorage here since we checked above
+    try {
+      localStorage.removeItem(CACHE_KEY);
+    } catch {}
     return null;
   }
 };
 
 const setCachedData = (prices: CryptoPrices, amounts: ConvertedAmounts, mxnAmount: number, apiSource: string): void => {
+  // Check if we're on the client side
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return;
+  }
+
   try {
     const cacheData: CacheData = {
       prices,
@@ -608,7 +621,7 @@ export const useCryptoPrice = (mxnAmount: number = 250) => {
   const [cryptoPrices, setCryptoPrices] = useState<CryptoPrices | null>(null);
   const [convertedAmounts, setConvertedAmounts] = useState<ConvertedAmounts | null>(null);
   const [loadingStates, setLoadingStates] = useState<LoadingStates>({
-    initial: true,
+    initial: mxnAmount > 0, // Only show initial loading if we're actually going to load
     refresh: false,
     retry: false
   });
@@ -617,8 +630,8 @@ export const useCryptoPrice = (mxnAmount: number = 250) => {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [apiSource, setApiSource] = useState<string>('Unknown');
 
-  // Service and control refs
-  const serviceRef = useRef<CryptoPriceService>(new CryptoPriceService());
+  // Service and control refs - lazy initialization to avoid SSR issues
+  const serviceRef = useRef<CryptoPriceService | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const retryConfigRef = useRef<RetryConfig>({
@@ -627,6 +640,11 @@ export const useCryptoPrice = (mxnAmount: number = 250) => {
     baseDelay: BASE_RETRY_DELAY,
     currentApiIndex: 0
   });
+
+  // Initialize service only on client side
+  if (!serviceRef.current && typeof window !== 'undefined') {
+    serviceRef.current = new CryptoPriceService();
+  }
 
   // Derived states
   const loading = loadingStates.initial || loadingStates.refresh;
@@ -666,6 +684,11 @@ export const useCryptoPrice = (mxnAmount: number = 250) => {
 
   // Main fetch function with retry logic - NUNCA muestra errores al usuario
   const fetchPricesWithRetry = useCallback(async (isRefresh = false): Promise<void> => {
+    // Don't fetch if amount is 0 or negative (disabled state)
+    if (mxnAmount <= 0) {
+      return;
+    }
+
     try {
       // Cancel any existing request
       if (abortControllerRef.current) {
@@ -677,6 +700,11 @@ export const useCryptoPrice = (mxnAmount: number = 250) => {
       setInternalError(null);
       if (isRefresh) {
         setLoadingStates(prev => ({ ...prev, refresh: true }));
+      }
+
+      // Ensure service is initialized (guard against SSR)
+      if (!serviceRef.current) {
+        serviceRef.current = new CryptoPriceService();
       }
 
       // Fetch prices using multi-API service - CON FALLBACK GARANTIZADO
@@ -706,6 +734,10 @@ export const useCryptoPrice = (mxnAmount: number = 250) => {
 
       // SIEMPRE usar precios de fallback para que el usuario nunca vea errores
       try {
+        // Ensure service is initialized (guard against SSR)
+        if (!serviceRef.current) {
+          serviceRef.current = new CryptoPriceService();
+        }
         const fallbackPrices = serviceRef.current.getFallbackPrices();
         const fallbackAmounts = calculateConvertedAmounts(fallbackPrices, mxnAmount);
 
@@ -745,6 +777,12 @@ export const useCryptoPrice = (mxnAmount: number = 250) => {
 
   // Main effect
   useEffect(() => {
+    // Don't fetch if amount is 0 or negative (disabled state)
+    if (mxnAmount <= 0) {
+      setLoadingStates({ initial: false, refresh: false, retry: false });
+      return;
+    }
+
     // Clear any existing interval
     if (intervalRef.current) {
       clearInterval(intervalRef.current);

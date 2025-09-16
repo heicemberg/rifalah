@@ -91,6 +91,11 @@ interface CacheData {
 }
 
 const getCachedData = (mxnAmount: number): CacheData | null => {
+  // Check if we're on the client side
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return null;
+  }
+
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (!cached) return null;
@@ -106,12 +111,20 @@ const getCachedData = (mxnAmount: number): CacheData | null => {
 
     return data;
   } catch {
-    localStorage.removeItem(CACHE_KEY);
+    // Safe to access localStorage here since we checked above
+    try {
+      localStorage.removeItem(CACHE_KEY);
+    } catch {}
     return null;
   }
 };
 
 const setCachedData = (prices: Record<string, CryptoPrice>, conversions: ConversionResult, mxnAmount: number): void => {
+  // Check if we're on the client side
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return;
+  }
+
   try {
     const cacheData: CacheData = {
       prices,
