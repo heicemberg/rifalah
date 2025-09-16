@@ -149,12 +149,12 @@ const OptimizedQuickSelectCard: React.FC<OptimizedQuickSelectCardProps> = React.
       whileTap={{ scale: disabled ? 1 : 0.98 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
     >
-      {/* Enhanced Popular Badge with urgency */}
+      {/* Enhanced Popular Badge with urgency - Fixed positioning for PC */}
       {isPopular && (
         <motion.div
           initial={{ scale: 0, rotate: -12 }}
           animate={{ scale: 1, rotate: 0 }}
-          className="absolute -top-2 -right-2 z-20 bg-gradient-to-r from-emerald-500 to-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg"
+          className="absolute -top-3 -right-3 z-20 bg-gradient-to-r from-emerald-500 to-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg"
         >
           <div className="flex items-center gap-1">
             <Zap size={10} />
@@ -163,9 +163,9 @@ const OptimizedQuickSelectCard: React.FC<OptimizedQuickSelectCardProps> = React.
         </motion.div>
       )}
 
-      {/* Urgency indicator for high-value packages */}
-      {option.tickets >= 50 && (
-        <div className="absolute top-2 left-2 z-10 bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-bold animate-pulse">
+      {/* Urgency indicator for high-value packages - Adjusted to avoid overlap */}
+      {option.tickets >= 50 && !isPopular && (
+        <div className="absolute -top-2 -left-2 z-10 bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-bold animate-pulse">
           🔥 OFERTA
         </div>
       )}
@@ -1378,104 +1378,164 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
                                           </div>
                                         </div>
 
-                                        {/* Enhanced Crypto Prices Display */}
+                                        {/* Enhanced Crypto Prices Display - Improved Organization */}
                                         {(newConversions || convertedAmounts) && (
-                                          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl border border-blue-200">
-                                            <div className="text-sm font-bold text-blue-800 mb-3 flex items-center justify-between">
-                                              <span>💰 Equivalencias para {formatPrice(totalPrice)}:</span>
+                                          <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-5 rounded-2xl border-2 border-amber-200 shadow-lg">
+                                            <div className="text-lg font-black text-amber-800 mb-4 flex items-center justify-between">
+                                              <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
+                                                  <span className="text-white font-bold">₿</span>
+                                                </div>
+                                                <span>Paga con Cripto</span>
+                                              </div>
                                               {(newCryptoLoading || cryptoLoading) && (
-                                                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                                <div className="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
                                               )}
                                             </div>
 
-                                            {/* Stablecoins Section */}
+                                            {/* Stablecoins Section - Premium Layout */}
                                             {(newConversions || stablecoins) && (
-                                              <>
-                                                <div className="text-xs font-semibold text-emerald-700 mb-2 flex items-center gap-2">
-                                                  💵 Stablecoins (Recomendado - Precio estable):
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-2 mb-4">
-                                                  <div className="bg-white/90 p-3 rounded-lg border border-green-200 shadow-sm hover:shadow-md transition-shadow">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                                                        <span className="text-white text-xs font-bold">₮</span>
-                                                      </div>
-                                                      <span className="font-bold text-green-700 text-sm">USDT</span>
-                                                    </div>
-                                                    <div className="font-bold text-green-700">
-                                                      ≈ {(newConversions?.USDT?.amount || convertedAmounts?.USDT)?.toFixed(2)}
-                                                    </div>
-                                                    <div className="text-xs text-slate-600">Tether (USD)</div>
+                                              <div className="mb-6">
+                                                <div className="text-sm font-black text-emerald-800 mb-3 flex items-center gap-2 bg-emerald-100/50 px-3 py-2 rounded-lg">
+                                                  <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+                                                    <span className="text-white text-xs font-bold">$</span>
                                                   </div>
-                                                  <div className="bg-white/90 p-3 rounded-lg border border-green-200 shadow-sm hover:shadow-md transition-shadow">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                                                        <span className="text-white text-xs font-bold">$</span>
-                                                      </div>
-                                                      <span className="font-bold text-green-700 text-sm">USDC</span>
-                                                    </div>
-                                                    <div className="font-bold text-green-700">
-                                                      ≈ {(newConversions?.USDC?.amount || convertedAmounts?.USDC)?.toFixed(2)}
-                                                    </div>
-                                                    <div className="text-xs text-slate-600">USD Coin</div>
+                                                  <span>Stablecoins - Recomendado</span>
+                                                  <div className="bg-emerald-600 text-white px-2 py-1 rounded-full text-xs font-bold ml-auto">
+                                                    ESTABLE
                                                   </div>
                                                 </div>
-                                              </>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                  <div className="bg-white p-4 rounded-xl border-2 border-green-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                      <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                                                          <span className="text-white font-bold text-lg">₮</span>
+                                                        </div>
+                                                        <div>
+                                                          <div className="font-black text-green-700 text-lg">USDT</div>
+                                                          <div className="text-xs text-green-600">Tether USD</div>
+                                                        </div>
+                                                      </div>
+                                                      <div className="text-right">
+                                                        <div className="font-black text-green-700 text-xl">
+                                                          {(newConversions?.USDT?.amount || convertedAmounts?.USDT)?.toFixed(2)}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500">USDT</div>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                  <div className="bg-white p-4 rounded-xl border-2 border-blue-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                      <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
+                                                          <span className="text-white font-bold text-lg">$</span>
+                                                        </div>
+                                                        <div>
+                                                          <div className="font-black text-blue-700 text-lg">USDC</div>
+                                                          <div className="text-xs text-blue-600">USD Coin</div>
+                                                        </div>
+                                                      </div>
+                                                      <div className="text-right">
+                                                        <div className="font-black text-blue-700 text-xl">
+                                                          {(newConversions?.USDC?.amount || convertedAmounts?.USDC)?.toFixed(2)}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500">USDC</div>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </div>
                                             )}
 
-                                            {/* Main Cryptos Section */}
-                                            <div className="text-xs font-semibold text-purple-700 mb-2">🚀 Criptomonedas Principales:</div>
-                                            <div className="grid grid-cols-2 gap-2">
-                                              <div className="bg-white/90 p-3 rounded-lg border border-orange-200 shadow-sm hover:shadow-md transition-shadow">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                  <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                                                    <span className="text-white text-xs font-bold">₿</span>
-                                                  </div>
-                                                  <span className="font-bold text-orange-600 text-sm">BTC</span>
+                                            {/* Main Cryptos Section - Enhanced Premium Layout */}
+                                            <div>
+                                              <div className="text-sm font-black text-purple-800 mb-3 flex items-center gap-2 bg-purple-100/50 px-3 py-2 rounded-lg">
+                                                <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                                                  <span className="text-white text-xs font-bold">₿</span>
                                                 </div>
-                                                <div className="font-bold text-orange-600">
-                                                  ≈ {(newConversions?.BTC?.amount || convertedAmounts?.BTC)?.toFixed(6)}
-                                                </div>
-                                                <div className="text-xs text-slate-600">Bitcoin</div>
+                                                <span>Otras Criptomonedas</span>
                                               </div>
-                                              <div className="bg-white/90 p-3 rounded-lg border border-blue-200 shadow-sm hover:shadow-md transition-shadow">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                                                    <span className="text-white text-xs font-bold">Ξ</span>
-                                                  </div>
-                                                  <span className="font-bold text-blue-600 text-sm">ETH</span>
-                                                </div>
-                                                <div className="font-bold text-blue-600">
-                                                  ≈ {(newConversions?.ETH?.amount || convertedAmounts?.ETH)?.toFixed(4)}
-                                                </div>
-                                                <div className="text-xs text-slate-600">Ethereum</div>
-                                              </div>
-                                              <div className="bg-white/90 p-3 rounded-lg border border-purple-200 shadow-sm hover:shadow-md transition-shadow">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                  <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                                                    <span className="text-white text-xs font-bold">◈</span>
-                                                  </div>
-                                                  <span className="font-bold text-purple-600 text-sm">SOL</span>
-                                                </div>
-                                                <div className="font-bold text-purple-600">
-                                                  ≈ {(newConversions?.SOL?.amount || convertedAmounts?.SOL)?.toFixed(2)}
-                                                </div>
-                                                <div className="text-xs text-slate-600">Solana</div>
-                                              </div>
-                                              {newConversions?.BNB && (
-                                                <div className="bg-white/90 p-3 rounded-lg border border-yellow-200 shadow-sm hover:shadow-md transition-shadow">
-                                                  <div className="flex items-center gap-2 mb-1">
-                                                    <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
-                                                      <span className="text-white text-xs font-bold">B</span>
+                                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                                <div className="bg-white p-4 rounded-xl border-2 border-orange-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+                                                  <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-3">
+                                                      <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                                                        <span className="text-white font-bold text-lg">₿</span>
+                                                      </div>
+                                                      <div>
+                                                        <div className="font-black text-orange-700 text-lg">BTC</div>
+                                                        <div className="text-xs text-orange-600">Bitcoin</div>
+                                                      </div>
                                                     </div>
-                                                    <span className="font-bold text-yellow-600 text-sm">BNB</span>
+                                                    <div className="text-right">
+                                                      <div className="font-black text-orange-700 text-lg">
+                                                        {(newConversions?.BTC?.amount || convertedAmounts?.BTC)?.toFixed(6)}
+                                                      </div>
+                                                      <div className="text-xs text-slate-500">BTC</div>
+                                                    </div>
                                                   </div>
-                                                  <div className="font-bold text-yellow-600">
-                                                    ≈ {newConversions.BNB.amount.toFixed(4)}
-                                                  </div>
-                                                  <div className="text-xs text-slate-600">Binance Coin</div>
                                                 </div>
-                                              )}
+                                                <div className="bg-white p-4 rounded-xl border-2 border-blue-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+                                                  <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-3">
+                                                      <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
+                                                        <span className="text-white font-bold text-lg">Ξ</span>
+                                                      </div>
+                                                      <div>
+                                                        <div className="font-black text-blue-700 text-lg">ETH</div>
+                                                        <div className="text-xs text-blue-600">Ethereum</div>
+                                                      </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                      <div className="font-black text-blue-700 text-lg">
+                                                        {(newConversions?.ETH?.amount || convertedAmounts?.ETH)?.toFixed(4)}
+                                                      </div>
+                                                      <div className="text-xs text-slate-500">ETH</div>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                                <div className="bg-white p-4 rounded-xl border-2 border-purple-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+                                                  <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-3">
+                                                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                                                        <span className="text-white font-bold text-lg">◈</span>
+                                                      </div>
+                                                      <div>
+                                                        <div className="font-black text-purple-700 text-lg">SOL</div>
+                                                        <div className="text-xs text-purple-600">Solana</div>
+                                                      </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                      <div className="font-black text-purple-700 text-lg">
+                                                        {(newConversions?.SOL?.amount || convertedAmounts?.SOL)?.toFixed(2)}
+                                                      </div>
+                                                      <div className="text-xs text-slate-500">SOL</div>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                                {newConversions?.BNB && (
+                                                  <div className="bg-white p-4 rounded-xl border-2 border-yellow-200 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                      <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg">
+                                                          <span className="text-white font-bold text-lg">B</span>
+                                                        </div>
+                                                        <div>
+                                                          <div className="font-black text-yellow-700 text-lg">BNB</div>
+                                                          <div className="text-xs text-yellow-600">Binance Coin</div>
+                                                        </div>
+                                                      </div>
+                                                      <div className="text-right">
+                                                        <div className="font-black text-yellow-700 text-lg">
+                                                          {newConversions.BNB.amount.toFixed(4)}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500">BNB</div>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                )}
+                                              </div>
                                             </div>
 
                                             {/* Status Footer */}
