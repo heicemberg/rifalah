@@ -123,9 +123,9 @@ const OptimizedQuickSelectCard: React.FC<OptimizedQuickSelectCardProps> = React.
   const isPopular = Boolean(option.popular);
   const baseStyles = useMemo(() => ({
     base: cn(
-      'relative overflow-hidden rounded-2xl p-4 sm:p-5 text-center transition-all duration-200 ease-out',
+      'relative rounded-2xl pt-8 pb-4 px-6 sm:pt-10 sm:pb-6 sm:px-8 text-center transition-all duration-200 ease-out',
       'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50',
-      'z-10 select-none', // Prevent text selection on mobile
+      'z-10 select-none max-w-full', // Extra padding top for badges, ensure containment
       disabled
         ? 'opacity-50 cursor-not-allowed'
         : 'cursor-pointer hover:scale-[1.02] active:scale-[0.98] touch-manipulation',
@@ -149,24 +149,24 @@ const OptimizedQuickSelectCard: React.FC<OptimizedQuickSelectCardProps> = React.
       whileTap={{ scale: disabled ? 1 : 0.98 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
     >
-      {/* Enhanced Popular Badge with urgency - Fixed positioning for PC */}
+      {/* Enhanced Popular Badge with urgency - Properly contained within borders */}
       {isPopular && (
         <motion.div
           initial={{ scale: 0, rotate: -12 }}
           animate={{ scale: 1, rotate: 0 }}
-          className="absolute -top-3 -right-3 z-20 bg-gradient-to-r from-emerald-500 to-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg"
+          className="absolute top-3 right-3 z-20 bg-gradient-to-r from-emerald-500 to-green-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg"
         >
           <div className="flex items-center gap-1">
-            <Zap size={10} />
-            MÁS ELEGIDO
+            <Zap size={8} />
+            <span className="text-xs">MÁS ELEGIDO</span>
           </div>
         </motion.div>
       )}
 
-      {/* Urgency indicator for high-value packages - Adjusted to avoid overlap */}
+      {/* Urgency indicator for high-value packages - Properly contained within borders */}
       {option.tickets >= 50 && !isPopular && (
-        <div className="absolute -top-2 -left-2 z-10 bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-bold animate-pulse">
-          🔥 OFERTA
+        <div className="absolute top-3 left-3 z-10 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold animate-pulse">
+          <span className="text-xs">🔥 OFERTA</span>
         </div>
       )}
 
@@ -284,14 +284,14 @@ const OptimizedPaymentMethodCard: React.FC<OptimizedPaymentMethodCardProps> = Re
 
   const priority = getMethodPriority();
 
-  // ✅ PERFORMANCE: Pre-calculated styles with enhanced mobile design
+  // ✅ PERFORMANCE: Pre-calculated styles with enhanced mobile design and proper containment
   const cardStyles = useMemo(() => {
-    const base = 'group w-full rounded-2xl border-2 text-center relative overflow-hidden transition-all duration-200 will-change-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 select-none touch-manipulation';
+    const base = 'group w-full rounded-2xl border-2 text-center relative overflow-hidden transition-all duration-200 will-change-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 select-none touch-manipulation max-w-full';
 
     if (expanded) {
       return cn(base, 'px-6 py-4 min-h-[80px] border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-xl ring-2 ring-blue-200/50');
     }
-    
+
     if (isSelected) {
       return cn(base,
         'px-4 py-6 min-h-[120px] border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-xl ring-2 ring-blue-200/50',
@@ -308,7 +308,7 @@ const OptimizedPaymentMethodCard: React.FC<OptimizedPaymentMethodCardProps> = Re
     };
 
     return cn(base,
-      'px-4 py-6 min-h-[120px] hover:scale-[1.02] active:scale-[0.98]',
+      'px-4 pt-8 pb-6 min-h-[120px] hover:scale-[1.02] active:scale-[0.98]',
       priorityStyles[priority.order] || 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/50',
       'hover:shadow-lg transition-all duration-200'
     );
@@ -322,13 +322,13 @@ const OptimizedPaymentMethodCard: React.FC<OptimizedPaymentMethodCardProps> = Re
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
     >
-      {/* Priority Badge */}
+      {/* Priority Badge - Fixed positioning for proper containment */}
       {priority.label && !expanded && (
         <motion.div
           initial={{ scale: 0, rotate: -12 }}
           animate={{ scale: 1, rotate: 0 }}
           className={cn(
-            'absolute -top-2 -right-2 z-20 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg',
+            'absolute top-3 right-3 z-20 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg',
             priority.color === 'yellow' && 'bg-gradient-to-r from-yellow-500 to-orange-500',
             priority.color === 'emerald' && 'bg-gradient-to-r from-emerald-500 to-green-500',
             priority.color === 'blue' && 'bg-gradient-to-r from-blue-500 to-indigo-500',
@@ -342,12 +342,12 @@ const OptimizedPaymentMethodCard: React.FC<OptimizedPaymentMethodCardProps> = Re
         </motion.div>
       )}
 
-      {/* Selection Indicator */}
+      {/* Selection Indicator - Fixed positioning for proper containment */}
       {isSelected && !expanded && (
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className="absolute -top-2 -left-2 z-10 w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg"
+          className="absolute top-3 left-3 z-10 w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg"
         >
           <CheckCircle size={16} className="text-white" />
         </motion.div>
@@ -1170,7 +1170,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
               }}
             >
           {/* ✅ PERFORMANCE: Optimized modal background */}
-          <div className="bg-white/98 rounded-3xl shadow-2xl ring-1 ring-slate-200/60 border border-white/30 overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-white/98 rounded-3xl shadow-2xl ring-1 ring-slate-200/60 border border-white/30 overflow-hidden flex flex-col max-h-[90vh] max-w-full w-full">
           
             {/* Header */}
             {/* ✅ PERFORMANCE: Simplified header background */}
@@ -1209,9 +1209,9 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
               {renderStepProgress()}
             </div>
 
-            {/* Content Container */}
-            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
-              <div className="p-4 sm:p-6 space-y-6">
+            {/* Content Container - Enhanced with Perfect Containment */}
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 max-w-full">
+              <div className="p-4 sm:p-6 space-y-6 max-w-full overflow-hidden">
                 
                 <AnimatePresence mode="wait">
                   {/* Step 0: Quick Selection */}
@@ -1256,7 +1256,7 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ duration: 0.25, ease: "easeInOut" }}
-                      className="space-y-8"
+                      className="space-y-8 max-w-full overflow-hidden"
                     >
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
@@ -1288,23 +1288,33 @@ const PurchaseWizard: React.FC<PurchaseWizardProps> = React.memo(({
                           </span>
                         </div>
 
-                        {/* Numbers Display - Always Visible */}
+                        {/* Numbers Display - Enhanced with Perfect Containment */}
                         {selectedTickets.length > 0 ? (
                           <div className="mb-4">
-                            <div className="flex flex-wrap gap-2 mb-3 max-h-24 overflow-y-auto p-2 bg-white/80 rounded-xl">
-                              {selectedTickets.slice(0, 20).map((ticket, index) => (
-                                <span
-                                  key={ticket}
-                                  className="text-sm font-mono font-bold bg-blue-600 text-white border border-blue-700 px-3 py-1.5 rounded-lg shadow-sm"
-                                >
-                                  {formatTicketNumber(ticket)}
-                                </span>
-                              ))}
-                              {selectedTickets.length > 20 && (
-                                <span className="text-sm font-bold text-blue-600 bg-blue-100 px-3 py-1.5 rounded-lg">
-                                  +{selectedTickets.length - 20} más
-                                </span>
-                              )}
+                            <div className="relative bg-white/90 rounded-2xl border border-blue-200/60 p-4 shadow-inner max-w-full overflow-hidden">
+                              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-blue-50 max-w-full">
+                                {selectedTickets.slice(0, 20).map((ticket, index) => (
+                                  <motion.span
+                                    key={ticket}
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: index * 0.02 }}
+                                    className="relative text-xs font-mono font-bold bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-2 rounded-xl shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 whitespace-nowrap flex-shrink-0 max-w-full truncate"
+                                  >
+                                    <span className="relative z-10 truncate">{formatTicketNumber(ticket)}</span>
+                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-500/20 rounded-xl opacity-0 hover:opacity-100 transition-opacity" />
+                                  </motion.span>
+                                ))}
+                                {selectedTickets.length > 20 && (
+                                  <motion.span
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="text-xs font-bold text-blue-700 bg-gradient-to-r from-blue-100 to-blue-200 px-3 py-2 rounded-xl border border-blue-300/50 whitespace-nowrap flex-shrink-0"
+                                  >
+                                    +{selectedTickets.length - 20} más
+                                  </motion.span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         ) : (
@@ -1891,7 +1901,7 @@ interface QuickSelectionStepProps {
 }
 
 const QuickSelectionStep: React.FC<QuickSelectionStepProps> = ({ onQuickSelect, validationError, isSelectingTickets }) => (
-  <div className="space-y-6">
+  <div className="space-y-6 max-w-full overflow-hidden">
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -2006,12 +2016,12 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ selectedTickets, to
         </div>
       </motion.div>
 
-      {/* Enhanced Stats Grid - Mobile Optimized with Fixed Overlapping */}
+      {/* Enhanced Stats Grid - Mobile Optimized with Proper Containment */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         {/* Tickets Count */}
-        <div className="group relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 text-center ring-1 ring-slate-200/50 hover:ring-slate-300/60 hover:shadow-lg transition-all duration-300">
+        <div className="group relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 text-center ring-1 ring-slate-200/50 hover:ring-slate-300/60 hover:shadow-lg transition-all duration-300 min-w-0">
           <div className="relative z-10">
-            <div className="text-2xl sm:text-3xl font-black bg-gradient-to-br from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2 leading-none">
+            <div className="text-2xl sm:text-3xl font-black bg-gradient-to-br from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2 leading-none truncate">
               {selectedTickets.length}
             </div>
             <div className="text-xs sm:text-sm font-semibold text-slate-600 uppercase tracking-wider">
@@ -2021,16 +2031,16 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ selectedTickets, to
         </div>
 
         {/* Total Price */}
-        <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 text-center ring-1 ring-blue-200/40 hover:ring-blue-300/50 hover:shadow-lg transition-all duration-300">
+        <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 text-center ring-1 ring-blue-200/40 hover:ring-blue-300/50 hover:shadow-lg transition-all duration-300 min-w-0">
           <div className="relative z-10">
-            <div className="text-xl sm:text-2xl lg:text-3xl font-black bg-gradient-to-br from-slate-700 to-slate-600 bg-clip-text text-transparent mb-2 leading-none">
+            <div className="text-xl sm:text-2xl lg:text-3xl font-black bg-gradient-to-br from-slate-700 to-slate-600 bg-clip-text text-transparent mb-2 leading-none truncate">
               {formatPrice(totalPrice)}
             </div>
             <div className="text-xs sm:text-sm font-semibold text-emerald-700 uppercase tracking-wider">
               Total a Pagar
             </div>
             {savingsAmount > 0 && (
-              <div className="text-xs text-emerald-600 font-bold mt-1">
+              <div className="text-xs text-emerald-600 font-bold mt-1 truncate">
                 Ahorras {formatPrice(savingsAmount)}
               </div>
             )}
@@ -2038,9 +2048,9 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ selectedTickets, to
         </div>
 
         {/* Win Probability */}
-        <div className="group relative overflow-hidden bg-gradient-to-br from-orange-50 to-yellow-50 backdrop-blur-sm rounded-2xl p-4 sm:p-6 text-center ring-1 ring-orange-200/40 hover:ring-orange-300/50 hover:shadow-lg transition-all duration-300">
+        <div className="group relative overflow-hidden bg-gradient-to-br from-orange-50 to-yellow-50 backdrop-blur-sm rounded-2xl p-4 sm:p-6 text-center ring-1 ring-orange-200/40 hover:ring-orange-300/50 hover:shadow-lg transition-all duration-300 min-w-0">
           <div className="relative z-10">
-            <div className="text-2xl sm:text-3xl font-black bg-gradient-to-br from-orange-700 to-yellow-600 bg-clip-text text-transparent mb-2 leading-none">
+            <div className="text-2xl sm:text-3xl font-black bg-gradient-to-br from-orange-700 to-yellow-600 bg-clip-text text-transparent mb-2 leading-none truncate">
               {winProbability}%
             </div>
             <div className="text-xs sm:text-sm font-semibold text-orange-700 uppercase tracking-wider">
@@ -2133,9 +2143,10 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
       className={cn(
         'group w-full rounded-3xl border-2 text-center relative backdrop-blur-sm overflow-hidden',
         'focus:outline-none focus:ring-4',
-        expanded 
-          ? 'px-6 py-4 min-h-[80px] border-blue-500 bg-gradient-to-r from-blue-50 to-blue-100/90 ring-4 ring-blue-200/60 shadow-2xl shadow-blue-500/25'
-          : 'px-4 py-6 sm:px-6 sm:py-8 min-h-[120px] sm:min-h-[140px]',
+        'min-w-0 max-w-full', // Prevent overflow
+        expanded
+          ? 'px-4 pt-8 pb-4 min-h-[80px] border-blue-500 bg-gradient-to-r from-blue-50 to-blue-100/90 ring-4 ring-blue-200/60 shadow-2xl shadow-blue-500/25'
+          : 'px-4 pt-10 pb-6 sm:px-6 sm:pt-12 sm:pb-8 min-h-[120px] sm:min-h-[140px]',
         isSelected && !expanded
           ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100/90 ring-4 ring-blue-200/60 shadow-2xl shadow-blue-500/25'
           : !expanded && 'border-slate-200/60 bg-gradient-to-br from-white via-white to-slate-50/40 hover:border-blue-300/70 hover:shadow-blue-100/30 ring-1 ring-slate-200/30'
@@ -2147,9 +2158,9 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.2 }}
     >
-      {/* Selection Indicator */}
+      {/* Selection Indicator - Fixed positioning for proper containment */}
       {isSelected && !expanded && (
-        <div className="absolute -top-2 -right-2 z-10">
+        <div className="absolute top-3 right-3 z-10">
           <div className="relative">
             <div className="absolute inset-0 bg-blue-500 rounded-full blur animate-pulse" />
             <div className="relative w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/40">
@@ -2266,11 +2277,11 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                 
                 <div className="space-y-4">
                   {/* BTC - Enhanced Premium Card */}
-                  <div className="group relative bg-gradient-to-br from-orange-50 via-yellow-50 to-amber-50 backdrop-blur-sm p-6 rounded-3xl border-3 border-orange-300/70 hover:border-orange-400/90 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] ring-2 ring-orange-200/40 hover:ring-orange-300/60">
-                    {/* Enhanced Badge BTC */}
-                    <div className="absolute -top-3 -right-3 z-10">
-                      <div className="bg-gradient-to-r from-orange-500 via-yellow-500 to-amber-500 text-white text-sm font-black px-4 py-2 rounded-full shadow-2xl transform rotate-12 border-3 border-white backdrop-blur-sm animate-pulse ring-2 ring-orange-200/50">
-                        💎 MÁS POPULAR
+                  <div className="group relative bg-gradient-to-br from-orange-50 via-yellow-50 to-amber-50 backdrop-blur-sm pt-8 pb-6 px-6 rounded-3xl border-3 border-orange-300/70 hover:border-orange-400/90 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] ring-2 ring-orange-200/40 hover:ring-orange-300/60 overflow-hidden">
+                    {/* Enhanced Badge BTC - Properly Contained */}
+                    <div className="absolute top-3 right-3 z-10">
+                      <div className="bg-gradient-to-r from-orange-500 via-yellow-500 to-amber-500 text-white text-xs font-black px-2 py-1 rounded-full shadow-lg transform rotate-12 border border-white backdrop-blur-sm">
+                        💎 POPULAR
                       </div>
                     </div>
                     
@@ -2315,11 +2326,11 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                   </div>
 
                   {/* SOL - Enhanced Premium Card */}
-                  <div className="group relative bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 backdrop-blur-sm p-6 rounded-3xl border-3 border-violet-300/70 hover:border-violet-400/90 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] ring-2 ring-violet-200/40 hover:ring-violet-300/60">
-                    {/* Enhanced Badge SOL */}
-                    <div className="absolute -top-3 -left-3 z-10">
-                      <div className="bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500 text-white text-sm font-black px-4 py-2 rounded-full shadow-2xl transform -rotate-12 border-3 border-white backdrop-blur-sm animate-pulse ring-2 ring-violet-200/50">
-                        ⚡ SÚPER RÁPIDA
+                  <div className="group relative bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 backdrop-blur-sm pt-8 pb-6 px-6 rounded-3xl border-3 border-violet-300/70 hover:border-violet-400/90 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] ring-2 ring-violet-200/40 hover:ring-violet-300/60 overflow-hidden">
+                    {/* Enhanced Badge SOL - Properly Contained */}
+                    <div className="absolute top-3 left-3 z-10">
+                      <div className="bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500 text-white text-xs font-black px-2 py-1 rounded-full shadow-lg transform -rotate-12 border border-white backdrop-blur-sm">
+                        ⚡ RÁPIDA
                       </div>
                     </div>
                     
@@ -2685,320 +2696,473 @@ const CustomerDataStep: React.FC<CustomerDataStepProps> = ({
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
-      <StepHeader
-        icon={<Users size={28} />}
-        title="Tus datos de contacto"
-        description="Información necesaria para entregarte tu premio cuando ganes"
-        color="orange"
-      />
-
-      {/* Progress Indicator */}
-      <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-bold text-orange-800">Progreso del formulario</span>
-          <span className="text-sm font-bold text-orange-600">
-            {Object.values(customerData).filter(v => v?.trim()).length}/5 campos
-          </span>
-        </div>
-        <div className="w-full bg-orange-200 rounded-full h-2">
-          <motion.div
-            className="bg-gradient-to-r from-orange-500 to-amber-500 h-2 rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${(Object.values(customerData).filter(v => v?.trim()).length / 5) * 100}%` }}
-            transition={{ duration: 0.3 }}
-          />
-        </div>
-        {isFormValid && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 mt-2 text-emerald-700"
-          >
-            <CheckCircle size={16} />
-            <span className="text-sm font-bold">¡Formulario completo!</span>
-          </motion.div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 gap-5 sm:gap-6">
-        {/* Full Name Field - Enhanced */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-            <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-            Nombre completo *
-          </label>
-          <div className="relative group">
-            <input
-              type="text"
-              value={customerData.name}
-              onChange={(e) => onDataChange(prev => ({ ...prev, name: e.target.value }))}
-              onFocus={() => setFieldFocus('name')}
-              onBlur={() => setFieldFocus('')}
-              className={cn(
-                'w-full pl-5 pr-12 py-4 rounded-2xl border-2 text-sm transition-all duration-300',
-                'bg-gradient-to-r from-white to-slate-50/50 backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
-                'focus:outline-none focus:ring-4 hover:shadow-lg touch-manipulation',
-                validationErrors.name
-                  ? 'border-red-300 focus:ring-red-200/50 focus:border-red-500 shadow-red-100'
-                  : 'border-slate-200/60 focus:ring-orange-200/50 focus:border-orange-500 hover:border-slate-300/60'
-              )}
-              placeholder="Ejemplo: Juan Pérez García"
-              autoComplete="name"
-            />
-            {customerData.name && !validationErrors.name && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
-              >
-                <CheckCircle size={18} className="text-emerald-500" />
-              </motion.div>
-            )}
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in-50 slide-in-from-bottom-4 duration-500 max-w-full overflow-hidden">
+      {/* Premium Header with Trust Indicators */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center space-y-4 max-w-full"
+      >
+        <div className="relative w-20 h-20 mx-auto">
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-600 rounded-3xl shadow-2xl shadow-orange-500/30 animate-pulse" />
+          <div className="relative w-full h-full bg-gradient-to-br from-orange-500 to-orange-600 rounded-3xl flex items-center justify-center">
+            <Users size={32} className="text-white drop-shadow-lg" />
           </div>
-          {fieldFocus === 'name' && !customerData.name && (
-            <motion.p
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-slate-600 text-xs mt-2 flex items-center gap-2"
-            >
-              <span>💡 Ingresa tu nombre completo como aparece en tu identificación</span>
-            </motion.p>
-          )}
-          {validationErrors.name && (
-            <motion.p
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-red-600 text-xs mt-2 flex items-center gap-2 font-medium"
-            >
-              <AlertCircle size={14} />
-              {validationErrors.name}
-            </motion.p>
-          )}
-        </motion.div>
+        </div>
+        <div className="space-y-3">
+          <h3 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+            Información de entrega
+          </h3>
+          <p className="text-slate-600 text-base font-medium max-w-md mx-auto leading-relaxed">
+            Datos seguros para contactarte cuando seas el ganador
+          </p>
 
-        {/* Phone Field - Enhanced with formatting */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-            <Phone size={14} className="text-emerald-500" />
-            Teléfono WhatsApp *
-          </label>
-          <div className="relative group">
-            <input
-              type="tel"
-              value={customerData.phone}
-              onChange={(e) => {
-                const formatted = formatPhoneNumber(e.target.value);
-                onDataChange(prev => ({ ...prev, phone: formatted }));
-              }}
-              onFocus={() => setFieldFocus('phone')}
-              onBlur={() => setFieldFocus('')}
-              className={cn(
-                'w-full px-5 py-4 rounded-2xl border-2 text-sm transition-all duration-300',
-                'bg-gradient-to-r from-white to-slate-50/50 backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
-                'focus:outline-none focus:ring-4 hover:shadow-lg touch-manipulation',
-                validationErrors.phone
-                  ? 'border-red-300 focus:ring-red-200/50 focus:border-red-500 shadow-red-100'
-                  : 'border-slate-200/60 focus:ring-emerald-200/50 focus:border-emerald-500 hover:border-slate-300/60'
-              )}
-              placeholder="+52 55 1234 5678"
-              autoComplete="tel"
-            />
-            {customerData.phone && !validationErrors.phone && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
-              >
-                <CheckCircle size={18} className="text-emerald-500" />
-              </motion.div>
-            )}
-          </div>
-          {fieldFocus === 'phone' && !customerData.phone && (
-            <motion.p
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-slate-600 text-xs mt-2 flex items-center gap-2"
-            >
-              <span>📱 Número con WhatsApp para confirmaciones instantáneas</span>
-            </motion.p>
-          )}
-          {validationErrors.phone && (
-            <motion.p
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-red-600 text-xs mt-2 flex items-center gap-2 font-medium"
-            >
-              <AlertCircle size={14} />
-              {validationErrors.phone}
-            </motion.p>
-          )}
-        </motion.div>
-
-        {/* Email and City - Side by side on larger screens */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Email Field */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-              <Mail size={14} className="text-blue-500" />
-              Email *
-            </label>
-            <div className="relative group">
-              <input
-                type="email"
-                value={customerData.email}
-                onChange={(e) => onDataChange(prev => ({ ...prev, email: e.target.value }))}
-                onFocus={() => setFieldFocus('email')}
-                onBlur={() => setFieldFocus('')}
-                className={cn(
-                  'w-full px-5 py-4 rounded-2xl border-2 text-sm transition-all duration-300',
-                  'bg-gradient-to-r from-white to-slate-50/50 backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
-                  'focus:outline-none focus:ring-4 hover:shadow-lg touch-manipulation',
-                  validationErrors.email
-                    ? 'border-red-300 focus:ring-red-200/50 focus:border-red-500 shadow-red-100'
-                    : 'border-slate-200/60 focus:ring-blue-200/50 focus:border-blue-500 hover:border-slate-300/60'
-                )}
-                placeholder="tu@email.com"
-                autoComplete="email"
-              />
-              {customerData.email && !validationErrors.email && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
-                >
-                  <CheckCircle size={18} className="text-emerald-500" />
-                </motion.div>
-              )}
+          {/* Trust Indicators */}
+          <div className="flex items-center justify-center gap-6 pt-2">
+            <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+              <span className="font-bold">100% Seguro</span>
             </div>
-            {fieldFocus === 'email' && !customerData.email && (
-              <motion.p
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-slate-600 text-xs mt-2 flex items-center gap-2"
-              >
-                <span>📧 Para enviarte información importante del sorteo</span>
-              </motion.p>
-            )}
-            {validationErrors.email && (
-              <motion.p
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-red-600 text-xs mt-2 flex items-center gap-2 font-medium"
-              >
-                <AlertCircle size={14} />
-                {validationErrors.email}
-              </motion.p>
-            )}
-          </motion.div>
+            <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200">
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+              <span className="font-bold">Datos Protegidos</span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
 
-          {/* City Field */}
+      {/* Enhanced Progress Indicator */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="relative bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 border-2 border-orange-200/60 rounded-3xl p-6 shadow-lg shadow-orange-200/30 overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-white/40 to-transparent rounded-3xl" />
+        <div className="relative">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl shadow-lg">
+                <FileText size={16} className="text-white" />
+              </div>
+              <span className="text-base font-black text-orange-900">Progreso del formulario</span>
+            </div>
+            <span className="text-sm font-black text-orange-700 bg-orange-100 px-3 py-1.5 rounded-full">
+              {Object.values(customerData).filter(v => v?.trim()).length}/5 campos
+            </span>
+          </div>
+          <div className="w-full bg-orange-200/60 rounded-full h-3 shadow-inner">
+            <motion.div
+              className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 h-3 rounded-full shadow-lg"
+              initial={{ width: 0 }}
+              animate={{ width: `${(Object.values(customerData).filter(v => v?.trim()).length / 5) * 100}%` }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+            />
+          </div>
+          {isFormValid && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="flex items-center justify-center gap-3 mt-4 text-emerald-700 bg-emerald-50 rounded-2xl p-3 border border-emerald-200"
+            >
+              <CheckCircle size={20} className="text-emerald-600" />
+              <span className="text-sm font-black">¡Formulario completo y listo!</span>
+            </motion.div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Premium Form Fields Container - Enhanced with Perfect Containment */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="relative bg-white rounded-3xl border-2 border-slate-200/60 p-6 sm:p-8 shadow-xl shadow-slate-200/50 overflow-hidden max-w-full"
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-white to-slate-50/30 rounded-3xl" />
+        <div className="relative space-y-6 sm:space-y-8 max-w-full overflow-hidden">
+
+          {/* Full Name Field - Premium Design */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="space-y-3"
           >
-            <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-              <MapPin size={14} className="text-purple-500" />
-              Ciudad *
+            <label className="flex items-center gap-3 text-base font-black text-slate-800">
+              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <Users size={18} className="text-white" />
+              </div>
+              <span>Nombre completo *</span>
             </label>
             <div className="relative group">
               <input
                 type="text"
-                value={customerData.city}
-                onChange={(e) => onDataChange(prev => ({ ...prev, city: e.target.value }))}
-                onFocus={() => setFieldFocus('city')}
+                value={customerData.name}
+                onChange={(e) => onDataChange(prev => ({ ...prev, name: e.target.value }))}
+                onFocus={() => setFieldFocus('name')}
                 onBlur={() => setFieldFocus('')}
                 className={cn(
-                  'w-full px-5 py-4 rounded-2xl border-2 text-sm transition-all duration-300',
-                  'bg-gradient-to-r from-white to-slate-50/50 backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
-                  'focus:outline-none focus:ring-4 hover:shadow-lg touch-manipulation',
-                  validationErrors.city
+                  'w-full pl-6 pr-14 py-5 rounded-2xl border-2 text-base font-medium transition-all duration-300',
+                  'bg-gradient-to-r from-slate-50 to-white backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
+                  'focus:outline-none focus:ring-4 hover:shadow-xl touch-manipulation',
+                  fieldFocus === 'name' && 'transform scale-[1.02]',
+                  validationErrors.name
                     ? 'border-red-300 focus:ring-red-200/50 focus:border-red-500 shadow-red-100'
-                    : 'border-slate-200/60 focus:ring-purple-200/50 focus:border-purple-500 hover:border-slate-300/60'
+                    : 'border-slate-300/60 focus:ring-orange-200/60 focus:border-orange-500 hover:border-orange-300/80 shadow-lg'
                 )}
-                placeholder="Ejemplo: Ciudad de México"
-                autoComplete="address-level2"
+                placeholder="Ingresa tu nombre completo"
+                autoComplete="name"
               />
-              {customerData.city && !validationErrors.city && (
+              {customerData.name && !validationErrors.name && (
                 <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  className="absolute right-5 top-1/2 -translate-y-1/2 z-10"
                 >
-                  <CheckCircle size={18} className="text-emerald-500" />
+                  <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                    <CheckCircle size={18} className="text-white" />
+                  </div>
                 </motion.div>
               )}
             </div>
-            {fieldFocus === 'city' && !customerData.city && (
-              <motion.p
-                initial={{ opacity: 0, y: -5 }}
+            {fieldFocus === 'name' && !customerData.name && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-slate-600 text-xs mt-2 flex items-center gap-2"
+                className="bg-orange-50 border border-orange-200 rounded-xl p-3"
               >
-                <span>🏙️ Ciudad donde realizaremos la entrega del premio</span>
-              </motion.p>
+                <p className="text-orange-700 text-sm font-medium flex items-center gap-2">
+                  <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">💡</span>
+                  </div>
+                  Ingresa tu nombre completo como aparece en tu identificación oficial
+                </p>
+              </motion.div>
             )}
-            {validationErrors.city && (
-              <motion.p
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-red-600 text-xs mt-2 flex items-center gap-2 font-medium"
+            {validationErrors.name && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-red-50 border border-red-200 rounded-xl p-3"
               >
-                <AlertCircle size={14} />
-                {validationErrors.city}
-              </motion.p>
+                <p className="text-red-700 text-sm font-bold flex items-center gap-2">
+                  <AlertCircle size={16} className="text-red-500" />
+                  {validationErrors.name}
+                </p>
+              </motion.div>
             )}
           </motion.div>
-        </div>
 
-        {/* State Field */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-            <Building2 size={14} className="text-indigo-500" />
-            Estado
-          </label>
-          <div className="relative group">
-            <select
-              value={customerData.state}
-              onChange={(e) => onDataChange(prev => ({ ...prev, state: e.target.value }))}
-              className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200/60 text-sm bg-gradient-to-r from-white to-slate-50/50 backdrop-blur-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-200/50 focus:border-indigo-500 hover:border-slate-300/60 hover:shadow-lg transition-all duration-300 appearance-none cursor-pointer touch-manipulation"
-            >
-              {mexicanStates.map(state => (
-                <option key={state} value={state}>{state}</option>
-              ))}
-            </select>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-              <motion.svg
-                className="w-5 h-5 text-slate-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                animate={{ rotate: fieldFocus === 'state' ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
+          {/* Phone Field - Premium Design */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+            className="space-y-3"
+          >
+            <label className="flex items-center gap-3 text-base font-black text-slate-800">
+              <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-green-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <Phone size={18} className="text-white" />
+              </div>
+              <span>Teléfono WhatsApp *</span>
+            </label>
+            <div className="relative group">
+              <input
+                type="tel"
+                value={customerData.phone}
+                onChange={(e) => {
+                  const formatted = formatPhoneNumber(e.target.value);
+                  onDataChange(prev => ({ ...prev, phone: formatted }));
+                }}
+                onFocus={() => setFieldFocus('phone')}
+                onBlur={() => setFieldFocus('')}
+                className={cn(
+                  'w-full pl-6 pr-14 py-5 rounded-2xl border-2 text-base font-medium transition-all duration-300',
+                  'bg-gradient-to-r from-slate-50 to-white backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
+                  'focus:outline-none focus:ring-4 hover:shadow-xl touch-manipulation',
+                  fieldFocus === 'phone' && 'transform scale-[1.02]',
+                  validationErrors.phone
+                    ? 'border-red-300 focus:ring-red-200/50 focus:border-red-500 shadow-red-100'
+                    : 'border-slate-300/60 focus:ring-emerald-200/60 focus:border-emerald-500 hover:border-emerald-300/80 shadow-lg'
+                )}
+                placeholder="+52 55 1234 5678"
+                autoComplete="tel"
+              />
+              {customerData.phone && !validationErrors.phone && (
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  className="absolute right-5 top-1/2 -translate-y-1/2 z-10"
+                >
+                  <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                    <CheckCircle size={18} className="text-white" />
+                  </div>
+                </motion.div>
+              )}
+            </div>
+            {fieldFocus === 'phone' && !customerData.phone && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-emerald-50 border border-emerald-200 rounded-xl p-3"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </motion.svg>
+                <p className="text-emerald-700 text-sm font-medium flex items-center gap-2">
+                  <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">📱</span>
+                  </div>
+                  Número con WhatsApp para confirmaciones instantáneas y entrega del premio
+                </p>
+              </motion.div>
+            )}
+            {validationErrors.phone && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-red-50 border border-red-200 rounded-xl p-3"
+              >
+                <p className="text-red-700 text-sm font-bold flex items-center gap-2">
+                  <AlertCircle size={16} className="text-red-500" />
+                  {validationErrors.phone}
+                </p>
+              </motion.div>
+            )}
+          </motion.div>
+
+          {/* Email and City - Premium Grid Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+            {/* Email Field - Premium Design */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+              className="space-y-3"
+            >
+              <label className="flex items-center gap-3 text-base font-black text-slate-800">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Mail size={18} className="text-white" />
+                </div>
+                <span>Email *</span>
+              </label>
+              <div className="relative group">
+                <input
+                  type="email"
+                  value={customerData.email}
+                  onChange={(e) => onDataChange(prev => ({ ...prev, email: e.target.value }))}
+                  onFocus={() => setFieldFocus('email')}
+                  onBlur={() => setFieldFocus('')}
+                  className={cn(
+                    'w-full pl-6 pr-14 py-5 rounded-2xl border-2 text-base font-medium transition-all duration-300',
+                    'bg-gradient-to-r from-slate-50 to-white backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
+                    'focus:outline-none focus:ring-4 hover:shadow-xl touch-manipulation',
+                    fieldFocus === 'email' && 'transform scale-[1.02]',
+                    validationErrors.email
+                      ? 'border-red-300 focus:ring-red-200/50 focus:border-red-500 shadow-red-100'
+                      : 'border-slate-300/60 focus:ring-blue-200/60 focus:border-blue-500 hover:border-blue-300/80 shadow-lg'
+                  )}
+                  placeholder="tu@email.com"
+                  autoComplete="email"
+                />
+                {customerData.email && !validationErrors.email && (
+                  <motion.div
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    className="absolute right-5 top-1/2 -translate-y-1/2 z-10"
+                  >
+                    <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                      <CheckCircle size={18} className="text-white" />
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+              {fieldFocus === 'email' && !customerData.email && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-blue-50 border border-blue-200 rounded-xl p-3"
+                >
+                  <p className="text-blue-700 text-sm font-medium flex items-center gap-2">
+                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs">📧</span>
+                    </div>
+                    Para enviarte información importante del sorteo y confirmaciones
+                  </p>
+                </motion.div>
+              )}
+              {validationErrors.email && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-red-50 border border-red-200 rounded-xl p-3"
+                >
+                  <p className="text-red-700 text-sm font-bold flex items-center gap-2">
+                    <AlertCircle size={16} className="text-red-500" />
+                    {validationErrors.email}
+                  </p>
+                </motion.div>
+              )}
+            </motion.div>
+
+            {/* City Field - Premium Design */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6 }}
+              className="space-y-3"
+            >
+              <label className="flex items-center gap-3 text-base font-black text-slate-800">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-violet-500 rounded-2xl flex items-center justify-center shadow-lg">
+                  <MapPin size={18} className="text-white" />
+                </div>
+                <span>Ciudad *</span>
+              </label>
+              <div className="relative group">
+                <input
+                  type="text"
+                  value={customerData.city}
+                  onChange={(e) => onDataChange(prev => ({ ...prev, city: e.target.value }))}
+                  onFocus={() => setFieldFocus('city')}
+                  onBlur={() => setFieldFocus('')}
+                  className={cn(
+                    'w-full pl-6 pr-14 py-5 rounded-2xl border-2 text-base font-medium transition-all duration-300',
+                    'bg-gradient-to-r from-slate-50 to-white backdrop-blur-sm placeholder:text-slate-400 text-slate-900',
+                    'focus:outline-none focus:ring-4 hover:shadow-xl touch-manipulation',
+                    fieldFocus === 'city' && 'transform scale-[1.02]',
+                    validationErrors.city
+                      ? 'border-red-300 focus:ring-red-200/50 focus:border-red-500 shadow-red-100'
+                      : 'border-slate-300/60 focus:ring-purple-200/60 focus:border-purple-500 hover:border-purple-300/80 shadow-lg'
+                  )}
+                  placeholder="Ciudad de México"
+                  autoComplete="address-level2"
+                />
+                {customerData.city && !validationErrors.city && (
+                  <motion.div
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    className="absolute right-5 top-1/2 -translate-y-1/2 z-10"
+                  >
+                    <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                      <CheckCircle size={18} className="text-white" />
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+              {fieldFocus === 'city' && !customerData.city && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-purple-50 border border-purple-200 rounded-xl p-3"
+                >
+                  <p className="text-purple-700 text-sm font-medium flex items-center gap-2">
+                    <div className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs">🏙️</span>
+                    </div>
+                    Ciudad donde realizaremos la entrega del premio si resultas ganador
+                  </p>
+                </motion.div>
+              )}
+              {validationErrors.city && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-red-50 border border-red-200 rounded-xl p-3"
+                >
+                  <p className="text-red-700 text-sm font-bold flex items-center gap-2">
+                    <AlertCircle size={16} className="text-red-500" />
+                    {validationErrors.city}
+                  </p>
+                </motion.div>
+              )}
+            </motion.div>
+          </div>
+
+          {/* State Field - Premium Design */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.7 }}
+            className="space-y-3"
+          >
+            <label className="flex items-center gap-3 text-base font-black text-slate-800">
+              <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <Building2 size={18} className="text-white" />
+              </div>
+              <span>Estado</span>
+            </label>
+            <div className="relative group">
+              <select
+                value={customerData.state}
+                onChange={(e) => onDataChange(prev => ({ ...prev, state: e.target.value }))}
+                onFocus={() => setFieldFocus('state')}
+                onBlur={() => setFieldFocus('')}
+                className={cn(
+                  'w-full pl-6 pr-14 py-5 rounded-2xl border-2 text-base font-medium transition-all duration-300 appearance-none cursor-pointer',
+                  'bg-gradient-to-r from-slate-50 to-white backdrop-blur-sm text-slate-900',
+                  'focus:outline-none focus:ring-4 hover:shadow-xl touch-manipulation',
+                  fieldFocus === 'state' && 'transform scale-[1.02]',
+                  'border-slate-300/60 focus:ring-indigo-200/60 focus:border-indigo-500 hover:border-indigo-300/80 shadow-lg'
+                )}
+              >
+                {mexicanStates.map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none">
+                <motion.div
+                  animate={{ rotate: fieldFocus === 'state' ? 180 : 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-6 h-6 bg-indigo-500 rounded-lg flex items-center justify-center"
+                >
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+
+        </div>
+      </motion.div>
+
+      {/* Security & Trust Footer */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+        className="relative bg-gradient-to-r from-slate-50 via-white to-slate-50 border-2 border-slate-200/60 rounded-3xl p-6 shadow-lg overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-white/60 to-transparent rounded-3xl" />
+        <div className="relative">
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <div className="p-3 bg-gradient-to-r from-emerald-500 to-green-500 rounded-2xl shadow-lg">
+              <CheckCircle size={24} className="text-white" />
+            </div>
+            <h4 className="text-xl font-black text-slate-800">100% Seguro y Confiable</h4>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+            <div className="flex flex-col items-center gap-2 p-4 bg-white/80 rounded-2xl border border-slate-200/50">
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm">🔒</span>
+              </div>
+              <span className="text-sm font-bold text-slate-700">Datos protegidos</span>
+            </div>
+            <div className="flex flex-col items-center gap-2 p-4 bg-white/80 rounded-2xl border border-slate-200/50">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm">⚡</span>
+              </div>
+              <span className="text-sm font-bold text-slate-700">Proceso rápido</span>
+            </div>
+            <div className="flex flex-col items-center gap-2 p-4 bg-white/80 rounded-2xl border border-slate-200/50">
+              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm">🏆</span>
+              </div>
+              <span className="text-sm font-bold text-slate-700">Entrega garantizada</span>
             </div>
           </div>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
 
       {/* Security Notice */}
       <motion.div
