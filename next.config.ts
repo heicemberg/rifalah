@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Configuración para despliegue estático
-  output: 'export',
-  trailingSlash: true,
-  distDir: 'dist',
+  // Configuración para despliegue estático (solo en producción)
+  ...(process.env.NODE_ENV === 'production' ? {
+    output: 'export',
+    trailingSlash: true,
+    distDir: 'dist',
+  } : {}),
   
   // Configuración de imágenes para modo estático
   images: {
@@ -17,13 +19,20 @@ const nextConfig: NextConfig = {
     ],
   },
   
-  // Deshabilitar telemetría y trace para evitar problemas  
+  // Deshabilitar telemetría y trace para evitar problemas
   experimental: {
     optimizePackageImports: [
-      'lucide-react', 
+      'lucide-react',
       'react-hot-toast',
       'zustand'
     ],
+    // Deshabilitar trace para evitar errores de permisos
+    disableOptimizedLoading: true,
+  },
+
+  // Deshabilitar telemetría completamente
+  telemetry: {
+    enabled: false,
   },
   
   // Deshabilitar generación de build traces para evitar errores de permisos

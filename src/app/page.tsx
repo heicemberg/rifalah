@@ -233,8 +233,8 @@ export default function NewRaffePage() {
             className="object-cover object-center"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-black/40 to-black/55"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/75"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/60"></div>
         </div>
 
         <div className="container mx-auto px-4 py-20 relative z-10 mt-16">
@@ -289,8 +289,8 @@ export default function NewRaffePage() {
             >
               <Gift className="w-8 h-8" />
               <div>
-                <div>¡COMPÁ TUS NÚMEROS DE LA SUERTE!</div>
-                <div className="text-sm opacity-90 font-normal">Desde {formatPriceMXN(PRECIO_POR_BOLETO_MXN)}</div>
+                <div>¡AGARRA TUS NÚMEROS DE LA SUERTE!</div>
+                <div className="text-sm opacity-90 font-normal">Desde {formatPriceMXN(PRECIO_POR_BOLETO_MXN)} por boleto</div>
               </div>
               <ArrowRight className="w-6 h-6" />
             </button>

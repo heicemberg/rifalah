@@ -53,7 +53,12 @@
       "Read(/C:\\Users\\Administrador\\.continue\\rifadefinitiva\\src/**)",
       "Read(/C:\\Users\\Administrador\\.continue\\rifadefinitiva\\src/**)",
       "Read(/C:\\Users\\Administrador\\.continue\\rifadefinitiva/**)",
-      "Read(/C:\\Users\\Administrador\\.continue\\rifadefinitiva\\src/**)"
+      "Read(/C:\\Users\\Administrador\\.continue\\rifadefinitiva\\src/**)",
+      "Bash(dir dist)",
+      "Bash(attrib:*)",
+      "Bash(npm cache clean:*)",
+      "Read(//c/Users/Administrador/**)",
+      "Bash(PORT=3001 npm run dev)"
     ],
     "deny": [],
     "ask": [],
