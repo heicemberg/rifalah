@@ -337,7 +337,7 @@ const QuickSelectionCards: React.FC<QuickSelectionCardsProps> = ({
                       <div className="font-medium mb-1">📊 Datos importantes:</div>
                       <ul className="space-y-1 text-xs">
                         <li>• Disponibles: <span className="font-bold">{availableCount.toLocaleString('es-MX')}</span> números</li>
-                        <li>• Precio por boleto: <span className="font-bold">$250</span></li>
+                        <li>• Precio por boleto: <span className="font-bold">$250 MXN</span> (pesos mexicanos)</li>
                         <li>• Los números se eligen automáticamente</li>
                       </ul>
                     </div>

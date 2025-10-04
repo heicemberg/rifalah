@@ -6,7 +6,7 @@ const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutos
 
 // Hash de la contraseña "llavita12$" pre-generado para mayor seguridad
-const ADMIN_PASSWORD_HASH = '$2a$12$7vKjUz8tX3v9.GH2mq.6MuKLs6xCZq1OGF3tW4Jk9L.Qwe2R3t4U5v';
+const ADMIN_PASSWORD_HASH = '$2b$12$e5dXKvfpI1BPX/QuIoGM4.vetfIzzF3FJmbg494vt/fiym6zUc/hG';
 
 // Rate limiting storage (en producción usar Redis)
 interface LoginAttempt {

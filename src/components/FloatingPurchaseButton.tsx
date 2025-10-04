@@ -22,7 +22,7 @@ const FloatingPurchaseButton: React.FC<FloatingPurchaseButtonProps> = ({
   isVisible
 }) => {
   const ticketCount = selectedTickets.length;
-  const totalPrice = ticketCount * 250; // $250 por ticket
+  const totalPrice = ticketCount * 250; // $250 MXN por ticket
 
   if (!isVisible || ticketCount === 0) {
     return null;

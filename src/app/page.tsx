@@ -264,7 +264,8 @@ export default function NewRaffePage() {
             {/* Precio Destacado */}
             <div className="bg-gradient-to-r from-red-600/20 to-red-500/20 backdrop-blur-sm rounded-2xl p-6 border border-red-500/30 mb-8 max-w-md mx-auto">
               <div className="text-sm text-gray-300 mb-2">PRECIO POR BOLETO</div>
-              <div className="text-4xl font-black text-yellow-400">{formatPriceMXN(PRECIO_POR_BOLETO_MXN)}</div>
+              <div className="text-4xl font-black text-yellow-400">{formatPriceMXN(PRECIO_POR_BOLETO_MXN)} MXN</div>
+              <div className="text-sm text-gray-400 mt-1">250 pesos mexicanos por boleto</div>
               <div className="text-sm text-gray-400">Valor total del premio: $876,000 pesos mexicanos</div>
             </div>
 
@@ -291,7 +292,7 @@ export default function NewRaffePage() {
               <Gift className="w-8 h-8" />
               <div>
                 <div>¡AGARRA TUS NÚMEROS DE LA SUERTE!</div>
-                <div className="text-sm opacity-90 font-normal">Desde {formatPriceMXN(PRECIO_POR_BOLETO_MXN)} por boleto</div>
+                <div className="text-sm opacity-90 font-normal">Desde $250 pesos mexicanos (MXN) por boleto</div>
               </div>
               <ArrowRight className="w-6 h-6" />
             </button>

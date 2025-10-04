@@ -17,7 +17,7 @@ import type {
 /** Total de tickets disponibles */
 export const TOTAL_TICKETS = 10000;
 
-/** Precio por ticket en pesos mexicanos */
+/** Precio por ticket en pesos mexicanos (MXN) */
 export const TICKET_PRICE = 250;
 
 /** Tiempo de reserva en minutos */

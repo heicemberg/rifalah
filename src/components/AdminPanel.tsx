@@ -923,7 +923,7 @@ export default function AdminPanel() {
                 <div className="flex justify-between items-center">
                   <span className="text-purple-200">Tickets vendidos:</span>
                   <span className="text-lg font-bold text-white">
-                    {adminSync.real.soldCount} × $250
+                    {adminSync.real.soldCount} × $250 MXN
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
