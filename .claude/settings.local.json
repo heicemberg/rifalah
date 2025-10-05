@@ -59,7 +59,10 @@
       "Bash(npm cache clean:*)",
       "Read(//c/Users/Administrador/**)",
       "Bash(PORT=3001 npm run dev)",
-      "WebFetch(domain:commons.wikimedia.org)"
+      "WebFetch(domain:commons.wikimedia.org)",
+      "Bash(git log:*)",
+      "Bash(cat:*)",
+      "Bash(git rev-list:*)"
     ],
     "deny": [],
     "ask": [],
