@@ -56,32 +56,32 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   // Información básica
   title: {
-    default: 'Rifa Chevrolet Silverado Z71 2024 - ¡Gana tu Camioneta Nueva!',
-    template: '%s | Rifa Silverado Z71 2024'
+    default: 'Gana con la Cantrina - Audi A4 2024 + PS5 + $5,000 USD',
+    template: '%s | Gana con la Cantrina'
   },
-  description: 'Participa en la rifa de una Chevrolet Silverado Z71 2024 completamente nueva. Boletos desde $250 MXN. Sorteo legal y transparente el 31 de Diciembre 2024. ¡Compra ya!',
+  description: 'Gana con la Cantrina: Audi A4 2024 + PlayStation 5 + $5,000 USD en pesos mexicanos. Boletos desde $250 MXN. Sorteo legal y transparente el 31 de Diciembre 2024. ¡Participa ya!',
   
   // Keywords específicas para México
   keywords: [
-    'rifa camioneta',
-    'Chevrolet Silverado',
+    'rifa audi',
+    'Audi A4 2024',
     'rifa México',
     'sorteo legal',
-    'pickup nueva',
-    'Z71 2024',
+    'rifa La H',
+    'PlayStation 5',
     'boletos rifa',
-    'camioneta 0km',
+    'audi nuevo',
     'rifa transparente',
     'sorteo diciembre',
-    'pickup 4x4',
+    'rifa ps5',
     'rifa online'
   ],
   
   // Información del autor/organizador
   authors: [
     {
-      name: 'Rifas México',
-      url: 'https://rifas-mexico.com'
+      name: 'Gana con la Cantrina',
+      url: 'https://ganacanlacantrina.com'
     }
   ],
   
@@ -100,10 +100,10 @@ export const metadata: Metadata = {
   
   // Configuración de idioma
   alternates: {
-    canonical: 'https://rifa-silverado.mx',
+    canonical: 'https://ganacanlacantrina.com',
     languages: {
-      'es-MX': 'https://rifa-silverado.mx',
-      'es': 'https://rifa-silverado.mx/es'
+      'es-MX': 'https://ganacanlacantrina.com',
+      'es': 'https://ganacanlacantrina.com/es'
     }
   },
   
@@ -111,23 +111,23 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'es_MX',
-    url: 'https://rifa-silverado.mx',
-    title: 'Rifa Chevrolet Silverado Z71 2024 - ¡Gana tu Camioneta Nueva!',
-    description: 'Participa en la rifa más grande de México. Chevrolet Silverado Z71 2024 nueva, valor $890,000 MXN. Boletos desde $250 MXN. Sorteo 31 Dic 2024.',
-    siteName: 'Rifa Silverado Z71 2024',
+    url: 'https://ganacanlacantrina.com',
+    title: 'Gana con la Cantrina - Audi A4 2024 + PS5 + $5,000 USD',
+    description: 'Gana con la Cantrina. Audi A4 2024 + PlayStation 5 + $5,000 USD en pesos mexicanos. Boletos desde $250 MXN. Sorteo 31 Dic 2024.',
+    siteName: 'Gana con la Cantrina',
     images: [
       {
-        url: 'https://rifa-silverado.mx/og-image.jpg',
+        url: 'https://ganacanlacantrina.com/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'Chevrolet Silverado Z71 2024 - Premio de la Rifa',
+        alt: 'Gana con la Cantrina - Audi A4 2024 + PS5 + $5,000 USD',
         type: 'image/jpeg'
       },
       {
-        url: 'https://rifa-silverado.mx/og-image-square.jpg',
+        url: 'https://ganacanlacantrina.com/og-image-square.jpg',
         width: 1080,
         height: 1080,
-        alt: 'Rifa Silverado Z71 - Imagen Cuadrada',
+        alt: 'Gana con la Cantrina - Premio Completo',
         type: 'image/jpeg'
       }
     ],
@@ -136,13 +136,13 @@ export const metadata: Metadata = {
   // Twitter Cards
   twitter: {
     card: 'summary_large_image',
-    site: '@RifasSilverado',
-    creator: '@RifasMexico',
-    title: 'Rifa Chevrolet Silverado Z71 2024 - ¡Gana tu Camioneta Nueva!',
-    description: 'Participa en la rifa más grande de México. Chevrolet Silverado Z71 2024 nueva, valor $890,000 MXN. Boletos desde $250 MXN.',
+    site: '@LaCantrina',
+    creator: '@LaCantrina',
+    title: 'Gana con la Cantrina - Audi A4 2024 + PS5 + $5,000 USD',
+    description: 'Gana con la Cantrina. Audi A4 2024 + PlayStation 5 + $5,000 USD en pesos mexicanos. Boletos desde $250 MXN.',
     images: {
-      url: 'https://rifa-silverado.mx/twitter-image.jpg',
-      alt: 'Chevrolet Silverado Z71 2024 - Premio de la Rifa',
+      url: 'https://ganacanlacantrina.com/twitter-image.jpg',
+      alt: 'Gana con la Cantrina - Audi A4 2024 + PS5 + $5,000 USD',
       width: 1200,
       height: 600,
       type: 'image/jpeg'
@@ -185,7 +185,7 @@ export const metadata: Metadata = {
   // Información de contacto
   other: {
     'contact:phone_number': '+523343461630',
-    'contact:email': 'info@rifa-silverado.mx',
+    'contact:email': 'info@ganacanlacantrina.com',
     'contact:country_name': 'México',
     'contact:region': 'CDMX'
   }
@@ -201,12 +201,12 @@ const structuredData = {
     // Organización
     {
       '@type': 'Organization',
-      '@id': 'https://rifa-silverado.mx/#organization',
-      name: 'Rifas México',
-      url: 'https://rifa-silverado.mx',
+      '@id': 'https://ganacanlacantrina.com/#organization',
+      name: 'Gana con la Cantrina',
+      url: 'https://ganacanlacantrina.com',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://rifa-silverado.mx/logo.png',
+        url: 'https://ganacanlacantrina.com/logo.svg',
         width: 300,
         height: 100
       },
@@ -224,28 +224,28 @@ const structuredData = {
         addressLocality: 'Ciudad de México'
       },
       sameAs: [
-        'https://facebook.com/RifasSilverado',
-        'https://twitter.com/RifasSilverado',
-        'https://instagram.com/rifas_silverado'
+        'https://facebook.com/LaCantrina',
+        'https://twitter.com/LaCantrina',
+        'https://instagram.com/lacantrina'
       ]
     },
     
     // Evento del Sorteo
     {
       '@type': 'Event',
-      '@id': 'https://rifa-silverado.mx/#event',
-      name: 'Sorteo Chevrolet Silverado Z71 2024',
-      description: 'Sorteo legal y transparente de una Chevrolet Silverado Z71 2024 completamente nueva. Transmisión en vivo del evento.',
+      '@id': 'https://ganacanlacantrina.com/#event',
+      name: 'Sorteo Gana con la Cantrina - Audi A4 2024 + PS5 + $5,000 USD',
+      description: 'Sorteo legal y transparente de un Audi A4 2024 + PlayStation 5 + $5,000 USD en pesos mexicanos. Transmisión en vivo del evento.',
       startDate: '2025-11-24T20:00:00-06:00',
       endDate: '2025-11-24T21:00:00-06:00',
       eventStatus: 'EventScheduled',
       eventAttendanceMode: 'OnlineEventAttendanceMode',
       location: {
         '@type': 'VirtualLocation',
-        url: 'https://rifa-silverado.mx/sorteo-en-vivo'
+        url: 'https://ganacanlacantrina.com/sorteo-en-vivo'
       },
       organizer: {
-        '@id': 'https://rifa-silverado.mx/#organization'
+        '@id': 'https://ganacanlacantrina.com/#organization'
       },
       offers: {
         '@type': 'Offer',
@@ -254,38 +254,38 @@ const structuredData = {
         availability: 'InStock',
         validFrom: '2024-01-01T00:00:00-06:00',
         validThrough: '2024-12-30T23:59:59-06:00',
-        url: 'https://rifa-silverado.mx'
+        url: 'https://ganacanlacantrina.com'
       },
-      image: 'https://rifa-silverado.mx/sorteo-image.jpg'
+      image: 'https://ganacanlacantrina.com/sorteo-image.jpg'
     },
     
     // Producto Premio
     {
       '@type': 'Product',
-      '@id': 'https://rifa-silverado.mx/#prize',
-      name: 'Chevrolet Silverado Z71 2024',
-      description: 'Camioneta pickup Chevrolet Silverado Z71 2024 completamente nueva, 0 kilómetros, con todos los papeles incluidos.',
+      '@id': 'https://ganacanlacantrina.com/#prize',
+      name: 'Audi A4 2024 + PlayStation 5 + $5,000 USD en Pesos Mexicanos',
+      description: 'Automóvil Audi A4 2024 completamente nuevo, 0 kilómetros, con todos los papeles incluidos + PlayStation 5 nueva + $5,000 USD en pesos mexicanos.',
       brand: {
         '@type': 'Brand',
-        name: 'Chevrolet'
+        name: 'Audi'
       },
-      model: 'Silverado Z71',
+      model: 'A4',
       vehicleModelDate: '2024',
-      category: 'Pickup Truck',
+      category: 'Automobile',
       offers: {
         '@type': 'Offer',
-        price: '890000',
+        price: '1200000',
         priceCurrency: 'MXN',
         itemCondition: 'NewCondition',
         availability: 'InStock'
       },
-      image: 'https://rifa-silverado.mx/premios/premio-rifa.png'
+      image: 'https://ganacanlacantrina.com/premios/premiorifa.jpg'
     },
     
     // FAQ Schema
     {
       '@type': 'FAQPage',
-      '@id': 'https://rifa-silverado.mx/#faq',
+      '@id': 'https://ganacanlacantrina.com/#faq',
       mainEntity: [
         {
           '@type': 'Question',
@@ -398,8 +398,8 @@ export default function RootLayout({
               JavaScript Requerido
             </h1>
             <p style={{ fontSize: '16px', lineHeight: '1.5', maxWidth: '500px' }}>
-              Para participar en la rifa de la Chevrolet Silverado Z71 2024, 
-              necesitas activar JavaScript en tu navegador. Esto nos permite 
+              Para participar en Gana con la Cantrina (Audi A4 2024 + PS5 + $5,000 USD),
+              necesitas activar JavaScript en tu navegador. Esto nos permite
               ofrecerte la mejor experiencia y garantizar la seguridad de tu compra.
             </p>
             <p style={{ fontSize: '14px', marginTop: '16px', opacity: 0.8 }}>
@@ -509,7 +509,7 @@ export default function RootLayout({
         )}
 
         {/* Preload de recursos críticos */}
-        <link rel="preload" href="/premios/premio-rifa.png" as="image" />
+        <link rel="preload" href="/premios/premiorifa.jpg" as="image" />
         <link rel="preload" href="/premios/QR.jpg" as="image" />
         {/* Logos de bancos ahora son componentes SVG inline - no necesitan preload */}
       </body>

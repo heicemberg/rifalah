@@ -258,9 +258,9 @@ export const DEFAULT_THEME_COLORS: ThemeColors = {
 // ============================================================================
 
 export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
-  prizeTitle: 'Chevrolet Silverado Z71 2024 - Valor $45,000 USD',
-  prizeImage: '/premios/premio-rifa.png',
-  prizeValue: 45000,
+  prizeTitle: 'Audi A4 2024 + PlayStation 5 + $5,000 USD en Pesos Mexicanos',
+  prizeImage: '/premios/premiorifa.jpg',
+  prizeValue: 5000,
   sorteoDate: new Date('2024-12-31T20:00:00-06:00'), // 31 Dec 2024 8PM CST
   colors: DEFAULT_THEME_COLORS,
   paymentMethods: PAYMENT_METHODS
@@ -391,10 +391,10 @@ export const MESSAGES = {
 // CONFIGURACIONES DE FORMATO (SOLO OBJETOS INTL)
 // ============================================================================
 
-/** Configuración para formatear moneda estadounidense */
+/** Configuración para formatear moneda mexicana (Pesos MXN) */
 export const CURRENCY_FORMAT_CONFIG = {
   style: 'currency' as const,
-  currency: 'USD' as const,
+  currency: 'MXN' as const,
   minimumFractionDigits: 0,
   maximumFractionDigits: 0
 };
