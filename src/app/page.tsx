@@ -28,6 +28,7 @@ import OrganicNotifications from '@/components/OrganicNotifications'
 import MathDebugger from '@/components/MathDebugger'
 import FloatingPurchaseButton from '@/components/FloatingPurchaseButton'
 import { BanamexLogo, BBVALogo, OXXOLogo, BinanceLogo } from '@/components/PaymentLogos'
+import { RifaSilveradoLogo } from '@/components/RifaSilveradoLogo'
 import { analytics } from '@/lib/analytics'
 
 export default function NewRaffePage() {
@@ -195,13 +196,7 @@ export default function NewRaffePage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Image
-                src="/logos/Rifasilverado.png"
-                alt="Rifa Silverado"
-                width={32}
-                height={32}
-                className="object-contain"
-              />
+              <RifaSilveradoLogo width={40} height={40} />
               <span className="font-black text-xl">RIFA SILVERADO</span>
             </div>
             <div className="relative">
@@ -758,13 +753,7 @@ export default function NewRaffePage() {
             {/* Logo y Descripción */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <Image
-                  src="/logos/Rifasilverado.png"
-                  alt="Rifa Silverado"
-                  width={40}
-                  height={40}
-                  className="object-contain"
-                />
+                <RifaSilveradoLogo width={40} height={40} />
                 <span className="font-black text-xl text-white">RIFA SILVERADO</span>
               </div>
               <p className="text-gray-400 text-sm mb-4">
