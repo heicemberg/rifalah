@@ -258,9 +258,9 @@ export const DEFAULT_THEME_COLORS: ThemeColors = {
 // ============================================================================
 
 export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
-  prizeTitle: 'Audi A4 2024 + PlayStation 5 + $5,000 USD en Pesos Mexicanos',
+  prizeTitle: 'Audi A4 2024 + PlayStation 5 + $85,000 MXN en Efectivo',
   prizeImage: '/premios/premiorifa.jpg',
-  prizeValue: 5000,
+  prizeValue: 85000,
   sorteoDate: new Date('2024-12-31T20:00:00-06:00'), // 31 Dec 2024 8PM CST
   colors: DEFAULT_THEME_COLORS,
   paymentMethods: PAYMENT_METHODS

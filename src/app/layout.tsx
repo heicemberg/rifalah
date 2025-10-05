@@ -56,10 +56,10 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   // Información básica
   title: {
-    default: 'Gana con la Cantrina - Audi A4 2024 + PS5 + $5,000 USD',
+    default: 'Gana con la Cantrina - Audi A4 2024 + PS5 + $85,000 MXN',
     template: '%s | Gana con la Cantrina'
   },
-  description: 'Gana con la Cantrina: Audi A4 2024 + PlayStation 5 + $5,000 USD en pesos mexicanos. Boletos desde $250 MXN. Sorteo legal y transparente el 31 de Diciembre 2024. ¡Participa ya!',
+  description: 'Gana con la Cantrina: Audi A4 2024 + PlayStation 5 + $85,000 MXN en efectivo. Boletos desde $250 MXN. Sorteo legal y transparente el 31 de Diciembre 2024. ¡Participa ya!',
   
   // Keywords específicas para México
   keywords: [
@@ -112,15 +112,15 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_MX',
     url: 'https://ganacanlacantrina.com',
-    title: 'Gana con la Cantrina - Audi A4 2024 + PS5 + $5,000 USD',
-    description: 'Gana con la Cantrina. Audi A4 2024 + PlayStation 5 + $5,000 USD en pesos mexicanos. Boletos desde $250 MXN. Sorteo 31 Dic 2024.',
+    title: 'Gana con la Cantrina - Audi A4 2024 + PS5 + $85,000 MXN',
+    description: 'Gana con la Cantrina. Audi A4 2024 + PlayStation 5 + $85,000 MXN en efectivo. Boletos desde $250 MXN. Sorteo 31 Dic 2024.',
     siteName: 'Gana con la Cantrina',
     images: [
       {
         url: 'https://ganacanlacantrina.com/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'Gana con la Cantrina - Audi A4 2024 + PS5 + $5,000 USD',
+        alt: 'Gana con la Cantrina - Audi A4 2024 + PS5 + $85,000 MXN',
         type: 'image/jpeg'
       },
       {
@@ -138,11 +138,11 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     site: '@LaCantrina',
     creator: '@LaCantrina',
-    title: 'Gana con la Cantrina - Audi A4 2024 + PS5 + $5,000 USD',
-    description: 'Gana con la Cantrina. Audi A4 2024 + PlayStation 5 + $5,000 USD en pesos mexicanos. Boletos desde $250 MXN.',
+    title: 'Gana con la Cantrina - Audi A4 2024 + PS5 + $85,000 MXN',
+    description: 'Gana con la Cantrina. Audi A4 2024 + PlayStation 5 + $85,000 MXN en efectivo. Boletos desde $250 MXN.',
     images: {
       url: 'https://ganacanlacantrina.com/twitter-image.jpg',
-      alt: 'Gana con la Cantrina - Audi A4 2024 + PS5 + $5,000 USD',
+      alt: 'Gana con la Cantrina - Audi A4 2024 + PS5 + $85,000 MXN',
       width: 1200,
       height: 600,
       type: 'image/jpeg'
@@ -234,8 +234,8 @@ const structuredData = {
     {
       '@type': 'Event',
       '@id': 'https://ganacanlacantrina.com/#event',
-      name: 'Sorteo Gana con la Cantrina - Audi A4 2024 + PS5 + $5,000 USD',
-      description: 'Sorteo legal y transparente de un Audi A4 2024 + PlayStation 5 + $5,000 USD en pesos mexicanos. Transmisión en vivo del evento.',
+      name: 'Sorteo Gana con la Cantrina - Audi A4 2024 + PS5 + $85,000 MXN',
+      description: 'Sorteo legal y transparente de un Audi A4 2024 + PlayStation 5 + $85,000 MXN en efectivo. Transmisión en vivo del evento.',
       startDate: '2025-11-24T20:00:00-06:00',
       endDate: '2025-11-24T21:00:00-06:00',
       eventStatus: 'EventScheduled',
@@ -263,8 +263,8 @@ const structuredData = {
     {
       '@type': 'Product',
       '@id': 'https://ganacanlacantrina.com/#prize',
-      name: 'Audi A4 2024 + PlayStation 5 + $5,000 USD en Pesos Mexicanos',
-      description: 'Automóvil Audi A4 2024 completamente nuevo, 0 kilómetros, con todos los papeles incluidos + PlayStation 5 nueva + $5,000 USD en pesos mexicanos.',
+      name: 'Audi A4 2024 + PlayStation 5 + $85,000 MXN en Efectivo',
+      description: 'Automóvil Audi A4 2024 completamente nuevo, 0 kilómetros, con todos los papeles incluidos + PlayStation 5 nueva + $85,000 pesos mexicanos en efectivo.',
       brand: {
         '@type': 'Brand',
         name: 'Audi'
@@ -398,7 +398,7 @@ export default function RootLayout({
               JavaScript Requerido
             </h1>
             <p style={{ fontSize: '16px', lineHeight: '1.5', maxWidth: '500px' }}>
-              Para participar en Gana con la Cantrina (Audi A4 2024 + PS5 + $5,000 USD),
+              Para participar en Gana con la Cantrina (Audi A4 2024 + PS5 + $85,000 MXN),
               necesitas activar JavaScript en tu navegador. Esto nos permite
               ofrecerte la mejor experiencia y garantizar la seguridad de tu compra.
             </p>
