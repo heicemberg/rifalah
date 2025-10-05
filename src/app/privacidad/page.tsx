@@ -17,7 +17,7 @@ export default function PrivacidadPage() {
             Aviso de Privacidad
           </h1>
           <p className="text-gray-600 text-lg">
-            Protección de Datos Personales - Rifa Silverado Z71 2024
+            Protección de Datos Personales - Gana con la Cantrina - Audi A4 2024
           </p>
           <div className="text-sm text-gray-500 mt-2">
             Última actualización: 23 de agosto de 2025
@@ -34,15 +34,15 @@ export default function PrivacidadPage() {
             </h2>
             <div className="space-y-4 text-gray-700 leading-relaxed">
               <p>
-                <strong>Denominación:</strong> Rifas Silverado México S.A. de C.V.<br/>
-                <strong>RFC:</strong> RSM240801ABC<br/>
+                <strong>Denominación:</strong> Gana con la Cantrina S.A. de C.V.<br/>
+                <strong>RFC:</strong> GCC240801ABC<br/>
                 <strong>Domicilio:</strong> Av. Reforma 123, Col. Centro, Ciudad de México, C.P. 06000<br/>
                 <strong>Teléfono:</strong> +52 55 1234-5678<br/>
-                <strong>Email de contacto:</strong> privacidad@rifa-silverado.mx<br/>
+                <strong>Email de contacto:</strong> privacidad@ganaconlacantrina.mx<br/>
                 <strong>Departamento de Datos Personales:</strong> Lic. María Fernández González
               </p>
               <p>
-                Rifas Silverado México S.A. de C.V. (en adelante &quot;Rifas Silverado&quot;, &quot;nosotros&quot; o &quot;la empresa&quot;) 
+                Gana con la Cantrina S.A. de C.V. (en adelante &quot;Gana con la Cantrina&quot;, &quot;nosotros&quot; o &quot;la empresa&quot;) 
                 es responsable del uso y protección de sus datos personales, en términos de la 
                 Ley Federal de Protección de Datos Personales en Posesión de los Particulares.
               </p>
@@ -240,7 +240,7 @@ export default function PrivacidadPage() {
               <p><strong>¿Cómo ejercer sus derechos?</strong></p>
               <p>Envíe su solicitud a:</p>
               <div className="bg-green-50 p-4 rounded-lg">
-                <p><strong>Email:</strong> privacidad@rifa-silverado.mx</p>
+                <p><strong>Email:</strong> privacidad@ganaconlacantrina.mx</p>
                 <p><strong>Asunto:</strong> &quot;Solicitud de Derechos ARCO&quot;</p>
                 <p><strong>Teléfono:</strong> +52 55 1234-5678 (Ext. 105)</p>
                 <p><strong>Horario de atención:</strong> Lunes a Viernes 9:00 - 17:00 hrs</p>
@@ -364,7 +364,7 @@ export default function PrivacidadPage() {
                 <div className="grid md:grid-cols-2 gap-4 text-blue-800">
                   <div>
                     <p><strong>Responsable:</strong> Lic. María Fernández González</p>
-                    <p><strong>Email:</strong> privacidad@rifa-silverado.mx</p>
+                    <p><strong>Email:</strong> privacidad@ganaconlacantrina.mx</p>
                     <p><strong>Teléfono:</strong> +52 55 1234-5678 (Ext. 105)</p>
                   </div>
                   <div>

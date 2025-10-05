@@ -34,10 +34,10 @@ export default function ClientScripts() {
               gtag('js', new Date());
               
               gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', {
-                page_title: 'Rifa Silverado Z71 2024 - Página Principal',
+                page_title: 'Gana con la Cantrina - Audi A4 2024',
                 page_location: window.location.href,
                 custom_map: {
-                  'custom_parameter_1': 'rifa_silverado'
+                  'custom_parameter_1': 'gana_con_la_cantrina'
                 }
               });
             `}

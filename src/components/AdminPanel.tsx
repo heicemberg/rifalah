@@ -800,7 +800,7 @@ export default function AdminPanel() {
           <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
             <div className="space-y-2">
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-800 via-purple-700 to-blue-900 bg-clip-text text-transparent">
-                ⚡ Panel Admin Ultra - Rifa Silverado Z71
+                ⚡ Panel Admin Ultra - Gana con la Cantrina
               </h1>
               <p className="text-slate-600 text-lg">Gestión masiva de compras en tiempo real</p>
             </div>

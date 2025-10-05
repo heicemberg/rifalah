@@ -28,7 +28,7 @@ import OrganicNotifications from '@/components/OrganicNotifications'
 import MathDebugger from '@/components/MathDebugger'
 import FloatingPurchaseButton from '@/components/FloatingPurchaseButton'
 import { BanamexLogo, BBVALogo, OXXOLogo, BinanceLogo } from '@/components/PaymentLogos'
-import { RifaSilveradoLogo } from '@/components/RifaSilveradoLogo'
+import LaCantrinaLogo from '@/components/LaCantrinaLogo'
 import { analytics } from '@/lib/analytics'
 
 export default function NewRaffePage() {
@@ -196,8 +196,7 @@ export default function NewRaffePage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <RifaSilveradoLogo width={40} height={40} />
-              <span className="font-black text-xl">RIFA SILVERADO</span>
+              <LaCantrinaLogo width={200} height={50} />
             </div>
             <div className="relative">
               <button 
@@ -223,8 +222,8 @@ export default function NewRaffePage() {
         {/* Imagen de Fondo con Overlay */}
         <div className="absolute inset-0">
           <Image
-            src="/premios/premio-rifa.png"
-            alt="Chevrolet Silverado Z71 2024"
+            src="/premios/premiorifa.jpg"
+            alt="Audi A4 2024 + PS5 + $85,000 MXN"
             fill
             className="object-cover object-center"
             priority
@@ -461,26 +460,26 @@ export default function NewRaffePage() {
                 
                 <div className="relative mb-6">
                   <Image
-                    src="/premios/premio-rifa.png"
-                    alt="Silverado Z71 2024"
+                    src="/premios/premiorifa.jpg"
+                    alt="Audi A4 2024"
                     width={600}
                     height={300}
                     className="w-full rounded-2xl shadow-2xl group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-2 rounded-xl font-bold text-sm">
-                    NUEVA 0KM
+                    NUEVO 0KM
                   </div>
                 </div>
 
-                <h3 className="text-3xl font-black text-white mb-4">Chevrolet Silverado Z71 2024</h3>
+                <h3 className="text-3xl font-black text-white mb-4">Audi A4 2024 + PS5 + $85,000 MXN</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm text-gray-300 mb-6">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Motor V8 Potente</span>
+                    <span>Motor Turbo</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Tracción 4x4</span>
+                    <span>Transmisión Automática</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-400" />
@@ -488,10 +487,10 @@ export default function NewRaffePage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Seguro 1 Año</span>
+                    <span>Garantía de Agencia</span>
                   </div>
                 </div>
-                <div className="text-2xl font-black text-yellow-400">Valor: $750,000 MXN</div>
+                <div className="text-2xl font-black text-yellow-400">Valor: $900,000 MXN</div>
               </div>
             </div>
 
@@ -753,11 +752,10 @@ export default function NewRaffePage() {
             {/* Logo y Descripción */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <RifaSilveradoLogo width={40} height={40} />
-                <span className="font-black text-xl text-white">RIFA SILVERADO</span>
+                <LaCantrinaLogo width={180} height={45} />
               </div>
               <p className="text-gray-400 text-sm mb-4">
-                Rifa legal y transparente de Chevrolet Silverado Z71 2024. 
+                Gana con la Cantrina: Rifa legal y transparente de Audi A4 2024 + PS5 + $85,000 MXN.
                 Sorteo ante Notario Público con transmisión en vivo.
               </p>
               <div className="flex items-center gap-2 text-green-400 text-sm">
@@ -801,7 +799,7 @@ export default function NewRaffePage() {
           <div className="border-t border-gray-800 pt-8 mt-8">
             <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
               <p className="text-gray-500 text-sm">
-                © 2024 Rifa Silverado. Todos los derechos reservados.
+                © 2024 Gana con la Cantrina. Todos los derechos reservados.
               </p>
               <p className="text-gray-500 text-sm">
                 Sorteo programado para cuando se completen todos los boletos.

@@ -452,7 +452,7 @@ const PagoStep: React.FC<{
             <div className="bg-white border rounded-lg p-3 mt-3 font-mono text-sm">
               {method.account}
             </div>
-            <p className="text-sm mt-2"><strong>Concepto:</strong> &quot;Rifa Silverado&quot;</p>
+            <p className="text-sm mt-2"><strong>Concepto:</strong> &quot;Gana con la Cantrina&quot;</p>
           </div>
         )}
 

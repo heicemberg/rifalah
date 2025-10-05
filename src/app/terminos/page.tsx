@@ -17,7 +17,7 @@ export default function TerminosPage() {
             Términos y Condiciones
           </h1>
           <p className="text-gray-600 text-lg">
-            Rifa Chevrolet Silverado Z71 2024 - Sorteo Legal
+            Gana con la Cantrina - Audi A4 2024 - Sorteo Legal
           </p>
           <div className="text-sm text-gray-500 mt-2">
             Última actualización: 23 de agosto de 2025
@@ -34,11 +34,11 @@ export default function TerminosPage() {
             </h2>
             <div className="space-y-4 text-gray-700 leading-relaxed">
               <p>
-                <strong>Organizador:</strong> Rifas Silverado México S.A. de C.V.<br/>
-                <strong>RFC:</strong> RSM240801ABC<br/>
+                <strong>Organizador:</strong> Gana con la Cantrina S.A. de C.V.<br/>
+                <strong>RFC:</strong> GCC240801ABC<br/>
                 <strong>Domicilio:</strong> Av. Reforma 123, Col. Centro, CDMX, C.P. 06000<br/>
                 <strong>Teléfono:</strong> +52 55 1234-5678<br/>
-                <strong>Email:</strong> contacto@rifa-silverado.mx
+                <strong>Email:</strong> contacto@ganaconlacantrina.mx
               </p>
               <p>
                 <strong>Tipo de Sorteo:</strong> Promocional comercial con fines de entretenimiento<br/>
@@ -55,8 +55,8 @@ export default function TerminosPage() {
             </h2>
             <div className="space-y-4 text-gray-700 leading-relaxed">
               <p>
-                <strong>Premio Principal:</strong> Una (1) Chevrolet Silverado Z71 2024, modelo Crew Cab, 
-                motor V8 de 5.3L, transmisión automática, color a elección del ganador entre los disponibles 
+                <strong>Premio Principal:</strong> Un (1) Audi A4 2024, modelo sedán de lujo,
+                motor turbo de 2.0L TFSI, transmisión automática S tronic, color a elección del ganador entre los disponibles
                 en concesionario.
               </p>
               <p>
@@ -172,7 +172,7 @@ export default function TerminosPage() {
               <p><strong>5.3 Entrega del Premio</strong></p>
               <ul className="list-disc list-inside ml-4 space-y-2">
                 <li>Plazo máximo: 15 días hábiles posterior al sorteo</li>
-                <li>Lugar: Agencia Chevrolet autorizada en CDMX</li>
+                <li>Lugar: Agencia Audi autorizada en CDMX</li>
                 <li>Gastos de traslado fuera de CDMX a cuenta del ganador</li>
                 <li>Firma de recibo y deslinde de responsabilidades</li>
               </ul>
@@ -295,7 +295,7 @@ export default function TerminosPage() {
               </p>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <p><strong>WhatsApp:</strong> +52 55 1234-5678</p>
-                <p><strong>Email:</strong> contacto@rifa-silverado.mx</p>
+                <p><strong>Email:</strong> contacto@ganaconlacantrina.mx</p>
                 <p><strong>Horario:</strong> Lunes a Viernes 9:00 - 18:00 hrs</p>
                 <p><strong>PROFECO:</strong> 01 800 468 8722</p>
               </div>

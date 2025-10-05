@@ -104,7 +104,7 @@ export default function AdminPage() {
         <div className="max-w-md w-full bg-white shadow-md rounded-lg p-6">
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900">🔐 Acceso Administrativo</h1>
-            <p className="text-sm text-gray-600 mt-2">Panel de control para la Rifa Silverado Z71</p>
+            <p className="text-sm text-gray-600 mt-2">Panel de control para Gana con la Cantrina</p>
             <p className="text-xs text-gray-500 mt-1">Sistema de autenticación seguro</p>
           </div>
 

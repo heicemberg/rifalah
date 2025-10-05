@@ -95,7 +95,7 @@ export const raffleEvents = {
         currency: 'USD',
         items: [{
           item_id: 'raffle_ticket',
-          item_name: 'Boleto Rifa Silverado Z71',
+          item_name: 'Boleto Gana con la Cantrina - Audi A4 2024',
           category: 'raffle',
           quantity: ticketCount,
           price: amount / ticketCount
@@ -192,7 +192,7 @@ export const trackConversion = {
   landingPageView: (source?: string, medium?: string, campaign?: string) => {
     if (typeof window !== 'undefined') {
       window.gtag?.('event', 'page_view', {
-        page_title: 'Rifa Silverado Z71 2024',
+        page_title: 'Gana con la Cantrina - Audi A4 2024',
         page_location: window.location.href,
         source,
         medium,
