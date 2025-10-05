@@ -10,7 +10,6 @@ import {
   testNetlifySupabaseConnection,
   resetNetlifyClient
 } from './supabase-netlify-fix';
-import { getSupabaseConfig, validateConfig } from '../../lib/secure-config';
 
 // Cliente principal optimizado para Netlify
 export const supabase = netlifySupabaseClient;

@@ -9,19 +9,26 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 // CONFIGURACIÓN DE CONNECTION STRINGS
 // ============================================================================
 
-// Importar configuración segura
-import { getSupabaseConfig } from '../../lib/secure-config';
+// ============================================================================
+// CONFIGURACIÓN SEGURA DESDE VARIABLES DE ENTORNO
+// ============================================================================
 
 function getSecureSupabaseConfig() {
-  const config = getSupabaseConfig();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+  if (!url || !key) {
+    console.error('⚠️ Supabase credentials not configured in environment variables');
+  }
+
   return {
     PROJECT_REF: '[SECURE-PROJECT-REF]',
-    ANON_KEY: config.anonKey,
+    ANON_KEY: key,
 
     // Connection Strings según documentación oficial Supabase
     URLS: {
       // Direct Connection - IPv6 (default para browsers con soporte IPv6)
-      DIRECT: config.url,
+      DIRECT: url,
 
       // Supavisor Session Pooler - IPv4 (para serverless/Netlify) - puerto 5432
       POOLER_SESSION: 'https://aws-0-us-east-1.pooler.supabase.com',
